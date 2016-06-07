@@ -180,7 +180,8 @@ for s=file_start:length(allsubj)
             end
             EEG = letterkilla_old(EEG); %DN: removes the letters that Brain Products appends to the triggers
         end
-
+        EEG.data = detrend(EEG.data')'; % GL: NB to prevent trending seeming like a bad channel
+        
         % Fish out the event triggers and times
         clear trigs stimes
         for i=1:length(EEG.event)
