@@ -9,7 +9,7 @@ Analysis scripts for Monash/Trinity Big Dots study
 
 1. 'getChannelVars_BigDots.m' - to extract a measure of electrode noise
 2. 'Check4badchans_BigDots.m' - checks for noisy channeles, you manually list any noisy channeles in 'runafew_BL.m'
-3. 'runafew_BigDots.m' - calls 'Dots_Discrete_Upper_Lower_ET.m' to extract ERP, Alpha, and Pupil Diameter epochs 
+3. 'runafew_BigDots.m' - calls a scriot to extract RT as well as epochs for ERP, Alpha and Pupil Diameter 
 
 
 
