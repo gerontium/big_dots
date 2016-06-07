@@ -9,11 +9,9 @@ clear all
 close all
 clc
 
-% datafolder = 'C:\Documents and Settings\Geronimo\My Documents\College Files\Dots Analysis\bilateral dots data\';
-% matfolder = 'C:\Documents and Settings\Geronimo\My Documents\College Files\Dots Analysis\bilateral dots data\';
 % path_temp = 'C:\Users\Ger Loughnane\Documents\Main Files\PhD\Projects\Evidence Acculumation Project\Dots Analysis\Study Participants\';
 % path_temp = 'C:\Users\Ger Loughnane\Documents\Main Files\PhD\Projects\Evidence Acculumation Project\Dots Analysis\Study Participants\';
-path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\';
+path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
 
 
 subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16_04_14', ...
@@ -93,7 +91,6 @@ for s=file_start:length(subject_folder)
             for n=1:length(block_temp)
                 k=k+1;
                 files{s}{k} = [path_temp subject_folder{s} '\' allsubj{s},num2str(block_temp(n)) '.bdf'];
-%                 matfiles{s}{k} = [path_temp subject_folder{s} '\Session' num2str(session) '\' allsubj{s} num2str(session) '_C',num2str(block_temp(n)) '.mat'];
             end
         elseif ismember(subject_folder{s},Monash_bigdots)
             block_temp = blocks{s};
@@ -102,7 +99,6 @@ for s=file_start:length(subject_folder)
                     k=k+1;
                     paths{s}{k} = [path_temp subject_folder{s} '\'];
                     files{s}{k} = [allsubj{s} num2str(block_temp(n)) '.vhdr'];
-%                     matfiles{s}{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(session) '_C' num2str(block_temp(n)) '.mat'];
                 end
             
         end
@@ -121,7 +117,7 @@ for s=file_start:length(allsubj)
     if ismember(subject_folder{s},TCD_bigdots)
         chanlocs = readlocs('cap64.loc');
     elseif ismember(subject_folder{s},Monash_bigdots)
-        load('C:\Users\Ger Loughnane\Documents\Main Files\PhD\Projects\Evidence Acculumation Project\Dots Analysis\BP_chanlocs.mat','chanlocs')
+        load('BP_chanlocs.mat','chanlocs')
         paths1 = paths{s};
     end
     files1 = files{s};
