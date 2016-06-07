@@ -90,7 +90,7 @@ for s=file_start:length(subject_folder)
             block_temp(find(ismember(block_temp,0))) = [];
             for n=1:length(block_temp)
                 k=k+1;
-                files{s}{k} = [path_temp subject_folder{s} '\' allsubj{s},num2str(block_temp(n)) '.bdf'];
+                files{s}{k} = [path_temp subject_folder{s} '\' allsubj{s},'_',num2str(block_temp(n)) '.bdf'];
             end
         elseif ismember(subject_folder{s},Monash_bigdots)
             block_temp = blocks{s};
