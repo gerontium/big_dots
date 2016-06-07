@@ -6,3 +6,5 @@ Analysis scripts for Monash/Trinity Big Dots study
 2. Check4BadChans
 
 3. Cut a hole in a box
+
+4. somthing different
