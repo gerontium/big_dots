@@ -10,3 +10,5 @@ Analysis scripts for Monash/Trinity Big Dots study
 4. somthing different
 
 5. And now for something COMPLETELY different.
+
+6. Ok this seems to be working - now for somthing the same 
