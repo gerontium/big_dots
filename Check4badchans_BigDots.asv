@@ -87,7 +87,7 @@ end
  if ismember(subject_folder{s},TCD_bigdots)
 chanlocs = readlocs('cap64.loc');
  else
-load('BP_chanlocs.mat','chanlocs')  
+    load('BP_chanlocs.mat','chanlocs')  
  end
 for s=file_start:length(subject_folder)
     disp(subject_folder{s})
