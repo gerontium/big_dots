@@ -56,7 +56,7 @@ close all
 
 %----SET PARAMETERS HERE----
 path = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\';
-subject_folder = {'279M_FT','234M_SW','484M_AI','453M_LB'};
+subject_folder = {'279M_FT','234M_SW','484M_AI','453M_LB','036M_JK'};
 
 for s=1:length(subject_folder)
     datafolder = [path, subject_folder{s}, '\'];
@@ -78,6 +78,9 @@ for s=1:length(subject_folder)
     elseif strcmp(subject_folder{s},'453M_LB')
         wrongnames={'LB59M12','LB59M12b'};
         rightnames={'LB59M11','LB59M12'};
+    elseif strcmp(subject_folder{s},'036M_JK')
+        wrongnames={'JK3M18'};
+        rightnames={'JK3M16'};
     end
     %%
 %----MAIN SCRIPT----
