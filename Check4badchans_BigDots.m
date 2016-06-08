@@ -54,14 +54,14 @@ single_participants = [];
 
 file_start = 1;
 
-blocks = {[1:8,10:16] [1:9,11:16] [1:3,5:16] [1:2,4:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:9,11:15] ...
-    [1:3,5:15] [1:16] [1:16] [1:16] [1:16] [1:16] [1:15] [1:16] [1:16] [1:16] ...
-    [1:16] [1:16] [1:16] [1:15,18] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] ...
+blocks = {[1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] ...
+    [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:15] [1:16] [1:16] [1:16] ...
     [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] ...
     [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] ...
-    [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:14,16]...
+    [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] ...
     [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16]...
-    [1:16] [1:16] [1:16] [1:16] [1:13,15,16] [1:16] [1:10,11:16] [1:16] [1:16] [1:16]};
+    [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16]...
+    [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16] [1:16]};
 
 if ~isempty(duds) && isempty(single_participants)
     subject_folder([duds]) = [];
@@ -77,9 +77,7 @@ end
 
 nchan = 64;
 
-% for s=file_start:length(subject_folder)
-%     matfiles{s} = [path_temp subject_folder{s} '\' allsubj{s} 'chanvars.mat'];
-% end
+
 for s=file_start:length(subject_folder)
     matfiles{s} = [path_temp subject_folder{s} '\' allsubj{s} 'chanvars.mat'];
 end
@@ -89,7 +87,7 @@ chanlocs = readlocs('cap64.loc');
  else
 load('BP_chanlocs.mat','chanlocs')  
  end
-for s=file_start:length(subject_folder)
+for s=file_start:file_start%length(subject_folder)
     disp(subject_folder{s})
     load(matfiles{s})
     % 1,4,7,11
@@ -98,9 +96,9 @@ for s=file_start:length(subject_folder)
 %     chanVar = chanVar(:,[1:3,6:14]);
     chanVar = double(chanVar);
     
-%     badchans = [40,41,46,54,57,58,62,64,105,109,117];
-%     changechans = [39,42,47,57,65,110,118]; % must be in same order as badchans.
-%     chanVar(badchans(1:end),:) = chanVar(changechans(1:end),:);
+    badchans =    [];
+    changechans = []; % must be in same order as badchans.
+    chanVar(badchans(1:end),:) = chanVar(changechans(1:end),:);
     
     avVar = mean(chanVar,2); 
         
