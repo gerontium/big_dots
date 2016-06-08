@@ -4,15 +4,15 @@ clc
 
 % path_temp = 'C:\Users\Ger Loughnane\Documents\Main Files\PhD\Projects\Evidence Acculumation Project\Dots Analysis\Study Participants\';
 % path_temp = 'C:\Users\Ger Loughnane\Documents\Main Files\PhD\Projects\Evidence Acculumation Project\Dots Analysis\Study Participants\';
-path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
-
+% path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
 
 subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16_04_14', ...
     'OF_28_04_14','RO_25_04_14','PR_20_04_14','AS_23_04_14','OM_07_05_14', ...
     'RM_06_05_14','SB_08_05_14','GW_09_05_14','OS_09_05_14','AC_13_05_14', ...
     'ND_16_05_14','SF_20_05_14','TL_23_05_14','JC_23_05_14','EL_24_05_14', ...
     'SH_25_05_14','059M_HP','093M_BR','036M_JK','221M_SJ', ...
-    '068M_CB','301M_MO','118M_CS','265M_EZ','291M_KS', ...
+    '068M_CB','301M_MO','118M_CS','265M_EZ','291M_KS', ... % 30
     '106M_NH','302M_BS','289M_AS','303M_SA','103M_JK', ...
     '314M_LK','226M_SM','037M_JD','338M_SC','091M_SW', ...
     '134M_JM','331M_CL','108M_CY','191M_DM','243M_JB', ...
@@ -50,7 +50,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
 
 
 duds = [];
-single_participants = [];
+single_participants = [40];
 
 file_start = 1;
 
@@ -84,12 +84,13 @@ for s=file_start:length(subject_folder)
     matfiles{s} = [path_temp subject_folder{s} '\' allsubj{s} 'chanvars.mat'];
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- if ismember(subject_folder{s},TCD_bigdots)
-chanlocs = readlocs('cap64.loc');
- else
-load('BP_chanlocs.mat','chanlocs')  
- end
+
 for s=file_start:length(subject_folder)
+    if ismember(subject_folder{s},TCD_bigdots)
+        chanlocs = readlocs('cap64.loc');
+    else
+        load('BP_chanlocs.mat','chanlocs')
+    end
     disp(subject_folder{s})
     load(matfiles{s})
     % 1,4,7,11
@@ -98,8 +99,8 @@ for s=file_start:length(subject_folder)
 %     chanVar = chanVar(:,[1:3,6:14]);
     chanVar = double(chanVar);
     
-%     badchans = [40,41,46,54,57,58,62,64,105,109,117];
-%     changechans = [39,42,47,57,65,110,118]; % must be in same order as badchans.
+%     badchans = [16,25,33];
+%     changechans = [17,27,34]; % must be in same order as badchans.
 %     chanVar(badchans(1:end),:) = chanVar(changechans(1:end),:);
     
     avVar = mean(chanVar,2); 
