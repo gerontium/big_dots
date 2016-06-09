@@ -29,7 +29,7 @@ allsubj = {'LK','AR','MH','AA','NT','OF','RO','PR','AS','OM', ...
     'NH10M','BS11M','AS12M','SA13M','JK14M','LK15M','SM16M','JD17M','SC18M','SW19M', ...
     'JM20M','CL21M','CY22M','DM24M','JB25M','JC26M','YV27M','AT28M','MK29M','LG30M', ...
     'JM31M','PP32M','KR33M','FT34M','CS35M','MG36M','DC37M','PH38M','AF39M','RO40M', ...
-    'EB41M','ED42M','LO43M','PD44M','LE45M','EW46M','AM47M', 'WM48M','VF49M','SW50M',...
+    'EB41M','ED42M','LO43M','PD44M','LE45M','EW46M','AM47M','WM48M','VF49M','SW50M',...
     'NB52M','BL53M','SS54M','LA55M','AH56M','TM57M','AI58M','LB59M','MK60M','CZ61M'};
 
 %%
@@ -52,18 +52,18 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
     '484M_AI','453M_LB','422M_MK','323M_CZ'};
 %%
 
-duds = [];
-single_participants = [];
+duds = []; % LK_07_04_14
+single_participants = [68:80];
 
 %%
-# % Change blocks
-allblocks = {[1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16],...
-    [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16],...
+
+allblocks = {[1:8,10:16], [1:9,11:16], [1:3,5:16], [1:2,4:16], [1:8,10:16], [1:16], [1:16], [1:5,7:16], [1:16], [1:9,11:16],...
+    [1:3,5:16], [1:13], [4:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16],...
+    [1:16], [1:16], [1:16], [2:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]...
     [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]...
     [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]...
-    [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]...
-    [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]...
-    [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]...
+    [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:14,16]...
+    [1:16], [1:16], [1:16], [1:16], [1:13,15,16], [1:16], [1:16], [1:7,9:16], [1:16], [1:16]...
     [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16], [1:16]};
 
 allbadchans = {[] % LK_07_04_14
@@ -183,12 +183,12 @@ for s=1:length(allsubj)
     clear paths files matfiles ET_files ET_matfiles; k=0;
     for n=1:length(blocks)
         k=k+1;
-        if ismember(subject_folder{s},TCD_subj)
+        if ismember(subject_folder{s},TCD_bigdots)
             files{k} = [path_temp subject_folder{s} '\' allsubj{s} '_' num2str(blocks(n)) '.bdf'];
             matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} '_' num2str(blocks(n)) '.mat'];
             ET_files{k}=[path_temp 'Samples_and_Events\' allsubj{s} '_' num2str(blocks(n)) '.asc'];
             ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} '_' num2str(blocks(n)) '_ET.mat'];
-        elseif ismember(subject_folder{s},Monash_subj)
+        elseif ismember(subject_folder{s},Monash_bigdots)
             files{k} = [allsubj{s} num2str(blocks(n)) '.vhdr'];
             paths{k} = [path_temp subject_folder{s} '\'];
             matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '.mat'];
@@ -200,11 +200,10 @@ for s=1:length(allsubj)
     if ismember(subject_folder{s},TCD_bigdots)
         G_CSD = G_TCD;
         H_CSD = H_TCD;
-        bibblyboo
+        TCD_preprocess_BigDots
     elseif ismember(subject_folder{s},Monash_bigdots)
         G_CSD = G_monash;
         H_CSD = H_monash;
-        bibblyba
+        Monash_preprocess_BigDots
     end
 end
-close(h)
