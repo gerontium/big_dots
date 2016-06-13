@@ -53,7 +53,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
 %%
 
 duds = []; % LK_07_04_14
-single_participants = [22:80];
+single_participants = [28:80];
 
 %%
 

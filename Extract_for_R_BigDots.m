@@ -101,12 +101,11 @@ for s=1:length(allsubj)
         load([path_temp subject_folder{s} '\' allsubj{s} mat_file])
 %         load([path_temp subject_folder{s} '\' 'avN2c_ParticipantLevel_peak_amp_index.mat'])
 %         load([path_temp subject_folder{s} '\' 'avN2i_ParticipantLevel_peak_amp_index.mat'])
-%         load([path_temp subject_folder{s} '\' 'ROIs.mat'])
-%%
-    
+%         load([path_temp subject_folder{s} '\' 'ROIs.mat']) 
 %     LH_ROI=LH_ROI_s;
 %     RH_ROI=RH_ROI_s;
         
+%%
      if CSD
          erp=erp_LPF_35Hz_CSD;
      else
@@ -130,12 +129,21 @@ for s=1:length(allsubj)
             erpr(:,:,n) = erp(:,RTsamp+trs,n);
             validrlock(n)=1;
         end
-    end
-    
+    end   
 %%    
     %DN: master_matrix_R columns:
     %Participant(1), Total Trial no(2), Inter-participant Trial no(3),ITI(4), TargetSide(5)
-    % Accuracy (6), 
+    % Accuracy (6), Artefact pre-target (7), Artifact baseline to
+    % 100mspost-response (8), Artefact any time before response (9), 
+    % Artefact between baseline and 1000ms (10), Fixation-Break pre-target (11), Artifact baseline to
+    % 100mspost-response (12), Fixation-Break any time before response (13), 
+    % Fixation-Break between baseline and 1000ms (14), Reaction time (15),
+    
+    %Pre-target AlphaPower overall (16), Pre-target AlphaPower Left Hemi (17)
+    %Pre-target AlphaPower Right Hemi (18), Pre-target AlphaAsym (19),
+    %Pre-target Pupil Diameter (20), Number of repeated/invalid trials (21), N2c Amp(22), N2i Amp (23),
+	%Post-target Alpha Power Left Hemi (24), Post-target Alpha Power Right Hemi (25),
+	%CPP half peak latency (26), N2c peak latency (27), Respose locked CPP slope (28),
     
     for trial=1:length(allTrials) % get rid of last trigger?
         total_numtr = total_numtr+1;
@@ -170,9 +178,7 @@ for s=1:length(allsubj)
         elseif allrespLR(trial)==2  
             master_matrix_R(total_numtr,6) = 2; %they clicked the wrong mouse button
         end
-        
-        
-        %%
+%% Meaning of the Artifact and fixation break vectors 
 % 'pretarg_artrej', - artifact at any pre-target time 
 % 'BL_resp_artrej', - artifact between baseline and 100ms post response
 % 'resp_artrej', - artifact any time before response
@@ -181,111 +187,113 @@ for s=1:length(allsubj)
 % 'ET_pretarg_artrej', - fixation break at any pre-target time 
 % 'ET_BL_resp_artrej', - fixation break between baseline and 100ms post response
 % 'ET_resp_artrej', - fixation break any time before response
-% 'ET_t1000ms_artrej' - fixation break between baseline and 1000ms 
-        
-        
-        
-        %% 10. Fixation Break or Blink:
-        master_matrix_R(total_numtr,10) = fixation_break_n(trial); %0=no fixation or blink; 1=there was a fixation break or blink
-        %% 11. Artefact during pre-target window (-500 - 0ms):
-        master_matrix_R(total_numtr,11)= artifact_PretargetToTarget_n(trial);
-        %% 12. Artefact during post-target window (-100ms to 100ms after response):
-        master_matrix_R(total_numtr,12)= artifact_BLintTo100msPostResponse_n(trial);
-        %% 13. Rejected trial
-        master_matrix_R(total_numtr,13)=rejected_trial_n(trial);
-        %% 14. Threshold_cohLevel 
-        %if participant's dot coherence which was determined by the staircase, use this:
-%         master_matrix_R(total_numtr,14)=Threshold_cohLevel; 
-         %otherwise, set whatever coherence you used (90%)?
-        master_matrix_R(total_numtr,14)=90;
+% 'ET_t1000ms_artrej' - fixation break between baseline and 1000ms    
+        %% 7. Artefact during pre-target window:
+        master_matrix_R(total_numtr,7)= pretarg_artrej(trial); %1=no Artefact; 0=there was an Artefact
+        %% 8. Artefact between -100ms to 100ms after response:
+        master_matrix_R(total_numtr,8)= BL_resp_artrej(trial); %1=no Artefact; 0=there was an Artefact
+        %% 9. Artefact any time before response
+        master_matrix_R(total_numtr,9)=resp_artrej(trial); %1=no Artefact; 0=there was an Artefact
+        %% 10. Artefact between baseline and 1000ms 
+        master_matrix_R(total_numtr,10)=t1000ms_artrej(trial); %1=no fixation break or blink; 0=there was an fixation break or blink 
+        %% 11. Fixation Break or Blink during pre-target window:
+        master_matrix_R(total_numtr,11) = ET_pretarg_artrej(trial); %1=no fixation break or blink; 0=there was a fixation break or blink
+        %% 12. Fixation Break or Blink between -100ms to 100ms after response:
+        master_matrix_R(total_numtr,12) = ET_BL_resp_artrej(trial); %1=no fixation or blink; 0=there was a fixation break or blink
+        %% 13. Fixation Break or Blink any time before response
+        master_matrix_R(total_numtr,13)=ET_resp_artrej(trial); %1=no fixation break or blink; 0=there was an fixation break or blink
+        %% 14. Fixation Break or Blink between baseline and 1000ms 
+        master_matrix_R(total_numtr,14)=ET_t1000ms_artrej(trial); %1=no fixation break or blink; 0=there was an fixation break or blink      
         %% 15. Reaction time (RT):
         master_matrix_R(total_numtr,15)=allRT(trial)*1000/fs;
-        %% 16. Pre-target Alpha Power overall (combining the two ROIs):
-        master_matrix_R(total_numtr,16)=squeeze(mean(mean(Alpha([LH_ROI_s RH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
-        %% 17. Pre-target Alpha Power Left Hemi:
-        master_matrix_R(total_numtr,17)=squeeze(mean(mean(Alpha([LH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
-        %% 18. Pre-target Alpha Power Right Hemi:
-        master_matrix_R(total_numtr,18)=squeeze(mean(mean(Alpha([RH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
-        %% 19.  Pre-target AlphaAsym:
-        master_matrix_R(total_numtr,19)=(master_matrix_R(total_numtr,18)-master_matrix_R(total_numtr,17))/(master_matrix_R(total_numtr,18)+master_matrix_R(total_numtr,17)); %(RightHemiROI - LeftHemiROI)/(RightHemiROI + LeftHemiROI)
-        %% 20. Pre-target Pupil Diameter:
-        master_matrix_R(total_numtr,20)=mean(Pupil(find(t==-500):find(t==0),trial));
-        %% 21. Number of repeated trials due to fixation breaks:
-        master_matrix_R(total_numtr,21)=length(allRT(~(~fixation_break_n) & ~(~rejected_trial_n)));  
-        %% 22. N2c Amp (using PARTICIPANT LEVEL AVERAGE to define N2c measurement window):
-        window=25; %this is the time (in samples) each side of the peak latency - so 25 is actually a 100ms window (since fs=500 and this is done each side of the peak latency)
-        master_matrix_R(total_numtr,22)=mean(mean(erp(ch_N2c(TargetSide,:),(avN2c_ParticipantLevel_peak_amp_index_s(TargetSide))-window:avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)+window,trial),1));
-        %% 23. N2i Amp (using PARTICIPANT LEVEL AVERAGE to define N2i measurement window):
-        master_matrix_R(total_numtr,23)=mean(mean(erp(ch_LR(TargetSide,:),avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)-window:avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)+window,trial),1));
-        %% 24. Post-target Alpha Power Left Hemi:
-        master_matrix_R(total_numtr,24)=squeeze(mean(mean(Alpha([LH_ROI],find(Alpha_smooth_time==300):find(Alpha_smooth_time==1000),trial),1),2));
-        %% 25. Post-target Alpha Power Right Hemi:
-        master_matrix_R(total_numtr,25)=squeeze(mean(mean(Alpha([RH_ROI],find(Alpha_smooth_time==300):find(Alpha_smooth_time==1000),trial),1),2));
-        %% 26. CPP half peak latency:
-        half_max_peak=max(erp(ch_CPP,find(t==0):find(t==1500),trial))/2;
-
-        half_max_peak_index=find(erp(ch_CPP,find(t==0):find(t==1500),trial)>=half_max_peak,1,'first')+length(find(erp(t<0)));
-        if half_max_peak<0
-            master_matrix_R(total_numtr,26)=0;
-        elseif isempty(half_max_peak_index)
-                master_matrix_R(total_numtr,26)=0;
-        else 
-        master_matrix_R(total_numtr,26)=t(half_max_peak_index);
-        end
         
-        %% 27. N2c peak latency:
-        % NB: this is quarter the window size in samples, each sample = 2ms and
-        % it's this either side.
-        window_size = 25;
-        % contra and search frames encompass the entire negativity.
-        contra_peak_t = [150,500]; contra_peak_ts(1) = find(t==contra_peak_t(1)); contra_peak_ts(2) = find(t==contra_peak_t(2));
-        % SEARCHING FOR PEAK LATENCY
-        clear N2c_peak_latencies
-        % for each trial...
-        % search your search timeframe, defined above by contra_peak ts, in sliding windows
-        % NB this is done in samples, not time, it's later converted.
-        clear win_mean win_mean_inds
-        counter2 = 1;
-        for j = contra_peak_ts(1)+window_size:contra_peak_ts(2)-window_size
-            % get average amplitude of sliding window from N2pc electrode
-            if master_matrix_R(total_numtr,6) == 1; %if left target, measure from right hemi (ch_LR(2,:)) electrodes
-                win_mean(counter2) = squeeze(mean(mean(erp(ch_LR(2,:),j-window_size:j+window_size,trial),1),2));
-            elseif master_matrix_R(total_numtr,6) == 2; %if right target, measure from left hemi (ch_LR(1,:)) electrodes
-                win_mean(counter2) = squeeze(mean(mean(erp(ch_LR(1,:),j-window_size:j+window_size,trial),1),2));
-            end
-            % get the middle sample point of that window
-            win_mean_inds(counter2) = j;
-            counter2 = counter2+1;
-        end
-        % find the most negative amplitude in the resulting windows
-        [~,ind_temp] = min(win_mean);
-        % get the sample point which had that negative amplitude
-        N2pc_min_ind = win_mean_inds(ind_temp);
-        
-        % if the peak latency is at the very start or end of the search
-        % timeframe, it will probably be bogus. set to NaN.
-        if ind_temp==1 | ind_temp==length(win_mean)
-            master_matrix_R(total_numtr,27)= 0; %%DN: make it 0 instead of NaN, will remove these in R
-        else
-            % it's good! add it in.
-            master_matrix_R(total_numtr,27)=t(N2pc_min_ind);  %N2c_peak_latencies(trial)= t(N2pc_min_ind);
-        end
-       %% 28. Respose locked CPP slope: (just fitting a straight line, like in Kelly and O'Connel J.Neuro, but on trial-by-trial basis)
-        slope_timeframe = [-150,-10];
-        if validrlock(trial)
-            coef = polyfit(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)),(erpr(ch_CPP,tr>slope_timeframe(1) & tr<slope_timeframe(2),trial)),1); % coef returns 2 coefficients fitting r = slope * x + intercept
-            master_matrix_R(total_numtr,28) = coef(1); %slope
-            %                 r = coef(1) .* tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
-            %                 figure
-            %                 plot(tr,erpr(ch_CPP,:,trial),'color','k');
-            %                 hold on;
-            %                 plot(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)), r, ':');
-            %                 line(xlim,[0,0],'Color','k');
-            %                 line([0,0],ylim,'Color','k');
-            %                 line([slope_timeframe(1),slope_timeframe(1)],ylim,'linestyle',':');
-            %                 line([slope_timeframe(2),slope_timeframe(2)],ylim,'linestyle',':');
-            %                 hold off;
-        end     
+        %% HAVE NOT YET UPDATED BELOW FOR BIG DOTS     
+%         %% 16. Pre-target Alpha Power overall (combining the two ROIs):
+%         master_matrix_R(total_numtr,16)=squeeze(mean(mean(Alpha([LH_ROI_s RH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
+%         %% 17. Pre-target Alpha Power Left Hemi:
+%         master_matrix_R(total_numtr,17)=squeeze(mean(mean(Alpha([LH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
+%         %% 18. Pre-target Alpha Power Right Hemi:
+%         master_matrix_R(total_numtr,18)=squeeze(mean(mean(Alpha([RH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
+%         %% 19.  Pre-target AlphaAsym:
+%         master_matrix_R(total_numtr,19)=(master_matrix_R(total_numtr,18)-master_matrix_R(total_numtr,17))/(master_matrix_R(total_numtr,18)+master_matrix_R(total_numtr,17)); %(RightHemiROI - LeftHemiROI)/(RightHemiROI + LeftHemiROI)
+%         %% 20. Pre-target Pupil Diameter:
+%         master_matrix_R(total_numtr,20)=mean(Pupil(find(t==-500):find(t==0),trial));
+%         %% 21. Number of repeated trials due to fixation breaks:
+%         master_matrix_R(total_numtr,21)=length(allRT(~(~fixation_break_n) & ~(~rejected_trial_n)));  
+%         %% 22. N2c Amp (using PARTICIPANT LEVEL AVERAGE to define N2c measurement window):
+%         window=25; %this is the time (in samples) each side of the peak latency - so 25 is actually a 100ms window (since fs=500 and this is done each side of the peak latency)
+%         master_matrix_R(total_numtr,22)=mean(mean(erp(ch_N2c(TargetSide,:),(avN2c_ParticipantLevel_peak_amp_index_s(TargetSide))-window:avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)+window,trial),1));
+%         %% 23. N2i Amp (using PARTICIPANT LEVEL AVERAGE to define N2i measurement window):
+%         master_matrix_R(total_numtr,23)=mean(mean(erp(ch_LR(TargetSide,:),avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)-window:avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)+window,trial),1));
+%         %% 24. Post-target Alpha Power Left Hemi:
+%         master_matrix_R(total_numtr,24)=squeeze(mean(mean(Alpha([LH_ROI],find(Alpha_smooth_time==300):find(Alpha_smooth_time==1000),trial),1),2));
+%         %% 25. Post-target Alpha Power Right Hemi:
+%         master_matrix_R(total_numtr,25)=squeeze(mean(mean(Alpha([RH_ROI],find(Alpha_smooth_time==300):find(Alpha_smooth_time==1000),trial),1),2));
+%         %% 26. CPP half peak latency:
+%         half_max_peak=max(erp(ch_CPP,find(t==0):find(t==1500),trial))/2;
+% 
+%         half_max_peak_index=find(erp(ch_CPP,find(t==0):find(t==1500),trial)>=half_max_peak,1,'first')+length(find(erp(t<0)));
+%         if half_max_peak<0
+%             master_matrix_R(total_numtr,26)=0;
+%         elseif isempty(half_max_peak_index)
+%                 master_matrix_R(total_numtr,26)=0;
+%         else 
+%         master_matrix_R(total_numtr,26)=t(half_max_peak_index);
+%         end
+%         
+%         %% 27. N2c peak latency:
+%         % NB: this is quarter the window size in samples, each sample = 2ms and
+%         % it's this either side.
+%         window_size = 25;
+%         % contra and search frames encompass the entire negativity.
+%         contra_peak_t = [150,500]; contra_peak_ts(1) = find(t==contra_peak_t(1)); contra_peak_ts(2) = find(t==contra_peak_t(2));
+%         % SEARCHING FOR PEAK LATENCY
+%         clear N2c_peak_latencies
+%         % for each trial...
+%         % search your search timeframe, defined above by contra_peak ts, in sliding windows
+%         % NB this is done in samples, not time, it's later converted.
+%         clear win_mean win_mean_inds
+%         counter2 = 1;
+%         for j = contra_peak_ts(1)+window_size:contra_peak_ts(2)-window_size
+%             % get average amplitude of sliding window from N2pc electrode
+%             if master_matrix_R(total_numtr,6) == 1; %if left target, measure from right hemi (ch_LR(2,:)) electrodes
+%                 win_mean(counter2) = squeeze(mean(mean(erp(ch_LR(2,:),j-window_size:j+window_size,trial),1),2));
+%             elseif master_matrix_R(total_numtr,6) == 2; %if right target, measure from left hemi (ch_LR(1,:)) electrodes
+%                 win_mean(counter2) = squeeze(mean(mean(erp(ch_LR(1,:),j-window_size:j+window_size,trial),1),2));
+%             end
+%             % get the middle sample point of that window
+%             win_mean_inds(counter2) = j;
+%             counter2 = counter2+1;
+%         end
+%         % find the most negative amplitude in the resulting windows
+%         [~,ind_temp] = min(win_mean);
+%         % get the sample point which had that negative amplitude
+%         N2pc_min_ind = win_mean_inds(ind_temp);
+%         
+%         % if the peak latency is at the very start or end of the search
+%         % timeframe, it will probably be bogus. set to NaN.
+%         if ind_temp==1 | ind_temp==length(win_mean)
+%             master_matrix_R(total_numtr,27)= 0; %%DN: make it 0 instead of NaN, will remove these in R
+%         else
+%             % it's good! add it in.
+%             master_matrix_R(total_numtr,27)=t(N2pc_min_ind);  %N2c_peak_latencies(trial)= t(N2pc_min_ind);
+%         end
+%        %% 28. Respose locked CPP slope: (just fitting a straight line, like in Kelly and O'Connel J.Neuro, but on trial-by-trial basis)
+%         slope_timeframe = [-150,-10];
+%         if validrlock(trial)
+%             coef = polyfit(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)),(erpr(ch_CPP,tr>slope_timeframe(1) & tr<slope_timeframe(2),trial)),1); % coef returns 2 coefficients fitting r = slope * x + intercept
+%             master_matrix_R(total_numtr,28) = coef(1); %slope
+%             %                 r = coef(1) .* tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
+%             %                 figure
+%             %                 plot(tr,erpr(ch_CPP,:,trial),'color','k');
+%             %                 hold on;
+%             %                 plot(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)), r, ':');
+%             %                 line(xlim,[0,0],'Color','k');
+%             %                 line([0,0],ylim,'Color','k');
+%             %                 line([slope_timeframe(1),slope_timeframe(1)],ylim,'linestyle',':');
+%             %                 line([slope_timeframe(2),slope_timeframe(2)],ylim,'linestyle',':');
+%             %                 hold off;
+%         end     
     end
 end
   
