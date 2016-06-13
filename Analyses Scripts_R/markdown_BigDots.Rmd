@@ -1,0 +1,819 @@
+---
+title: "BigDots"
+author: "Daniel Newman"
+date: "12 June 2016"
+output: html_document
+---
+
+```{r Load and Pre-Process the single trial Data, echo=FALSE, include=FALSE}
+
+####Which computer/directory is this being run on?
+location<-"Monash"
+# location<-"DansLaptop"
+
+if (location=="Monash") {
+    setwd(("C:/GitHub/big_dots/Analyses Scripts_R"))
+} else if (location=="DansLaptop") {
+    setwd(("C:/Users/Dan/Documents/GitHub/big_dots/Analyses Scripts_R"))
+} else setwd(("~"))
+
+
+
+
+
+####################################
+#######  How to use ################
+####################################
+
+# 1) Install the packages and software specified below. (consider also updating all installed packages by chosing Update on the Packages tab)
+# 2) Set the working directory (setwd) above, and directory where you have "data_ParticipantLevel", "master_matrix_R" and "ID_vector" saved
+# 3) Hit Knit Word (or Knit HTML)! (Output can take while due to bootstrapping the robust effect size and calculating the Bayesian Highest Density Iinterval)
+
+
+####################################
+######  FIRST TIME ONLY ############
+####################################
+
+#Remove # in front of the line below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
+
+# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","ggplot2","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl"))
+
+#Installation of the robust statistics package: Remove # in front of each of 4 lines below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
+
+# install.packages("devtools")
+# library("devtools")
+# install_github("mrxiaohe/WRScpp")
+# install_github("nicebread/WRS", subdir="pkg")
+
+
+#Download and install JAGS to calculate Bayesian HDI: http://sourceforge.net/projects/mcmc-jags/
+
+###################################################################################################################################
+
+## Install relevant libraries 
+library(foreign)
+library(car)
+library(nlme)
+library(ggplot2)
+library(pastecs)
+library(psych)
+library(plyr)
+library(multcomp)
+library(reshape2)
+library(compute.es)
+library(ez)
+library(lattice)
+library(lme4)
+library(png)
+library(grid)
+library(readxl)
+
+###### Import single trial data:
+if (location=="Monash") {
+data <- read.csv("C:/GitHub/big_dots/master_matrix_R_BigDots.csv", header=FALSE)
+} else if (location=="DansLaptop") {
+data <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_BigDots.csv", header=FALSE)
+} else setwd(("~"))
+#Import IDs:
+if (location=="Monash") {
+ID <- read.table("C:/GitHub/big_dots/ID_vector_BigDots.csv", quote="\"")
+} else if (location=="DansLaptop") {
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_BigDots.csv", quote="\"")
+} else setwd(("~"))
+
+data$ID<-data[,1]
+#Replace the participant numbers with IDs:
+data[,1]<-ID[,1]
+#Remove the seperate ID vector now it has been included into data dataframe
+rm(ID)
+drops <- c("ID")
+data<-data[,!(names(data) %in% drops)]
+
+
+
+#########################################################################################################################
+#data_ParticipantLevel:
+
+# ###### Import data_ParticipantLevel:
+# if (location=="Monash") {
+# data_participant_level <- read.csv("C:/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
+# } else if (location=="DansLaptop") {
+# data_participant_level <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
+# } else setwd(("~"))
+# 
+# 
+# #Import IDs:
+# if (location=="Monash") {
+# ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/11.Megan_ONeill/Analysis Scripts_Matlab/IDs.csv", quote="\"")
+# } else if (location=="DansLaptop") {
+# ID <- read.csv("C:/Users/Dan/Documents/GitHub/OldervsYounger/Analyses Scripts_Matlab/IDs.csv", header=F)
+# } else setwd(("~"))
+# ID<-plyr::rename(ID,c("V1"="ID"))
+# data_participant_level$ID<-ID$ID
+# rm(ID)
+# # drops <- c("ID")
+# # data_participant_level<-data_participant_level[,!(names(data_participant_level) %in% drops)]
+# 
+# #import demographic data
+# if (location=="Monash") {
+# Demographics<-read.csv("S:/R-MNHS-SPP/Bellgrove-data/11.Megan_ONeill/Analysis Scripts_R/Older_Younger_Demographics_etc.csv", header=T)
+# } else if (location=="DansLaptop") {
+# Demographics<-read.csv("C:/Users/Dan/Documents/GitHub/OldervsYounger/Analyses Scripts_R/Older_Younger_Demographics_etc.csv", header=T)
+# } else setwd(("~"))
+# 
+# 
+# 
+# #Merge Demographics into data_participant_level:
+# data_participant_level <- merge(data_participant_level, Demographics, by.x = "ID", by.y = "ID")
+# rm(Demographics)
+
+#########################################################################################################################
+
+
+#Rename data columns:
+data<-rename(data, c("V1"="ID","V2"="TotalTrialNumber","V3"="Trial","V4"="ITI","V5"="Hemifield", "V6"="Accuracy",
+                     "V7"="Art_neg500_0", "V8"="Art_neg100_100PR","V9"="Art_neg500_100PR", "V10"="Art_neg100_1000",
+                     "V11"="FixBreak_neg500_0", "V12"="FixBreak_neg100_100PR","V13"="FixBreak_neg500_100PR", "V14"="FixBreak_neg100_1000",
+                     "V15"="RT"))   
+#NOTE: FOR N2c/i,  the _GA or _PA suffix indicates whether N2c/i is measured with a measurement window based
+#on Grand average (GA) peak N2c/i latency,  or based on Participant level average (PA) peak N2c/i latency
+             
+#Make the required columns into factors:
+data$ITI <- factor(data$ITI)
+data$Hemifield <- factor(data$Hemifield)
+data$Accuracy <- factor(data$Accuracy)
+
+#Rename factor Levels:
+data$Hemifield <- revalue(data$Hemifield, c("1"="Left", "2"="Right"))
+data$Accuracy <- revalue(data$Accuracy, c("1"="Hit", "0"="RejectedTrial", "2"="WrongButton", "3"="Miss"))
+
+
+#Re-class required vectors into Logicals:
+data$Art_neg500_0<-as.logical(data$Art_neg500_0)
+data$Art_neg100_100PR<-as.logical(data$Art_neg100_100PR)
+data$FixationBreak<-as.logical(data$FixationBreak)
+data$RejectedTrial<-as.logical(data$RejectedTrial)
+
+
+############################################ Import DAT1 Data ##############################################
+DAT1 <- read_excel("DAT1genotypes_forR.xlsx") 
+
+summary(DAT1)
+
+summary(DAT1$DAT1_3UTR_VNTRraw)
+#Make the required columns into factors:
+DAT1$DAT1_3UTR_VNTRraw <- factor(DAT1$DAT1_3UTR_VNTRraw)
+DAT1$Site <- factor(DAT1$Site)
+
+DAT1$DAT1_10_10_repeats  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw , 
+                                       c("10 10"="Two", 
+                                         "10 11"="One", 
+                                         "7 10"="One",
+                                         "7 9"="Zero",
+                                         "8 11"="Zero",
+                                         "9 10"="One",
+                                         "9 9"="Zero"))
+summary(DAT1$DAT1_10_10_repeats)
+
+DAT1$DAT1_3UTR  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw , 
+                                 c("10 10"="10_10_repeat", 
+                                   "10 11"="non10_10_repeat", 
+                                   "7 10"="non10_10_repeat",
+                                   "7 9"="non10_10_repeat",
+                                   "8 11"="non10_10_repeat",
+                                   "9 10"="non10_10_repeat",
+                                   "9 9"="non10_10_repeat"))
+summary(DAT1$DAT1_3UTR)
+
+
+DAT1$DAT1_int8  <- plyr::revalue(DAT1$DAT1_Int8_VNTRraw , 
+                                 c("6 6"="6_6_repeat", 
+                                   "5 6"="non6_6_repeat", 
+                                   "5 5"="non6_6_repeat"))
+summary(DAT1$DAT1_int8)
+
+#### Merge the data sets together
+data<-merge(data, DAT1, c("ID")) 
+################################################################################################
+
+
+
+###############Data Cleaning For Single Trial Data######################
+
+
+#Check number of Trials for each participant by running the function 'length', 
+#on "data$RT" for each group, broken down by ID + Light
+num_trials1 <- ddply(data, c("ID"), summarise,
+               Trials    = length(RT))
+mean(num_trials1$Trials)
+
+##################Accuracy ##########################
+Accuracy_checker <- ddply(data, c("ID"), summarise,
+               Hits  = sum(Accuracy=="Hit"),
+               Misses = sum(Accuracy=="Miss"))
+Accuracy_checker$Total=Accuracy_checker$Hits+Accuracy_checker$Misses
+Accuracy_checker$Accuracy_overall=(Accuracy_checker$Hits/Accuracy_checker$Total)*100
+summary(Accuracy_checker$Accuracy_overall)
+
+#Remove rejected trials with eeg trigger conflicts 
+data<-data[!data$RejectedTrial,]
+#Remove trials where RT=0 (i.e. they did not respond)
+data<-data[data$RT!=0,]
+#Remove trials where RT longer than 1000ms (i.e. after target finished)
+data<-data[data$RT<1500,]
+#Remove trials where RT faster than 100ms (i.e. too fast must be false alarm)
+data<-data[data$RT>150,]
+#Remove trials with missing values :
+data<-data[complete.cases(data),] 
+
+############################################ Log transform:
+#################################################################################################################################
+data$log_RT<-log(data$RT) #log
+
+#####Z-score each participant's log_RT data ####
+data$IDbyHemifield<-interaction(data$ID, data$Hemifield)
+#calculate mean and sd 
+m <- tapply(data$log_RT,data$IDbyHemifield,mean)
+s <- sqrt(tapply(data$log_RT,data$IDbyHemifield,var))
+#calculate log_RT.Z and save it inside data.frame
+data$log_RT.Z <- (data$log_RT-m[data$IDbyHemifield])/s[data$IDbyHemifield]
+#check that Z scores have mean=0 and std=1 
+log_RT.Z_checker <- ddply(data, c("ID", "Hemifield"), summarise,
+               N    = length(log_RT.Z ),
+               mean = round(mean(log_RT.Z )),
+               sd   = sd(log_RT.Z ),
+               se   = sd / sqrt(N))
+summary(log_RT.Z_checker$mean)
+summary(log_RT.Z_checker$sd)
+
+#Remove trials where absolute log_RT.Z>3 (i.e. remove outlier RTs)
+data<-data[!abs(data$log_RT.Z)>3,]
+
+
+#plot again after outlier removal:
+ggplot(data, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Group)
+ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Group)
+
+
+#Calculate alpha desynchronisation by subtracting Pre-target Alpha from post target alpha
+data$AlphaDesyncRH<-(data$PreAlphaPowerRH)-(data$PostAlphaPowerRH)
+data$AlphaDesyncLH<-data$PreAlphaPowerLH-data$PostAlphaPowerLH
+
+# Make PostAlpha contralateral (PostAlpha_c) and -Ipsilateral (PostAlpha_i) variables:
+A<-data$Hemifield=="Left"
+#Absolute post target alpha
+data$PostAlpha_c[A]<-data$PostAlphaPowerRH[A]
+data$PostAlpha_c[!A]<-data$PostAlphaPowerLH[!A]
+data$PostAlpha_i[!A]<-data$PostAlphaPowerRH[!A]
+data$PostAlpha_i[A]<-data$PostAlphaPowerLH[A]
+
+#Post target Alpha desynchronisation 
+data$AlphaDesync_c[A]<-data$AlphaDesyncRH[A]
+data$AlphaDesync_c[!A]<-data$AlphaDesyncLH[!A]
+data$AlphaDesync_i[!A]<-data$AlphaDesyncRH[!A]
+data$AlphaDesync_i[A]<-data$AlphaDesyncLH[A]
+
+rm(A)
+
+
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+#################################################################################################################################
+
+#Rename data_participant_level columns of data_participant_level:
+data_participant_level<-rename(data_participant_level, c("V1"="ValidPreAlphaTrials",
+                     "V2"="ValidERPTrials","V3"="PreAlpha_LeftHemi",
+                     "V4"="PreAlpha_RightHemi","V5"="N2c_LeftTarget_PA","V6"="N2c_RightTarget_PA",
+                     "V7"="N2i_LeftTarget_PA","V8"="N2i_RightTarget_PA","V9"="AlphaDesync_LeftHemi_LeftTarget",
+                     "V10"="AlphaDesync_LeftHemi_RightTarget","V11"="AlphaDesync_RightHemi_LeftTarget",
+                     "V12"="AlphaDesync_RightHemi_RightTarget",
+                     "V13"="CPPonset_LeftTarget","V14"="CPPonset_RightTarget","V15"="N2c_latency_LeftTarget",
+                     "V16"="N2c_latency_RightTarget","V17"="N2i_latency_LeftTarget","V18"="N2i_latency_RightTarget",
+                     "V19"="CPPslope_LeftTarget","V20"="CPPslope_RightTarget","V21"="Group"))
+
+
+#NOTE: FOR N2c/i ,  the _GA or _PA suffix indicates whether N2c/i is measured with a measurement window based  
+#on Grand average (GA) peak N2c/i latency ,  or based on Participant level average (PA) peak N2c/i latency
+
+#Look at Column names:
+colnames(data_participant_level)
+             
+#Make the required columns into factors:
+data_participant_level$Group <- factor(data_participant_level$Group)
+data_participant_level$Gender <- factor(data_participant_level$Gender)
+
+#Rename factor Levels:
+data_participant_level$Group <- revalue(data_participant_level$Group, c("1"="Older", "2"="Younger"))
+
+#add in accuracy
+data_participant_level <- merge(data_participant_level, Accuracy_checker, by.x = "ID", by.y = "ID")
+data <- merge(data, Accuracy_checker, by.x = "ID", by.y = "ID")
+
+###Incorporate the demographic variables from data_participant_level into the single trial 'data' dataframe 
+target<-dplyr::select(data_participant_level, ID, Gender, Age,  Years_of_Education, Greyscale_correct, Greyscales_L_chosen, Bells_Cancellation, CoC_Index, Extinction,          Landmark_Spatial_Index)
+
+data<-merge(data, target, by.x="ID", by.y = "ID")
+rm(target)
+
+############## Participant exclusion ####################   
+#Single trial
+data <-data[data$ID %in% data_participant_level$ID, ] 
+
+#This ^ Excludes participants from the single trial data if they are not in data_participant_level
+
+#Kick out trials with fixation breaks:
+data2<-data[!data$FixationBreak,]
+
+#Calculate the number of trials each participant has left after fixation break trials are kicked out:
+num_trials2 <- ddply(data2, c("ID"), summarise,
+               Num_RT_Trials    = length(RT))
+#Merge this into the single trial and participant level data sets
+data <- merge(data, num_trials2, by.x = "ID", by.y = "ID")
+data_participant_level <-merge(data_participant_level, num_trials2, by.x = "ID", by.y = "ID")
+
+```
+
+#Significant accuracy difference in behavioural accuracy between Older and Younger participants?
+
+Accuracy distributions have negitive skew so do non-parametric repeated measures permutation test:
+```{r, echo=FALSE, warning=FALSE}
+###Check for Accuracy_overall outliers
+min(data_participant_level$Accuracy_overall)
+
+#Plot the Accuracy distribution for each group
+ggplot(data_participant_level, aes(Accuracy_overall))  + geom_histogram() + facet_wrap(~ Group)
+
+############ Are there significant accuracy differences between Older and Younger? ##############
+##############################################################
+#Overall Accuracy_overall by Group
+Accuracy_Group <- ezPerm(data = data_participant_level
+                                  , dv = .(Accuracy_overall)
+                                  , wid = .(ID)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+Accuracy_Group
+#################################################################################################
+```
+
+**So this ^ shows the older participants had significantly lower accuracy than the younger** 
+
+#Healthy younger participants have significant leftward RT asymmetry, and the older participants do not
+```{r, echo=FALSE, warning=FALSE}
+# ##Try seperate one-sample t-test - one for each Group
+# t.test (data_participant_level$RT_Asym[data_participant_level$Group=="Younger"], mu=0)
+# t.test (data_participant_level$RT_Asym[data_participant_level$Group=="Older"], mu=0)
+# 
+# #However, these are not normally distributed:
+# hist(data_participant_level$RT_Asym[data_participant_level$Group=="Younger"])
+# hist(data_participant_level$RT_Asym[data_participant_level$Group=="Older"])
+
+#So get participant level RT into long format so I can run permutated t-tests  
+RT_collapsed<-ddply(data2, .(ID, Hemifield, Group), summarise, RT=mean(RT))
+
+#Plot RT by group and hemifield:
+RT_collapsed$Hemifield_by_Group<-interaction(RT_collapsed$Hemifield, RT_collapsed$Group)
+#non log transformed:
+ggplot(RT_collapsed, aes(RT))  + geom_histogram() + facet_wrap(~ Hemifield_by_Group)
+
+## 2 seperate permutated within subjects test for the effect of Hemifield##
+#Younger:
+RT_Hemifield_Younger <- ezPerm(data = dplyr::filter(RT_collapsed, Group=="Younger")
+                                  , dv = .(RT)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , perms = 1000
+)
+RT_Hemifield_Younger
+
+#Older:
+RT_Hemifield_Older <- ezPerm(data = dplyr::filter(RT_collapsed, Group=="Older")
+                                  , dv = .(RT)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , perms = 1000
+)
+RT_Hemifield_Older
+
+
+
+```
+
+
+#However, the difference in RT-asymmetry between the Older and Younger groups is not significant:
+
+```{r, echo=FALSE, warning=FALSE}
+######Calculate RT asymmetry Index and add it to "data_participant_level"######
+#Collapse each participant's trials accross ITI
+RT_collapsed<-ddply(data2, .(ID, Hemifield), summarise, RT=mean(RT))
+#Bring Target-Hemifield up into wide format
+RT_collapsed <- dcast(RT_collapsed, ID  ~ Hemifield, value.var="RT", fun.aggregate=mean)
+RT_collapsed<-rename(RT_collapsed, c("Left"="RT_Left", "Right"="RT_Right"))
+#Calculate RT asymmetry
+RT_collapsed$RT_Asym<-(RT_collapsed$RT_Left-RT_collapsed$RT_Right)/(RT_collapsed$RT_Left+RT_collapsed$RT_Right)
+#add the RT measures into data_participant_level
+data_participant_level <- merge(data_participant_level, RT_collapsed, by.x = "ID", by.y = "ID")
+#Save the participant level file as .csv
+write.csv(data_participant_level, file = "participant_level_data.csv", row.names = F)
+##################################################################################
+ggplot(data_participant_level, aes(RT_Asym))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Group)
+
+RT_Asym.mean <- ddply(data_participant_level, "Group", summarise, RT_Asym.mean=mean(RT_Asym))
+RT_Asym.mean
+##Between groups t-test for RT_Asym
+t.test(data_participant_level$RT_Asym ~ data_participant_level$Group)
+
+##Try permutated t-test
+RTasym_Group <- ezPerm(data = data_participant_level
+                                  , dv = .(RT_Asym)
+                                  , wid = .(ID)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+RTasym_Group
+
+
+
+##Try Group * Hemifield interaction on RT (rather than using RT-asym)
+#So get participant level RT into long format so I can run permutated mixed model anova 
+RT_collapsed<-ddply(data2, .(ID, Hemifield, Group), summarise, RT=mean(RT))
+RT_Hemifield_by_Group <- ezPerm(data = RT_collapsed
+                                  , dv = .(RT)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+RT_Hemifield_by_Group
+```
+
+
+#Try linear mixed model approach to test the Group x Hemifield effect on log(RTs) in the single trial data:
+
+```{r, echo=FALSE, warning=FALSE}
+
+#Uncomment this if you want to kick out the 2 participants with lowest accuracy
+### data2<-dplyr::filter(data2, Accuracy_overall>80)
+
+#Plots show that a log transform fixes the skew in the single trial data
+ggplot(data, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Group)
+ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Group)
+
+
+########################### Multi-level Models ########################## 
+RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
+RT_Group<-update(RT_random_intercepts_only, .~. + Group)
+RT_Hemifield<-update(RT_Group, .~. + Hemifield)
+RT_HemifieldbyGroup<-update(RT_Hemifield, .~. + Hemifield:Group)
+anova(RT_random_intercepts_only, RT_Group, RT_Hemifield, RT_HemifieldbyGroup)
+
+
+RT_collapsed<-ddply(data2, .(ID, Hemifield, ITI, Group), summarise, RT=mean(RT))
+summary(m2<-lmerTest::lmer(log(RT) ~ 1 + Group + Hemifield + Group:Hemifield + 
+                               (1 | ID) +
+                               (1 | Hemifield) +
+                               (1 | ITI), 
+                           data = RT_collapsed, REML=FALSE, na.action = na.omit))
+```
+
+**So the linear mixed model approach ^ shows no significant Group x Hemifield effect**
+
+##However simple effects of hemifield inside group linear mixed model approach confirms that Younger participants have signficantly faster RTs to left targets and Older participants do not: 
+```{r, echo=FALSE, warning=FALSE}
+#########Break down the signifiant Hemifield by group interaction:
+#look at the effect of Hemifield for Older only  -
+summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|ID)+(1|ITI) + (1|Hemifield)+ (1|Trial), data = data2[data2$Group=="Older",], REML=FALSE, na.action = na.omit)))
+#look at the effect of Hemifield for Younger only - 
+summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|ID)+(1|ITI) + (1|Hemifield)+ (1|Trial), data = data2[data2$Group=="Younger",], REML=FALSE, na.action = na.omit)))
+
+```
+
+###So Younger have significant pseudoneglect (i.e. faster RTs to left hemifield targets), and Older do not, but this is only seen in the simple effects (doing seperate test for each group). The factorial design gives no significant Group x Hemifield effect
+
+**Nonetheless, lets plot this:**
+
+```{r, echo=FALSE, warning=FALSE}
+
+
+source("summarySE.R") 
+source("summarySEwithin.R") #function to calculate Std.Er of mean
+source("normDataWithin.R")
+plotdata <- summarySEwithin(data2, measurevar="RT", withinvars=c("Hemifield"), betweenvars="Group", idvar="ID")
+ggplot(plotdata, aes(x=Group, y=RT, fill=Hemifield)) +
+    geom_bar(position=position_dodge(.9), colour="Black", stat="identity") + 
+    geom_errorbar(position=position_dodge(.9), width=.3, aes(ymin=RT-ci, ymax=RT+ci)) + #can change "se" to "ci" if I want to use 95%ci instead
+    geom_hline(yintercept=0) +  coord_cartesian(ylim = c(400, 700)) +
+    xlab("Hemifield") + ylab("RT (ms)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
+    theme(axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
+    theme(legend.title = element_text(size=11, face="bold")) +
+    theme(legend.text = element_text(size = 11, face = "bold")) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
+
+
+```
+
+###Next I'll move on to look at the EEG data. This EEG data was low-pass filtered to 35Hz, and no high-pass filter applied. No CSD transformation was applied:
+
+#Single trial N2 Amplitude 
+
+###N2c/i measurement window (100ms) was centred on peak amplitude of each INDIVIDUAL PARTICIANT's AVERAGE N2c/i waveforms:
+
+```{r, echo=FALSE, message=FALSE}
+##Calc N2_participant_level_long here
+N2_participant_level_long <- melt(data_participant_level, id.vars=c("ID", "Gender", "Group"), 
+                                          measure.vars=c("N2c_LeftTarget_PA", "N2c_RightTarget_PA", "N2i_LeftTarget_PA", "N2i_RightTarget_PA" ), 
+                                          variable.name="Hemifield_by_Hemisphere",
+                                          value.name="N2")
+#Create seperate target Hemifield and Hemisphere factors
+N2_participant_level_long$Hemifield<-revalue(N2_participant_level_long$Hemifield_by_Hemisphere, c("N2c_LeftTarget_PA"="Left","N2i_LeftTarget_PA"="Left", "N2c_RightTarget_PA"="Right", "N2i_RightTarget_PA"="Right"))
+N2_participant_level_long$Hemisphere<-revalue(N2_participant_level_long$Hemifield_by_Hemisphere, c("N2c_LeftTarget_PA"="Contralateral","N2i_LeftTarget_PA"="Ipsilateral", "N2c_RightTarget_PA"="Contralateral", "N2i_RightTarget_PA"="Ipsilateral"))
+
+
+
+N2amp_perm <- ezPerm(data = N2_participant_level_long
+                                  , dv = .(N2)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield, Hemisphere)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+N2amp_perm
+
+
+## Plot the Group*Hemifield*Hemisphere(N2c vs N2i)
+N2_boot<-ezBoot(data = N2_participant_level_long
+                                  , dv = .(N2)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield, Hemisphere)
+                                  , between = .(Group)
+                                  , resample_within = FALSE
+       )
+ezPlot2(N2_boot, x=Hemifield, col=Group)
+
+#Look at N2c only - i.e. the Group*Hemifield effect on N2c
+N2c_amp_perm <- ezPerm(data = dplyr::filter(N2_participant_level_long, Hemisphere == "Contralateral")
+                                  , dv = .(N2)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+N2c_amp_perm
+
+
+#Look at N2c only - i.e. the Group*Hemifield effect on N2c
+N2i_amp_perm <- ezPerm(data = dplyr::filter(N2_participant_level_long, Hemisphere == "Ipsilateral")
+                                  , dv = .(N2)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+N2i_amp_perm
+
+
+
+##Bootstrapped plot of the Group*Hemifield effect on N2c
+N2_boot<-ezBoot(data = dplyr::filter(N2_participant_level_long, Hemisphere == "Contralateral")
+                                  , dv = .(N2)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , resample_within = FALSE
+       )
+ezPlot2(N2_boot, x=Hemifield, col=Group)
+
+
+
+
+
+##Box plot of the Group*Hemifield effect on N2c 
+ggplot(dplyr::filter(N2_participant_level_long, Hemisphere == "Contralateral"), aes(Group, N2, colour = Hemifield))  + 
+    geom_boxplot() + theme_bw ()
+
+#Box plot of the Group*Hemifield effect on N2i
+ggplot(dplyr::filter(N2_participant_level_long, Hemisphere == "Ipsilateral"), aes(Group, N2, colour = Hemifield))  + 
+    geom_boxplot() + theme_bw ()
+
+
+```
+
+
+**Plot it:**
+
+**First Plot the marginal N2 means and 95% CIs predicted by the model:**
+
+```{r, echo=FALSE, message=FALSE}
+require(effects)
+plot(allEffects(N2_HemifieldbyGroupbyHemisphere), multiline=T,x.var="Hemifield", z.var="Hemisphere", alternating=F, ci.style="bars")
+```
+
+**Now plot the actual N2 data (note these error bars are std. error):**
+
+```{r, echo=FALSE, message=FALSE}
+
+source("summarySE.R") 
+source("summarySEwithin.R") #function to calculate Std.Er of mean
+source("normDataWithin.R")
+plotdata <- summarySEwithin(DF, measurevar="N2", withinvars=c("Hemisphere","Hemifield"), betweenvars="Group", idvar="ID")
+# plotdata$N2<-abs(plotdata$N2)
+ggplot(plotdata, aes(x=Hemisphere, y=N2, fill=Hemifield)) +
+    geom_bar(position=position_dodge(.9), colour="Black", stat="identity") + 
+    geom_errorbar(position=position_dodge(.9), width=.3, aes(ymin=N2-se, ymax=N2+se)) + #can change "se" to "ci" if I want to use 95%ci instead
+    geom_hline(yintercept=0) +  coord_cartesian(ylim = c(0.5, -4.2)) +
+    xlab("Hemisphere") + ylab("N2 Amplitude (uV)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
+    theme(axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
+    theme(legend.title = element_text(size=11, face="bold")) +
+    theme(legend.text = element_text(size = 11, face = "bold")) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) + facet_wrap(~ Group)
+# 
+# load(file = "StimLockedN2_Plot_Group.gg")
+# 
+# StimLockedN2_Plot_Group
+# 
+# N2_BarPlot_Group
+
+
+```
+
+
+
+#CPP onset 
+
+##CPP onset was measured on a participant level (rather than on a single trial level) using the same method as Ger's Current Biology paper. There is no significant Group x Hemifield effect unfortunately 
+
+```{r, echo=FALSE, message=FALSE}
+#Reshape data_participant_level into long format for modeling with lmw4:
+CPPonset_participant_level_long <- melt(data_participant_level, id.vars=c("ID", "Gender", "Group", "Age"), 
+                                        measure.vars=c("CPPonset_LeftTarget", "CPPonset_RightTarget" ), 
+                                        variable.name="Hemifield",
+                                        value.name="CPPonset")
+
+# Rename factor names from "cond1" and "cond2" to "first" and "second"
+levels(CPPonset_participant_level_long$Hemifield)[levels(CPPonset_participant_level_long$Hemifield)=="CPPonset_LeftTarget"] <- "Left"
+levels(CPPonset_participant_level_long$Hemifield)[levels(CPPonset_participant_level_long$Hemifield)=="CPPonset_RightTarget"] <- "Right"
+
+# # #Check which participant have invalid CPPonset
+# CPPonset_participant_level_long[CPPonset_participant_level_long$CPPonset==0,]
+# #Remove any participants with CPP onsets of zero as they are not valid
+# CPPonset_participant_level_long<-CPPonset_participant_level_long[CPPonset_participant_level_long$CPPonset!=0,]
+
+
+# # #Find CPPonset Outliers 
+# CPPonset_participant_level_long$CPPonset.Z<-scale(CPPonset_participant_level_long$CPPonset)
+# #Check which participants have outlier CPPonsets
+# CPPonset_participant_level_long[!abs(CPPonset_participant_level_long$CPPonset.Z)<3,]
+# #Remove CPPonset Outliers 
+# CPPonset_participant_level_long<-CPPonset_participant_level_long[abs(CPPonset_participant_level_long$CPPonset.Z)<3,]
+
+# #Histogram of participant's CPPonset scores by group and Hemifield 
+CPPonset_participant_level_long$Hemifield_By_Group<-interaction(CPPonset_participant_level_long$Hemifield, CPPonset_participant_level_long$Group)
+ggplot(CPPonset_participant_level_long, aes(CPPonset))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Hemifield_By_Group)
+
+
+ezANOVA(
+    data = CPPonset_participant_level_long
+    , dv = .(CPPonset)
+    , wid = .(ID)
+    , within = .(Hemifield)
+    , within_full = .(Hemifield)
+    , between = (Group)
+    , type = 3
+    , detailed = F
+)
+
+CPPonset_perm <- ezPerm(data = CPPonset_participant_level_long
+                                  , dv = .(CPPonset)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+CPPonset_perm
+
+#Younger:
+CPPonset_perm_Younger <- ezPerm(data = dplyr::filter(CPPonset_participant_level_long, Group=="Younger")
+                                  , dv = .(CPPonset)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , perms = 1000
+)
+CPPonset_perm_Younger
+
+#Older:
+CPPonset_perm_Older <- ezPerm(data = dplyr::filter(CPPonset_participant_level_long, Group=="Older")
+                                  , dv = .(CPPonset)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , perms = 1000
+)
+CPPonset_perm_Older
+
+```
+
+###So if you test separate  simple effects of Hemifield on CPPonset inside Younger and Older groups (seperate test for each group). It shows there is almost and effect of Hemifield on CPPonset p=0.089, and not close in the older participants p=0.307
+
+**Lets plot this:**
+
+```{r, echo=FALSE, message=FALSE}
+# #Try a boxplot		
+ggplot(CPPonset_participant_level_long, aes(Group, CPPonset, colour = Hemifield))  + 
+    geom_boxplot() + coord_flip() + theme_bw ()
+
+
+```
+
+
+#Younger Participants have significantly steaper CPP slope analysis than Older participants, however 
+
+```{r, echo=FALSE, message=FALSE}
+#Reshape data_participant_level into long format for modeling with lmw4:
+CPPslope_participant_level_long <- melt(data_participant_level, id.vars=c("ID", "Gender", "Group", "Age"), 
+                                        measure.vars=c("CPPslope_LeftTarget", "CPPslope_RightTarget" ), 
+                                        variable.name="Hemifield",
+                                        value.name="CPPslope")
+
+# Rename factor names from "cond1" and "cond2" to "first" and "second"
+levels(CPPslope_participant_level_long$Hemifield)[levels(CPPslope_participant_level_long$Hemifield)=="CPPslope_LeftTarget"] <- "Left"
+levels(CPPslope_participant_level_long$Hemifield)[levels(CPPslope_participant_level_long$Hemifield)=="CPPslope_RightTarget"] <- "Right"
+
+
+# #Check which participant have invalid CPPslope
+# CPPslope_participant_level_long[CPPslope_participant_level_long$CPPslope<0,]
+# #Remove CPP slopes of zero as they are not valid
+# CPPslope_participant_level_long<-CPPslope_participant_level_long[CPPslope_participant_level_long$CPPslope>0,]
+
+
+# #Histogram of participant's CPPslope scores by group and Hemifield 
+# CPPslope_participant_level_long$Hemifield_By_Group<-interaction(CPPslope_participant_level_long$Hemifield, CPPslope_participant_level_long$Group)
+# ggplot(CPPslope_participant_level_long, aes(CPPslope))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ Hemifield_By_Group)
+
+
+
+# CPPslope_random_intercepts_only<-lmer(CPPslope ~ 1 + (1 | ID) +(1|Hemifield), data = CPPslope_participant_level_long, REML=FALSE, na.action = na.omit)
+# CPPslope_Hemifield<-update(CPPslope_random_intercepts_only, .~. + Hemifield)
+# CPPslope_Group<-update(CPPslope_Hemifield, .~. + Group)
+# CPPslope_Hemifield_By_Group<-update(CPPslope_Group, .~. + Hemifield*Group)
+# anova(CPPslope_random_intercepts_only, CPPslope_Hemifield, CPPslope_Group, CPPslope_Hemifield_By_Group)
+
+
+
+CPPslope_participant_level_long$Hemifield_by_Group<-interaction(CPPslope_participant_level_long$Hemifield, CPPslope_participant_level_long$Group)
+#non log transformed:
+# ggplot(CPPslope_participant_level_long, aes(CPPslope))  + geom_histogram() + facet_wrap(~ Hemifield_by_Group)
+
+
+CPPslope_perm <- ezPerm(data = CPPslope_participant_level_long
+                                  , dv = .(CPPslope)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , perms = 1000
+)
+CPPslope_perm
+
+
+
+
+
+CPPslope_boot<-ezBoot(data = CPPslope_participant_level_long
+                                  , dv = .(CPPslope)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(Group)
+                                  , resample_within = FALSE
+       )
+ezPlot2(CPPslope_boot, x=Hemifield, col=Group)
+
+
+
+
+#Younger:
+CPPslope_perm_Younger <- ezPerm(data = dplyr::filter(CPPslope_participant_level_long, Group=="Younger")
+                                  , dv = .(CPPslope)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , perms = 1000
+)
+CPPslope_perm_Younger
+
+#Older:
+CPPslope_perm_Older <- ezPerm(data = dplyr::filter(CPPslope_participant_level_long, Group=="Older")
+                                  , dv = .(CPPslope)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , perms = 1000
+)
+CPPslope_perm_Older
+```
+
+###Interestingly, the above shows that if you test separate  simple effects of Hemifield on CPPslope inside Younger and Older groups (seperate test for each group). It shows there is a significant effect of Hemifield on CPPonset p=0.026, and not close in the older participants p=0.578
