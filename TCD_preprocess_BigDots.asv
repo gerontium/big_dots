@@ -1,23 +1,22 @@
-clear
-close all
-clc
-subject_folder = {'059M_HP','093M_BR'};
-allsubj = {'HP1M','BR2M'};
-
-s = 1;
-blocks = [1:16];
-badchans = [];
-path_temp = 'D:\Participant Folders_new\';
-
-clear paths files matfiles ET_files ET_matfiles; k=0;
-for n=1:length(blocks)
-    k=k+1;
-    paths{k} = [path_temp subject_folder{s} '\'];
-    files{k} = [allsubj{s} num2str(blocks(n)) '.vhdr'];    
-    matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '.mat'];
-    ET_files{k}=[path_temp 'Samples_and_Events\' allsubj{s} num2str(blocks(n)) '.asc'];
-    ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '_ET.mat'];
-end
+% clear
+% close all
+% clc
+% subject_folder = {'AR_08_04_14'};
+% allsubj = {'AR'};
+% 
+% s = 1;
+% blocks = [1:9,11:16];
+% badchans = [14,15,43];
+% path_temp = 'D:\Participant Folders_new\';
+% 
+% clear files matfiles ET_files ET_matfiles; k=0;
+% for n=1:length(blocks)
+%     k=k+1;
+%     files{k} = [path_temp subject_folder{s} '\' allsubj{s} '_' num2str(blocks(n)) '.bdf'];
+%     matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} '_' num2str(blocks(n)) '.mat'];
+%     ET_files{k} = [path_temp 'Samples_and_Events\' allsubj{s} '_' num2str(blocks(n)) '.asc'];
+%     ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} '_' num2str(blocks(n)) '_ET.mat'];
+% end
 
 % LK has coherence 35%!!!
 % for i = 1:length(conditiondescrip)
@@ -32,15 +31,15 @@ end
 
 %% CSD
 
-E = textread('chans65_monash.asc','%s');
-M = ExtractMontage('10-5-System_Mastoids_EGI129.csd',E);  % reading in the montage for the CSD toolbox
-% MapMontage(M);
-[G_CSD,H_CSD] = GetGH(M);
+% E = textread('chans64.asc','%s');
+% M = ExtractMontage('10-5-System_Mastoids_EGI129.csd',E);  % reading in the montage for the CSD toolbox
+% % MapMontage(M);
+% [G_CSD,H_CSD] = GetGH(M);
 
 %% Time
 
 targcodes = [101:106];
-nchan = 65;
+nchan = 64;
 
 fs = 500; % new sample rate
 
@@ -68,7 +67,7 @@ ARchans = [1:64];  % just the ones we care about, and RH opposite LH to be symme
 artifth = 100;
 artifchans=[];  % keep track of channels on which the threshold is exceeded, causing trial rejection
 
-chanlocs = readlocs('actiCAP65_ThetaPhi.elp','filetype','besa'); %DN for actiCAP
+chanlocs = readlocs('cap64.loc');
 chanlocs = chanlocs(1:nchan)';
 
 %% Initialise
@@ -84,36 +83,55 @@ ET_pretarg_artrej = []; ET_BL_resp_artrej = []; ET_resp_artrej = []; ET_t1000ms_
 
 for f=1:length(files)
     disp(f)
-    EEG = pop_loadbv(paths{f},files{f});
-    loadbvSK_DN % this takes 65 channels
-    EEG = letterkilla_old(EEG); %DN: removes the letters that Brain Products appends to the triggers
+    filename=[files{f}];
+    EEG = pop_biosig(filename, 'blockepoch', 'off','channels',[1:nchan]);
     EEG.data = double(EEG.data);
-    while 1
-        if EEG.event(1).type==1 | EEG.event(1).type==-88
-            EEG.event(1) = [];
-        else
-            break;
-        end
-    end
     
     load(matfiles{f},'trialCond','par');
-    if par.cohLevels~=50
-        disp(['Coh discrepancy: Coh = ',num2str(par.cohLevels)])
-        keyboard
+    
+    fid = fopen(ET_files{f});
+    ET_text = textscan(fid,'%s%s%s%s%s%s%s%s%s%s%s','Headerlines',22,'ReturnOnError',0);
+    fclose(fid);
+    for i = 1:size(ET_text{1,3},1)
+        if strcmp('GAZE_COORDS',ET_text{1,3}(i))
+            screen_res(1) = str2num(cell2mat(ET_text{1,6}(i)))+1
+            screen_res(2) = str2num(cell2mat(ET_text{1,7}(i)))+1
+            continue
+        end
     end
+    if screen_res==[1024,768], middle 
+%     if par.cohLevels~=50
+%         disp(['Coh discrepancy: Coh = ',num2str(par.cohLevels)])
+%         keyboard
+%     end
     trialCond = trialCond+100;
     
-    if ~exist(ET_matfiles{f}, 'file') %DN: if ET matfile NOT been saved        
+%     if ~exist(ET_matfiles{f}, 'file') %DN: if ET matfile NOT been saved        
         FixEyelinkMessages %then calculate and save it now 
-    end   
+%     end   
     
-    numev = length(EEG.event);
+    EEG2 = pop_resample(EEG,fs);
+    resamp_data = [];
+    for elec = 1:size(EEG.data,1)
+        resamp_data(elec,:) = resample(EEG.data(elec,:),500,512,0);
+    end
+    EEG.data = resamp_data;
+    EEG.pnts = EEG2.pnts;
+    EEG.times = EEG2.times;
+    EEG.srate = EEG2.srate;
+    if size(resamp_data,2)~=EEG.pnts
+        disp('Resample size mismatch')
+        keyboard
+    end
+    
+    numev = length(EEG2.event);
     % Fish out the event triggers and times
     clear trigs stimes
     for i=1:numev
-        trigs(i)=EEG.event(i).type;
-        stimes(i)=round(EEG.event(i).latency);
+        trigs(i)=EEG2.event(i).type;
+        stimes(i)=round(EEG2.event(i).latency);
     end
+    clear EEG2 % unnecessary now
         
     % interpolate bad channels
     if ~isempty(badchans)
@@ -123,18 +141,31 @@ for f=1:length(files)
     
     % ET stuff
     load(ET_matfiles{f}) %DN: load the ET mat file
+    
+    % fix missing trig issue
+    EEG_trigs=[]; ET_trigs=[];
+    for i = 1:length(EEG.event), EEG_trigs(i) = EEG.event(i).type; end
+    for i = 1:length(event), ET_trigs(i) = event(i,2); end
+    ET_trigs = ET_trigs(find(ET_trigs>100)); EEG_trigs = EEG_trigs(find(EEG_trigs>100));
+    
+    if length(ET_trigs)>length(EEG_trigs), last_event = ET_trigs(end-1); 
+        if ET_trigs(end)==ET_trigs(end-1), event = event(1:end-2,:); save(ET_matfiles{f},'event','-append'); end
+    end
+    
     plotter = 0;
     %Add an extra 4 rows into the EEG struct - 'TIME'    
-    %'GAZE_X' 'GAZE_Y' 'AREA'. This will add these as extra channels onto %EEG.data. So the final channel is the pupil area (i.e. diameter):   
+    %'GAZE_X' 'GAZE_Y' 'AREA'. This will add these as extra channels onto %EEG.data. So the final channel is the pupil area (i.e. diameter):  
+
     EEG_temp = pop_importeyetracker(EEG,ET_matfiles{f},[first_event ...
         last_event],[1:4] ,{'TIME' 'GAZE_X' 'GAZE_Y' 'AREA'},0,1,0,plotter);
     [output_cell,~,~] = command_window_text();
     text = output_cell{length(output_cell)-1};
     numsamp = sscanf(text,'%*s%*s%*s%*s%*s%*f%*s%*s%f');
     if numsamp<30
-        disp([allsubj{s},', block ',num2str(f),': ET sync issue'])
+        beep
+        disp([allsubj{s},', block ',num2str(allblocks{s}(f)),': ET sync issue'])
+        figure, plot(ET_trigs), hold on, plot(EEG_trigs)
         keyboard
-        % if it stalls here, define first and last event yourself manually
     end
     
     ET_data = EEG_temp.data([nchan+1:nchan+4],:);
@@ -326,44 +357,6 @@ erp_LPF_8Hz = single(erp_LPF_8Hz);
 erp_LPF_35Hz = single(erp_LPF_35Hz);
 erp_LPF_8Hz_CSD = single(erp_LPF_8Hz_CSD);
 erp_LPF_35Hz_CSD = single(erp_LPF_35Hz_CSD);
-
-chanlocs_TCD = readlocs('cap64.loc');
-chanlocs_TCD = chanlocs_TCD';
-chanlocs_Monash = readlocs('actiCAP65_ThetaPhi.elp','filetype','besa'); %DN for actiCAP
-chanlocs_Monash = chanlocs_Monash';
-
-counter = 1;
-counter2 = 1;
-for elec_Monash = 1:65
-    yesser = 0;
-    for elec_TCD = 1:64
-        if strcmp(chanlocs_TCD(1,elec_TCD).labels,chanlocs_Monash(1,elec_Monash).labels)
-            order_TCD(counter) = elec_TCD;
-            order_Monash(counter) = elec_Monash;
-            counter = counter+1;
-            yesser = 1;
-        end
-    end
-    if yesser==0
-        unmatched_elecs_Monash(counter2) = elec_Monash;
-        counter2 = counter2+1;
-    end
-end
-% tester = zeros(64,1);
-% figure
-% topoplot(tester,chanlocs_Monash,'maplimits', ...
-%     [min(tester)  max(tester)],'electrodes','numbers');
-% figure
-% topoplot(tester,chanlocs_Monash,'maplimits', ...
-%     [min(tester)  max(tester)],'electrodes','labels');
-
-erp_TCD = single(zeros(size(erp)));
-erp_TCD(order_TCD,:,:) = erp(order_Monash,:,:);
-erp = erp_TCD;
-
-erp_TCD = single(zeros(size(erp_CSD)));
-erp_TCD(order_TCD,:,:) = erp_CSD(order_Monash,:,:);
-erp_CSD = erp_TCD;
 
 save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','erp_LPF_8Hz_CSD','erp_LPF_35Hz_CSD', ...
     'allRT','allrespLR','allTrig','allblock_count','t','ET_trials', ...
