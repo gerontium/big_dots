@@ -107,9 +107,9 @@ for f=1:length(files)
 %     end
     trialCond = trialCond+100;
     
-%     if ~exist(ET_matfiles{f}, 'file') %DN: if ET matfile NOT been saved        
+     if ~exist(ET_matfiles{f}, 'file') %DN: if ET matfile NOT been saved        
         FixEyelinkMessages %then calculate and save it now 
-%     end   
+     end   
     
     EEG2 = pop_resample(EEG,fs);
     resamp_data = [];

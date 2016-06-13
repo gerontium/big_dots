@@ -4,7 +4,7 @@ close all
 clc
 
 %%
-% path = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+% path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
 path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
 %%
 subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16_04_14', ...
@@ -53,7 +53,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
 %%
 
 duds = []; % LK_07_04_14
-single_participants = [1:21];
+single_participants = [1:80];
 
 %%
 
