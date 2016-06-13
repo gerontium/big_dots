@@ -88,6 +88,19 @@ for f=1:length(files)
     EEG.data = double(EEG.data);
     
     load(matfiles{f},'trialCond','par');
+    
+    fid = fopen(ET_files{f});
+    ET_text = textscan(fid,'%s%s%s%s%s%s%s%s%s%s%s','Headerlines',22,'ReturnOnError',0);
+    fclose(fid);
+    for i = 1:size(ET_text{1,3},1)
+        if strcmp('GAZE_COORDS',ET_text{1,3}(i))
+            screen_res(1) = str2num(cell2mat(ET_text{1,6}(i)))+1
+            screen_res(2) = str2num(cell2mat(ET_text{1,7}(i)))+1
+            continue
+        end
+    end
+    if screen_res(1)==1024, ranger = 76; elseif screen_res(1)==1280, ranger = 98; else disp(screen_res), keyboard, end
+    middle = screen_res(1)/2;
 %     if par.cohLevels~=50
 %         disp(['Coh discrepancy: Coh = ',num2str(par.cohLevels)])
 %         keyboard
@@ -275,11 +288,11 @@ for f=1:length(files)
         if length(artifchans_thistrial_resp) > 0, resp_artrej(numtr) = 0; else resp_artrej(numtr) = 1; end
         if length(artifchans_thistrial_1000ms) > 0, t1000ms_artrej(numtr) = 0; else t1000ms_artrej(numtr) = 1; end
         
-        % scres = 1024 x 768: 512, 384 is middle. 3 deg is 76 pixels
-        artif_ET_pretarg = find(ep_ET(2,find(ts<=0))<512-76 | ep_ET(2,find(ts<=0))>512+76);
-        artif_ET_BL_resp = find(ep_ET(2,find(ts>=-0.1 & ts<=response_time+0.1*fs))<512-76 | ep_ET(2,find(ts>=-0.1 & ts<=response_time+0.1*fs))>512+76);
-        artif_ET_resp = find(ep_ET(2,find(ts<=(response_time+0.1*fs)))<512-76 | ep_ET(2,find(ts<=(response_time+0.1*fs)))>512+76);
-        artif_ET_1000ms = find(ep_ET(2,find(ts>=-0.1 & ts<=1))<512-76 | ep_ET(2,find(ts>=-0.1 & ts<=1))>512+76);
+        % scres = 1024 x 768: 512, 384 is middle. 3 deg is 76 pixels. Nope!
+        artif_ET_pretarg = find(ep_ET(2,find(ts<=0))<middle-ranger | ep_ET(2,find(ts<=0))>middle+ranger);
+        artif_ET_BL_resp = find(ep_ET(2,find(ts>=-0.1 & ts<=response_time+0.1*fs))<middle-ranger | ep_ET(2,find(ts>=-0.1 & ts<=response_time+0.1*fs))>middle+ranger);
+        artif_ET_resp = find(ep_ET(2,find(ts<=(response_time+0.1*fs)))<middle-ranger | ep_ET(2,find(ts<=(response_time+0.1*fs)))>middle+ranger);
+        artif_ET_1000ms = find(ep_ET(2,find(ts>=-0.1 & ts<=1))<middle-ranger | ep_ET(2,find(ts>=-0.1 & ts<=1))>middle+ranger);
         
         % 0 = reject, 1 = keep
         if length(artif_ET_pretarg) > 0, ET_pretarg_artrej(numtr) = 0; else ET_pretarg_artrej(numtr) = 1; end
