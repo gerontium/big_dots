@@ -235,29 +235,30 @@ data<-data[data$RT!=0,]
 data<-data[data$RT<1500,]
 #Remove trials where RT faster than 100ms (i.e. too fast must be false alarm)
 data<-data[data$RT>150,]
-
+#Kick out trials with fixation breaks:
+data<-data[!data$FixBreak_neg100_100PR,]
 
 ############################################ Log transform:
 ##############################################################################################
 data$log_RT<-log(data$RT) #log
 #####Z-score each participant's log_RT data ####
-data$IDbyITI<-interaction(data$ID, data$ITI)
+data$IDbyITIbyHemifield<-interaction(data$ID, data$ITI, data$Hemifield)
 #calculate mean and sd 
-m <- tapply(data$log_RT,data$IDbyITI,mean)
-s <- sqrt(tapply(data$log_RT,data$IDbyITI,var))
+m <- tapply(data$log_RT,data$IDbyITIbyHemifield,mean)
+s <- sqrt(tapply(data$log_RT,data$IDbyITIbyHemifield,var))
 #calculate log_RT.Z and save it inside data.frame
-data$log_RT.Z <- (data$log_RT-m[data$IDbyITI])/s[data$IDbyITI]
+data$log_RT.Z <- (data$log_RT-m[data$IDbyITIbyHemifield])/s[data$IDbyITIbyHemifield]
 #check that Z scores have mean=0 and std=1 
-log_RT.Z_checker <- ddply(data, c("ID", "ITI"), summarise,
+log_RT.Z_checker <- ddply(data, c("ID", "ITI", "Hemifield"), summarise,
                N    = length(log_RT.Z ),
                mean = round(mean(log_RT.Z )),
                sd   = sd(log_RT.Z ),
                se   = sd / sqrt(N))
-summary(log_RT.Z_checker$mean)
-summary(log_RT.Z_checker$sd)
+summary(log_RT.Z_checker$mean)#make sure mean is 0
+summary(log_RT.Z_checker$sd) #Make sure SD is 1
 
 #Remove trials where absolute log_RT.Z>3 (i.e. remove outlier RTs)
-data<-data[!abs(data$log_RT.Z)>2.5,]
+data<-data[!abs(data$log_RT.Z)>3,]
 
 
 #plot again after outlier removal:
@@ -326,15 +327,9 @@ ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fi
 # data<-merge(data, target, by.x="ID", by.y = "ID")
 # rm(target)
 
-############## Participant exclusion ####################   
-#Kick out trials with fixation breaks:
-data<-data[!data$FixBreak_neg100_100PR,]
-
 #Calculate the number of trials each participant has left after fixation break trials are kicked out:
 num_trials2 <- ddply(data, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
-
-
 ```
 
 #First Look at the effect of Hemifield on RT, regardless of DAT1 genotype (because we loose 4 participants with failed genotypes later when testing for effect of DAT1 genotype)
@@ -376,7 +371,8 @@ ggplot(data, aes(Hemifield, log(RT), colour = Hemifield))  +
 
 #Plot the effect of Hemifield*Time-on-task
 ggplot(data, aes(x=data$Trial, y=data$RT,fill=Hemifield,colour=Hemifield)) +
-     stat_smooth(method="glm",level = 0.95,size=1) + # Add a glm smoothed fit curve with 95% confidence region around the three light conditions
+     # stat_smooth(method="glm",level = 0.95,size=1) + # Add a glm smoothed fit curve with 95% confidence region around the three light conditions
+    geom_smooth() +
     scale_fill_manual(name="Target\nHemifield",  breaks=c("Left", "Right"), labels=c(" Left", " Right"), guide = guide_legend(reverse=TRUE), values=c("#999999", "black")) +
     scale_colour_manual(name="Target\nHemifield",  breaks=c("Left", "Right"), labels=c(" Left", " Right"), guide = guide_legend(reverse=TRUE), values=c("black", "black")) +
     ylab("RT (ms)") +  xlab("Time On Task (trials)") + coord_cartesian(ylim = c(500, 700))+
@@ -390,8 +386,8 @@ ggplot(data, aes(x=data$Trial, y=data$RT,fill=Hemifield,colour=Hemifield)) +
     panel.background = element_blank(), axis.line = element_line(colour = "black")) 
 
 ##Check the plot of the model parameters matches with this^ plot of the raw data 
-require(effects)
-plot(allEffects(RT_Hemifield_by_TOT), multiline=T)
+# require(effects)
+# plot(allEffects(RT_Hemifield_by_TOT), multiline=T)
 
 
 ```
@@ -402,33 +398,33 @@ plot(allEffects(RT_Hemifield_by_TOT), multiline=T)
 ```{r, echo=FALSE, warning=FALSE}
 data2<-data[complete.cases(data$DAT1_3UTR),]####### This kicks out 4 the participants for which we didn't have DAT1 genotpes  
 
-Accuracy_collapsed<-ddply(data2, .(ID, DAT1_3UTR), summarise, Accuracy=mean(Accuracy_overall))
 
+Accuracy_collapsed<-ddply(data2, .(ID, DAT1_3UTR), summarise, Accuracy=mean(Accuracy_overall))
 ###Check for Accuracy_overall outliers
 min(Accuracy_collapsed$Accuracy)
-
 #Plot the Accuracy distribution for each DAT1_3UTR
 ggplot(Accuracy_collapsed, aes(Accuracy))  + geom_histogram() + facet_wrap(~ DAT1_3UTR)
 
 ############ Are there significant accuracy differences between 10_10_repeat and non10_10_repeat? ##############
 ##############################################################
 #Overall Accuracy by DAT1_3UTR
-Accuracy_DAT1_3UTR <- ezPerm(data = Accuracy_collapsed
+log <- capture.output({
+   Accuracy_DAT1_3UTR <- ezPerm(data = Accuracy_collapsed
                                   , dv = .(Accuracy)
                                   , wid = .(ID)
                                   , between = .(DAT1_3UTR)
-                                  , perms = 1000
-)
-Accuracy_DAT1_3UTR
-#################################################################################################
+                                  , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of DAT1_3UTR on Accuracy")
+print(Accuracy_DAT1_3UTR);
 ```
+
+
 
 **So this ^ shows shows no significant difference in accuracy between the DAT1 genotype groups** 
 
-#non10_10_repeat participants have significant leftward RT asymmetry, and the 10_10_repeat participants do not
+#Simple effects of Genotype inside each DAT1 Group show that non10_10_repeat participants have significant leftward RT asymmetry, and the 10_10_repeat participants do not
 ```{r, echo=FALSE, warning=FALSE}
-
-
 #Calculate the number of trials each participant has left after NAs are kicked out:
 num_trials2 <- ddply(data2, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
@@ -458,43 +454,52 @@ ggplot(RT_collapsed, aes(RT, colour = DAT1_3UTR_by_Hemifield))  +
     geom_density(alpha = 0.1) 
 
 
-RT_Hemifield_by_DAT1_3UTR <- ezPerm(data = RT_collapsed
-                                  , dv = .(RT)
-                                  , wid = .(ID)
-                                  , within = .(Hemifield)
-                                  , between = .(DAT1_3UTR)
-                                  , perms = 1000
-)
-RT_Hemifield_by_DAT1_3UTR
-
 
 ## 2 seperate permutated within subjects test for the effect of Hemifield##
 #non10_10_repeat:
+log <- capture.output({
 RT_Hemifield_non10_10_repeat <- ezPerm(data = dplyr::filter(RT_collapsed, DAT1_3UTR=="non10_10_repeat")
                                   , dv = .(RT)
                                   , wid = .(ID)
                                   , within = .(Hemifield)
                                   , perms = 1000
-)
-RT_Hemifield_non10_10_repeat
+) })
+print("Factorial Permutation test for the simple effect of Target Hemifield on RT in the non10_10_repeat group")
+print(RT_Hemifield_non10_10_repeat)
+
+
 
 #10_10_repeat:
+log <- capture.output({
 RT_Hemifield_10_10_repeat <- ezPerm(data = dplyr::filter(RT_collapsed, DAT1_3UTR=="10_10_repeat")
                                   , dv = .(RT)
                                   , wid = .(ID)
                                   , within = .(Hemifield)
                                   , perms = 1000
-)
-RT_Hemifield_10_10_repeat
+)})
+print("Factorial Permutation test for the simple effect of Target Hemifield on RT in the 10_10_repeat group")
+print(RT_Hemifield_10_10_repeat)
 
 
 
 ```
 
 
-#However, the difference in RT-asymmetry between the 10_10_repeat and non10_10_repeat DAT1_3UTRs is not significant:
+###However, the difference the DAT1Group x Hemifield interaction in RT is not significant, and also there is no significant difference in RT-asymmetry between the 10_10_repeat and non10_10_repeat DAT1_3UTRs:
 
 ```{r, echo=FALSE, warning=FALSE}
+log <- capture.output({
+RT_Hemifield_by_DAT1_3UTR <- ezPerm(data = RT_collapsed
+                                  , dv = .(RT)
+                                  , wid = .(ID)
+                                  , within = .(Hemifield)
+                                  , between = .(DAT1_3UTR)
+                                  , perms = 1000
+)})
+print("Factorial Permutation test for Hemifield x DAT1 group interaction on RT")
+print(RT_Hemifield_by_DAT1_3UTR)
+
+
 ######Calculate RT asymmetry Index and add it to "data_participant_level"######
 #Collapse each participant's trials accross ITI
 RT_collapsed<-ddply(data2, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
@@ -511,9 +516,12 @@ ggplot(RT_collapsed, aes(RT_Asym))  + geom_histogram(aes(y=..count..), colour="b
 ggplot(RT_collapsed, aes(RT_Asym, colour = DAT1_3UTR))  + 
     geom_density(alpha = 0.1) 
 
+#Remove outliers
 RT_collapsed$RT_Asym.Z<-scale(RT_collapsed$RT_Asym)
-
 RT_collapsed<-RT_collapsed[abs(RT_collapsed$RT_Asym.Z)<3,]
+#Try a density plot after outlier remove
+ggplot(RT_collapsed, aes(RT_Asym, colour = DAT1_3UTR))  + 
+    geom_density(alpha = 0.1) 
 
 RT_Asym.mean <- ddply(RT_collapsed, "DAT1_3UTR", summarise, RT_Asym.mean=mean(RT_Asym))
 RT_Asym.mean
@@ -521,13 +529,15 @@ RT_Asym.mean
 t.test(RT_collapsed$RT_Asym ~ RT_collapsed$DAT1_3UTR)
 
 ##Try permutated t-test
+log <- capture.output({
 RTasym_DAT1_3UTR <- ezPerm(data = RT_collapsed
                                   , dv = .(RT_Asym)
                                   , wid = .(ID)
                                   , between = .(DAT1_3UTR)
                                   , perms = 1000
-)
-RTasym_DAT1_3UTR
+)})
+print("Factorial Permutation test for effect if DAT1 group RT Asymmetry")
+print(RTasym_DAT1_3UTR)
 
 ```
 
@@ -545,11 +555,25 @@ ggplot(data2, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", f
 
 
 ########################### Multi-level Models ########################## 
-RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
+RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (Hemifield + Trial | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
 RT_DAT1_3UTR<-update(RT_random_intercepts_only, .~. + DAT1_3UTR)
 RT_Hemifield<-update(RT_DAT1_3UTR, .~. + Hemifield)
 RT_HemifieldbyDAT1_3UTR<-update(RT_Hemifield, .~. + Hemifield:DAT1_3UTR)
 anova(RT_random_intercepts_only, RT_DAT1_3UTR, RT_Hemifield, RT_HemifieldbyDAT1_3UTR)
+
+
+# RT_random_intercepts_only<-glmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data2, family = Gamma(link = log) , na.action = na.omit)
+# RT_DAT1_3UTR<-update(RT_random_intercepts_only, .~. + DAT1_3UTR)
+# RT_Hemifield<-update(RT_DAT1_3UTR, .~. + Hemifield)
+# RT_HemifieldbyDAT1_3UTR<-update(RT_Hemifield, .~. + Hemifield:DAT1_3UTR)
+# anova(RT_random_intercepts_only, RT_DAT1_3UTR, RT_Hemifield, RT_HemifieldbyDAT1_3UTR)
+
+# require(LMERConvenienceFunctions)
+#   data2 <- romr.fnc(RT_HemifieldbyDAT1_3UTR, data2, trim = 3)
+#   data2$n.removed
+#   data2$percent.removed
+#   data2<-data2$data
+
 ```
 
 **So the linear mixed model approach ^ shows no significant DAT1_3UTR x Hemifield effect**
@@ -566,8 +590,9 @@ summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|ID)+(1|ITI) + (1|Hemifield)+ 
 
 ###So non10_10_repeat have significant pseudoneglect (i.e. faster RTs to left hemifield targets), and 10_10_repeat do not, but this is only seen in the simple effects (doing seperate test for each DAT1_3UTR). The factorial design gives no significant DAT1_3UTR x Hemifield effect
 
-**Nonetheless, lets plot this:**
 
+
+##Look at the DAT1Group x Hemifield x Time-on-task interaction in the single trial data:
 ```{r, echo=FALSE, warning=FALSE}
 
 RT_random_effects_only<-lmer(log(RT) ~ 1 + (1 | DAT1_3UTR/ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
@@ -584,7 +609,8 @@ anova(RT_random_effects_only, RT_Hemifield, RT_DAT1,RT_TOT, RT_Hemifield_by_DAT1
 
 #Plot the effect of Hemifield*Time-on-task
 ggplot(data2, aes(x=data2$Trial, y=data2$RT,fill=Hemifield,colour=Hemifield)) +
-     stat_smooth(method="glm",level = 0.95,size=1) + # Add a glm smoothed fit curve with 95% confidence region around the three light conditions
+     # stat_smooth(method="glm",level = 0.95,size=1) + # Add a glm smoothed fit curve with 95% confidence region around the three light conditions
+    geom_smooth() +
     scale_fill_manual(name="Target\nHemifield",  breaks=c("Left", "Right"), labels=c(" Left", " Right"), guide = guide_legend(reverse=TRUE), values=c("#999999", "black")) +
     scale_colour_manual(name="Target\nHemifield",  breaks=c("Left", "Right"), labels=c(" Left", " Right"), guide = guide_legend(reverse=TRUE), values=c("black", "black")) +
     ylab("RT (ms)") +  xlab("Time On Task (trials)") + coord_cartesian(ylim = c(500, 650))+
@@ -600,3 +626,4 @@ ggplot(data2, aes(x=data2$Trial, y=data2$RT,fill=Hemifield,colour=Hemifield)) +
 
 ```
 
+###So there is no evidence for a 3-way DAT1Group x Hemifield x Time-on-task interaction. I haven't included random slopes directly above, so if there was any hint on a 3-way DAT1Group x Hemifield x Time-on-task interaction this model should have detected 
