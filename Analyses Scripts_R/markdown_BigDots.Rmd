@@ -633,4 +633,4 @@ ggplot(data2, aes(x=data2$Trial, y=data2$RT,fill=Hemifield,colour=Hemifield)) +
 
 ```
 
-###So there is no evidence for a 3-way DAT1Group x Hemifield x Time-on-task interaction. I haven't included random slopes directly above, so if there was any hint on a 3-way DAT1Group x Hemifield x Time-on-task interaction this model should have detected 
+###So there is no evidence for a 3-way DAT1Group x Hemifield x Time-on-task interaction. I haven't included random slopes directly above, so if there was any hint on a 3-way DAT1Group x Hemifield x Time-on-task interaction this model should have detected it!
