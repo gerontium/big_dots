@@ -96,7 +96,6 @@ for s=1:length(allsubj)
     disp(['Subject: ',num2str(s)])
     disp(['Subject: ',allsubj{s}])
     
-
 %% Load the participant's .mat file:
         load([path_temp subject_folder{s} '\' allsubj{s} mat_file])
 %         load([path_temp subject_folder{s} '\' 'avN2c_ParticipantLevel_peak_amp_index.mat'])

@@ -194,10 +194,11 @@ DAT1$DAT1_int8  <- revalue(DAT1$DAT1_Int8_VNTRraw ,
                                    "5 5"="non6_6_repeat"))
 summary(DAT1$DAT1_int8)
 
+#Only keep Genotypes for the participants who we actually tested on big dots (there are a few extra participant genotypes in the DAT1 sheet)
+DAT1 <-DAT1[DAT1$ID %in% data$ID, ]
 
 #### Merge the data sets together
-data<-merge(data, DAT1, by.x = "ID", by.y = "ID", all.x = TRUE) 
-
+data<-merge(data, DAT1, by.x = "ID", by.y = "ID") 
 
 ################################################################################################
 
