@@ -2,7 +2,11 @@
 title: "BigDots"
 author: "Daniel Newman"
 date: "12 June 2016"
-output: html_document
+output:
+  html_document:
+    fig_width: 8
+    keep_md: yes
+  word_document: default
 ---
 
 ```{r Load and Pre-Process the single trial Data, echo=FALSE, include=FALSE}
@@ -37,16 +41,6 @@ if (location=="Monash") {
 #Remove # in front of the line below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
 
 # install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","ggplot2","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl"))
-
-#Installation of the robust statistics package: Remove # in front of each of 4 lines below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
-
-# install.packages("devtools")
-# library("devtools")
-# install_github("mrxiaohe/WRScpp")
-# install_github("nicebread/WRS", subdir="pkg")
-
-
-#Download and install JAGS to calculate Bayesian HDI: http://sourceforge.net/projects/mcmc-jags/
 
 ###################################################################################################################################
 
@@ -415,7 +409,7 @@ log <- capture.output({
                                   , between = .(DAT1_3UTR)
                                   , perms = 1000);
  })
-print("Factorial Permutation test for the effect of DAT1_3UTR on Accuracy")
+print("Factorial Permutation test for the effect of DAT1_3UTR on Accuracy:")
 print(Accuracy_DAT1_3UTR);
 ```
 
@@ -464,7 +458,7 @@ RT_Hemifield_non10_10_repeat <- ezPerm(data = dplyr::filter(RT_collapsed, DAT1_3
                                   , within = .(Hemifield)
                                   , perms = 1000
 ) })
-print("Factorial Permutation test for the simple effect of Target Hemifield on RT in the non10_10_repeat group")
+print("Factorial Permutation test for the simple effect of Target Hemifield on RT in the non10_10_repeat group:")
 print(RT_Hemifield_non10_10_repeat)
 
 
@@ -477,7 +471,7 @@ RT_Hemifield_10_10_repeat <- ezPerm(data = dplyr::filter(RT_collapsed, DAT1_3UTR
                                   , within = .(Hemifield)
                                   , perms = 1000
 )})
-print("Factorial Permutation test for the simple effect of Target Hemifield on RT in the 10_10_repeat group")
+print("Factorial Permutation test for the simple effect of Target Hemifield on RT in the 10_10_repeat group:")
 print(RT_Hemifield_10_10_repeat)
 
 
@@ -496,8 +490,21 @@ RT_Hemifield_by_DAT1_3UTR <- ezPerm(data = RT_collapsed
                                   , between = .(DAT1_3UTR)
                                   , perms = 1000
 )})
-print("Factorial Permutation test for Hemifield x DAT1 group interaction on RT")
+print("Factorial Permutation test for Hemifield x DAT1 group interaction on RT:")
 print(RT_Hemifield_by_DAT1_3UTR)
+
+
+##Try the old school 
+ezANOVA(
+    data = RT_collapsed
+    , dv = .(RT)
+    , wid = .(ID)
+    , within = .(Hemifield)
+    , between = .(DAT1_3UTR)
+    , observed = .(DAT1_3UTR)
+    , type = 3
+    , detailed = F
+)
 
 
 ######Calculate RT asymmetry Index and add it to "data_participant_level"######
@@ -536,7 +543,7 @@ RTasym_DAT1_3UTR <- ezPerm(data = RT_collapsed
                                   , between = .(DAT1_3UTR)
                                   , perms = 1000
 )})
-print("Factorial Permutation test for effect if DAT1 group RT Asymmetry")
+print("Factorial Permutation test for effect if DAT1 group RT Asymmetry:")
 print(RTasym_DAT1_3UTR)
 
 ```
@@ -595,7 +602,7 @@ summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|ID)+(1|ITI) + (1|Hemifield)+ 
 ##Look at the DAT1Group x Hemifield x Time-on-task interaction in the single trial data:
 ```{r, echo=FALSE, warning=FALSE}
 
-RT_random_effects_only<-lmer(log(RT) ~ 1 + (1 | DAT1_3UTR/ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
+RT_random_effects_only<-lmer(log(RT) ~ 1 + (1 | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
 RT_Hemifield<-update(RT_random_effects_only, .~. + Hemifield)
 RT_DAT1<-update(RT_Hemifield, .~. + DAT1_3UTR)
 RT_TOT<-update(RT_DAT1, .~. + Trial)
