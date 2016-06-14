@@ -171,7 +171,15 @@ for s=1:length(allsubj)
             master_matrix_R(total_numtr,5) = 2; %right target
         end
         %% 6. Accuracy:
-            master_matrix_R(total_numtr,6) = allrespLR(trial); %no response
+        if allrespLR(trial)== 0
+            master_matrix_R(total_numtr,6) = 0; %no response
+        elseif allrespLR(trial)== 1
+            master_matrix_R(total_numtr,6) = 1; %correct
+        elseif allrespLR(trial)==2  
+            master_matrix_R(total_numtr,6) = 2; %they clicked the wrong mouse button
+        elseif allrespLR(trial)==3  
+            master_matrix_R(total_numtr,6) = 2; %they clicked the wrong mouse button
+        end
 %% Meaning of the Artifact and fixation break vectors 
 % 'pretarg_artrej', - artifact at any pre-target time 
 % 'BL_resp_artrej', - artifact between baseline and 100ms post response

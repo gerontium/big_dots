@@ -149,23 +149,26 @@ data$Accuracy <- revalue(data$Accuracy, c("1"="Hit", "0"="RejectedTrial", "2"="W
 
 
 #Re-class required vectors into Logicals:
-data$Art_neg500_0<-as.logical(data$Art_neg500_0)
-data$Art_neg100_100PR<-as.logical(data$Art_neg100_100PR)
-data$FixationBreak<-as.logical(data$FixationBreak)
-data$RejectedTrial<-as.logical(data$RejectedTrial)
+data$Art_neg500_0<-!as.logical(data$Art_neg500_0)
+data$Art_neg100_100PR<-!as.logical(data$Art_neg100_100PR)
+data$Art_neg500_100PR<-!as.logical(data$Art_neg500_100PR)
+data$Art_neg100_1000<-!as.logical(data$Art_neg100_1000)
+data$FixBreak_neg500_0<-!as.logical(data$FixBreak_neg500_0)
+data$FixBreak_neg100_100PR<-!as.logical(data$FixBreak_neg100_100PR)
+data$FixBreak_neg500_100PR<-!as.logical(data$FixBreak_neg500_100PR)
+data$FixBreak_neg100_1000<-!as.logical(data$FixBreak_neg100_1000)
+
 
 
 ############################################ Import DAT1 Data ##############################################
 DAT1 <- read_excel("DAT1genotypes_forR.xlsx") 
-
-summary(DAT1)
-
-summary(DAT1$DAT1_3UTR_VNTRraw)
 #Make the required columns into factors:
 DAT1$DAT1_3UTR_VNTRraw <- factor(DAT1$DAT1_3UTR_VNTRraw)
+DAT1$DAT1_Int8_VNTRraw <- factor(DAT1$DAT1_Int8_VNTRraw)
 DAT1$Site <- factor(DAT1$Site)
+DAT1$ID<-as.factor(DAT1$ID)
 
-DAT1$DAT1_10_10_repeats  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw , 
+DAT1$DAT1_10_10_repeats  <- revalue(DAT1$DAT1_3UTR_VNTRraw , 
                                        c("10 10"="Two", 
                                          "10 11"="One", 
                                          "7 10"="One",
@@ -175,25 +178,27 @@ DAT1$DAT1_10_10_repeats  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw ,
                                          "9 9"="Zero"))
 summary(DAT1$DAT1_10_10_repeats)
 
-DAT1$DAT1_3UTR  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw , 
+DAT1$DAT1_3UTR  <- revalue(DAT1$DAT1_3UTR_VNTRraw , 
                                  c("10 10"="10_10_repeat", 
                                    "10 11"="non10_10_repeat", 
                                    "7 10"="non10_10_repeat",
                                    "7 9"="non10_10_repeat",
                                    "8 11"="non10_10_repeat",
                                    "9 10"="non10_10_repeat",
-                                   "9 9"="non10_10_repeat"))
+                                  "9 9"="non10_10_repeat"))
 summary(DAT1$DAT1_3UTR)
 
-
-DAT1$DAT1_int8  <- plyr::revalue(DAT1$DAT1_Int8_VNTRraw , 
+DAT1$DAT1_int8  <- revalue(DAT1$DAT1_Int8_VNTRraw , 
                                  c("6 6"="6_6_repeat", 
                                    "5 6"="non6_6_repeat", 
                                    "5 5"="non6_6_repeat"))
 summary(DAT1$DAT1_int8)
 
+
 #### Merge the data sets together
-data<-merge(data, DAT1, c("ID")) 
+data<-merge(data, DAT1, by.x = "ID", by.y = "ID", all.x = TRUE) 
+
+
 ################################################################################################
 
 
@@ -205,6 +210,7 @@ data<-merge(data, DAT1, c("ID"))
 #on "data$RT" for each group, broken down by ID + Light
 num_trials1 <- ddply(data, c("ID"), summarise,
                Trials    = length(RT))
+summary(num_trials1$Trials)
 mean(num_trials1$Trials)
 
 ##################Accuracy ##########################
