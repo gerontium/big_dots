@@ -354,13 +354,13 @@ ggplot(plotdata, aes(x=Hemifield, y=RT, fill=Hemifield)) +
           panel.background = element_blank(), axis.line = element_line(colour = "black")) 
 
 
-#Look at a boxplot of RT
-ggplot(data, aes(Hemifield, RT, colour = Hemifield))  + 
-    geom_boxplot() + coord_flip() + theme_bw ()
-
-#Look at a boxplot of log(RT)
-ggplot(data, aes(Hemifield, log(RT), colour = Hemifield))  + 
-    geom_boxplot() + coord_flip() + theme_bw ()
+# #Look at a boxplot of RT
+# ggplot(data, aes(Hemifield, RT, colour = Hemifield))  + 
+#     geom_boxplot() + coord_flip() + theme_bw ()
+# 
+# #Look at a boxplot of log(RT)
+# ggplot(data, aes(Hemifield, log(RT), colour = Hemifield))  + 
+#     geom_boxplot() + coord_flip() + theme_bw ()
 
 
 #Plot the effect of Hemifield*Time-on-task
@@ -413,8 +413,6 @@ print("Factorial Permutation test for the effect of DAT1_3UTR on Accuracy:")
 print(Accuracy_DAT1_3UTR);
 ```
 
-
-
 **So this ^ shows shows no significant difference in accuracy between the DAT1 genotype groups** 
 
 #Simple effects of Genotype inside each DAT1 Group show that non10_10_repeat participants have significant leftward RT asymmetry, and the 10_10_repeat participants do not
@@ -424,16 +422,6 @@ num_trials2 <- ddply(data2, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
 
 summary(num_trials2)
-
-
-data2$DAT1_3UTR_by_Hemifield<-interaction(data2$DAT1_3UTR, data2$Hemifield)
-ggplot(data2, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ DAT1_3UTR_by_Hemifield)
-ggplot(data2, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ DAT1_3UTR_by_Hemifield)
-
-#Try a density plot
-ggplot(data2, aes(RT, colour = DAT1_3UTR_by_Hemifield))  + 
-    geom_density(alpha = 0.1) 
-
 
 
 #So get participant level RT into long format so I can run permutated t-tests  
@@ -555,11 +543,6 @@ print(RTasym_DAT1_3UTR)
 
 #Uncomment this if you want to kick out the 2 participants with lowest accuracy
 ### data2<-dplyr::filter(data2, Accuracy_overall>80)
-
-#Plots show that a log transform fixes the skew in the single trial data
-ggplot(data2, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ DAT1_3UTR)
-ggplot(data2, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") + facet_wrap(~ DAT1_3UTR)
-
 
 ########################### Multi-level Models ########################## 
 RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (Hemifield + Trial | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
