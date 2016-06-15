@@ -69,7 +69,13 @@ Daniel Newman
 ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 ```
 
-![](markdown_BigDots_files/figure-html/unnamed-chunk-3-1.png)![](markdown_BigDots_files/figure-html/unnamed-chunk-3-2.png)
+![](markdown_BigDots_files/figure-html/unnamed-chunk-3-1.png)
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-3-2.png)![](markdown_BigDots_files/figure-html/unnamed-chunk-3-3.png)
 
 ```
 ## [1] "Factorial Permutation test for the simple effect of Target Hemifield on RT in the non10_10_repeat group:"
@@ -98,18 +104,18 @@ Daniel Newman
 ```
 
 ```
-##                Effect     p p<.05
-## 1           DAT1_3UTR 0.880      
-## 2           Hemifield 0.005     *
-## 3 DAT1_3UTR:Hemifield 0.718
+##                         Effect     p p<.05
+## 1           DAT1_10_10_repeats 0.953      
+## 2                    Hemifield 0.003     *
+## 3 DAT1_10_10_repeats:Hemifield 0.744
 ```
 
 ```
 ## $ANOVA
-##                Effect DFn DFd          F           p p<.05          ges
-## 2           DAT1_3UTR   1  74 0.02328207 0.879141121       3.010699e-04
-## 3           Hemifield   1  74 8.52941588 0.004629491     * 4.896401e-03
-## 4 DAT1_3UTR:Hemifield   1  74 0.14822712 0.701339748       8.551002e-05
+##                Effect DFn DFd          F          p p<.05          ges
+## 2           DAT1_3UTR   1  74 0.07557194 0.78415644       0.0009813568
+## 3           Hemifield   1  74 8.04637362 0.00587824     * 0.0040930147
+## 4 DAT1_3UTR:Hemifield   1  74 0.54387465 0.46316344       0.0002777942
 ```
 
 ```
@@ -150,27 +156,51 @@ Daniel Newman
 
 #Try linear mixed model approach to test the DAT1_3UTR x Hemifield effect on log(RTs) in the single trial data:
 
+![](markdown_BigDots_files/figure-html/unnamed-chunk-5-1.png)![](markdown_BigDots_files/figure-html/unnamed-chunk-5-2.png)![](markdown_BigDots_files/figure-html/unnamed-chunk-5-3.png)
 
 ```
 ## Data: data2
 ## Models:
-## RT_random_intercepts_only: log(RT) ~ 1 + (Hemifield + Trial | ID) + (1 | ITI) + (1 | Trial)
-## RT_DAT1_3UTR: log(RT) ~ (Hemifield + Trial | ID) + (1 | ITI) + (1 | Trial) + 
-## RT_DAT1_3UTR:     DAT1_3UTR
-## RT_Hemifield: log(RT) ~ (Hemifield + Trial | ID) + (1 | ITI) + (1 | Trial) + 
-## RT_Hemifield:     DAT1_3UTR + Hemifield
-## RT_HemifieldbyDAT1_3UTR: log(RT) ~ (Hemifield + Trial | ID) + (1 | ITI) + (1 | Trial) + 
-## RT_HemifieldbyDAT1_3UTR:     DAT1_3UTR + Hemifield + DAT1_3UTR:Hemifield
+## RT_random_intercepts_only: log(RT) ~ 1 + (Hemifield | ID) + (1 | ITI) + (1 | Trial)
+## RT_DAT1_3UTR: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + DAT1_3UTR
+## RT_Hemifield: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + DAT1_3UTR + 
+## RT_Hemifield:     Hemifield
+## RT_HemifieldbyDAT1_3UTR: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + DAT1_3UTR + 
+## RT_HemifieldbyDAT1_3UTR:     Hemifield + DAT1_3UTR:Hemifield
 ##                           Df     AIC     BIC logLik deviance  Chisq Chi Df
-## RT_random_intercepts_only 10 -9039.2 -8960.3 4529.6  -9059.2              
-## RT_DAT1_3UTR              11 -9036.9 -8950.1 4529.5  -9058.9 0.0000      1
-## RT_Hemifield              12 -9038.7 -8943.9 4531.3  -9062.7 3.7211      1
-## RT_HemifieldbyDAT1_3UTR   13 -9036.8 -8934.2 4531.4  -9062.8 0.1648      1
+## RT_random_intercepts_only  7 -8437.7 -8382.4 4225.8  -8451.7              
+## RT_DAT1_3UTR               8 -8435.7 -8372.6 4225.9  -8451.7 0.0251      1
+## RT_Hemifield               9 -8439.6 -8368.6 4228.8  -8457.6 5.8808      1
+## RT_HemifieldbyDAT1_3UTR   10 -8437.9 -8358.9 4228.9  -8457.9 0.2815      1
 ##                           Pr(>Chisq)  
 ## RT_random_intercepts_only             
-## RT_DAT1_3UTR                 1.00000  
-## RT_Hemifield                 0.05373 .
-## RT_HemifieldbyDAT1_3UTR      0.68479  
+## RT_DAT1_3UTR                 0.87400  
+## RT_Hemifield                 0.01531 *
+## RT_HemifieldbyDAT1_3UTR      0.59571  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+```
+## Data: data2
+## Models:
+## RT_random_intercepts_only: log(RT) ~ 1 + (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial)
+## RT_DAT1_3UTR: log(RT) ~ (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial) + 
+## RT_DAT1_3UTR:     DAT1_3UTR
+## RT_Hemifield: log(RT) ~ (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial) + 
+## RT_Hemifield:     DAT1_3UTR + Hemifield
+## RT_HemifieldbyDAT1_3UTR: log(RT) ~ (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial) + 
+## RT_HemifieldbyDAT1_3UTR:     DAT1_3UTR + Hemifield + DAT1_3UTR:Hemifield
+##                           Df     AIC     BIC logLik deviance   Chisq
+## RT_random_intercepts_only  7 -8092.7 -8037.4 4053.3  -8106.7        
+## RT_DAT1_3UTR               8 -8090.7 -8027.6 4053.4  -8106.7  0.0845
+## RT_Hemifield               9 -8127.5 -8056.4 4072.7  -8145.5 38.7357
+## RT_HemifieldbyDAT1_3UTR   10 -8127.3 -8048.4 4073.6  -8147.3  1.8121
+##                           Chi Df Pr(>Chisq)    
+## RT_random_intercepts_only                      
+## RT_DAT1_3UTR                   1     0.7713    
+## RT_Hemifield                   1  4.852e-10 ***
+## RT_HemifieldbyDAT1_3UTR        1     0.1783    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -183,8 +213,8 @@ Daniel Newman
 ## 
 ## 	 Simultaneous Tests for General Linear Hypotheses
 ## 
-## Fit: lmer(formula = log(RT) ~ Hemifield + (Hemifield | ID) + (1 | 
-##     ITI) + (1 | Hemifield) + (1 | Trial), data = data2[data2$DAT1_3UTR == 
+## Fit: lmer(formula = log(RT) ~ Hemifield + (Hemifield | Site/ID) + 
+##     (1 | ITI) + (1 | Hemifield) + (1 | Trial), data = data2[data2$DAT1_3UTR == 
 ##     "10_10_repeat", ], REML = FALSE, na.action = na.omit)
 ## 
 ## Linear Hypotheses:
@@ -200,13 +230,13 @@ Daniel Newman
 ## 
 ## 	 Simultaneous Tests for General Linear Hypotheses
 ## 
-## Fit: lmer(formula = log(RT) ~ Hemifield + (Hemifield | ID) + (1 | 
-##     ITI) + (1 | Hemifield) + (1 | Trial), data = data2[data2$DAT1_3UTR == 
+## Fit: lmer(formula = log(RT) ~ Hemifield + (Hemifield | Site/ID) + 
+##     (1 | ITI) + (1 | Hemifield) + (1 | Trial), data = data2[data2$DAT1_3UTR == 
 ##     "non10_10_repeat", ], REML = FALSE, na.action = na.omit)
 ## 
 ## Linear Hypotheses:
 ##                     Estimate Std. Error z value Pr(>|z|)    
-## (Intercept) == 0    6.309314   0.043694 144.397   <1e-10 ***
+## (Intercept) == 0    6.309314   0.043695 144.396   <1e-10 ***
 ## HemifieldRight == 0 0.021944   0.007259   3.023    0.005 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

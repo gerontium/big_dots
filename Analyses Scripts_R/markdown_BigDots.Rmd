@@ -260,26 +260,6 @@ ggplot(data, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="
 ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") 
 
 
-# #Calculate alpha desynchronisation by subtracting Pre-target Alpha from post target alpha
-# data$AlphaDesyncRH<-(data$PreAlphaPowerRH)-(data$PostAlphaPowerRH)
-# data$AlphaDesyncLH<-data$PreAlphaPowerLH-data$PostAlphaPowerLH
-# 
-# # Make PostAlpha contralateral (PostAlpha_c) and -Ipsilateral (PostAlpha_i) variables:
-# A<-data$Hemifield=="Left"
-# #Absolute post target alpha
-# data$PostAlpha_c[A]<-data$PostAlphaPowerRH[A]
-# data$PostAlpha_c[!A]<-data$PostAlphaPowerLH[!A]
-# data$PostAlpha_i[!A]<-data$PostAlphaPowerRH[!A]
-# data$PostAlpha_i[A]<-data$PostAlphaPowerLH[A]
-# 
-# #Post target Alpha desynchronisation 
-# data$AlphaDesync_c[A]<-data$AlphaDesyncRH[A]
-# data$AlphaDesync_c[!A]<-data$AlphaDesyncLH[!A]
-# data$AlphaDesync_i[!A]<-data$AlphaDesyncRH[!A]
-# data$AlphaDesync_i[A]<-data$AlphaDesyncLH[A]
-# 
-# rm(A)
-
 #################################################################################################################################
 #################################################################################################################################
 #################################################################################################################################
@@ -354,9 +334,7 @@ ggplot(plotdata, aes(x=Hemifield, y=RT, fill=Hemifield)) +
           panel.background = element_blank(), axis.line = element_line(colour = "black")) 
 
 
-# #Look at a boxplot of RT
-# ggplot(data, aes(Hemifield, RT, colour = Hemifield))  + 
-#     geom_boxplot() + coord_flip() + theme_bw ()
+
 # 
 # #Look at a boxplot of log(RT)
 # ggplot(data, aes(Hemifield, log(RT), colour = Hemifield))  + 
@@ -425,16 +403,20 @@ summary(num_trials2)
 
 
 #So get participant level RT into long format so I can run permutated t-tests  
-RT_collapsed<-ddply(data2, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
+RT_collapsed<-ddply(data2, .(ID, Hemifield, DAT1_3UTR, Site, DAT1_10_10_repeats), summarise, RT=mean(RT))
 
 #Plot RT by DAT1_3UTR and hemifield:
 RT_collapsed$DAT1_3UTR_by_Hemifield<-interaction(RT_collapsed$Hemifield, RT_collapsed$DAT1_3UTR)
 #non log transformed:
 ggplot(RT_collapsed, aes(RT))  + geom_histogram() + facet_wrap(~ DAT1_3UTR_by_Hemifield)
-#Try a density plot
-ggplot(RT_collapsed, aes(RT, colour = DAT1_3UTR_by_Hemifield))  + 
-    geom_density(alpha = 0.1) 
+ggplot(RT_collapsed, aes(log(RT)))  + geom_histogram() + facet_wrap(~ DAT1_3UTR_by_Hemifield)
 
+
+ggplot(RT_collapsed, aes(DAT1_3UTR_by_Hemifield, RT, colour = DAT1_3UTR_by_Hemifield))  + 
+    geom_violin() + coord_flip() + theme_bw () +  geom_boxplot()
+
+
+RT_collapsed$log_RT<-log(RT_collapsed$RT)
 
 
 ## 2 seperate permutated within subjects test for the effect of Hemifield##
@@ -475,24 +457,27 @@ RT_Hemifield_by_DAT1_3UTR <- ezPerm(data = RT_collapsed
                                   , dv = .(RT)
                                   , wid = .(ID)
                                   , within = .(Hemifield)
-                                  , between = .(DAT1_3UTR)
+                                  , between = .(DAT1_10_10_repeats)
                                   , perms = 1000
 )})
 print("Factorial Permutation test for Hemifield x DAT1 group interaction on RT:")
 print(RT_Hemifield_by_DAT1_3UTR)
 
 
-##Try the old school 
+
+##Try the old school approach used in SPSS
 ezANOVA(
     data = RT_collapsed
-    , dv = .(RT)
+    , dv = .(log_RT)
     , wid = .(ID)
     , within = .(Hemifield)
     , between = .(DAT1_3UTR)
     , observed = .(DAT1_3UTR)
+    , between_covariates = .(Site)
     , type = 3
     , detailed = F
 )
+
 
 
 ######Calculate RT asymmetry Index and add it to "data_participant_level"######
@@ -541,15 +526,32 @@ print(RTasym_DAT1_3UTR)
 
 ```{r, echo=FALSE, warning=FALSE}
 
-#Uncomment this if you want to kick out the 2 participants with lowest accuracy
-### data2<-dplyr::filter(data2, Accuracy_overall>80)
+# #Look at a boxplot of RT
+ggplot(data2, aes(Hemifield, RT, colour = Hemifield))  + 
+    geom_violin() + coord_flip() + theme_bw () + facet_wrap(~ DAT1_10_10_repeats) +  geom_boxplot()
+
+
+ggplot(data2, aes(Hemifield, RT, colour = Hemifield))  + 
+    geom_violin() + coord_flip() + theme_bw () +  geom_boxplot() + facet_wrap(~ DAT1_3UTR)
+
+data2$Hemifield_by_DAT1_3UTR<-interaction(data2$Hemifield, data2$DAT1_3UTR)
+ggplot(data2, aes(Hemifield_by_DAT1_3UTR, RT, colour = Hemifield_by_DAT1_3UTR))  + 
+    geom_violin() + coord_flip() + theme_bw () +  geom_boxplot() + facet_wrap(~ Site)
 
 ########################### Multi-level Models ########################## 
-RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (Hemifield + Trial | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
+RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
 RT_DAT1_3UTR<-update(RT_random_intercepts_only, .~. + DAT1_3UTR)
 RT_Hemifield<-update(RT_DAT1_3UTR, .~. + Hemifield)
 RT_HemifieldbyDAT1_3UTR<-update(RT_Hemifield, .~. + Hemifield:DAT1_3UTR)
 anova(RT_random_intercepts_only, RT_DAT1_3UTR, RT_Hemifield, RT_HemifieldbyDAT1_3UTR)
+
+RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (1 | Site/DAT1_3UTR/ID) +(1|ITI) + (1|Trial), data = data2, REML=FALSE, na.action = na.omit)
+RT_DAT1_3UTR<-update(RT_random_intercepts_only, .~. + DAT1_3UTR)
+RT_Hemifield<-update(RT_DAT1_3UTR, .~. + Hemifield)
+RT_HemifieldbyDAT1_3UTR<-update(RT_Hemifield, .~. + Hemifield:DAT1_3UTR)
+anova(RT_random_intercepts_only, RT_DAT1_3UTR, RT_Hemifield, RT_HemifieldbyDAT1_3UTR)
+
+
 
 
 # RT_random_intercepts_only<-glmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data2, family = Gamma(link = log) , na.action = na.omit)
@@ -572,9 +574,9 @@ anova(RT_random_intercepts_only, RT_DAT1_3UTR, RT_Hemifield, RT_HemifieldbyDAT1_
 ```{r, echo=FALSE, warning=FALSE}
 #########Break down the signifiant Hemifield by DAT1_3UTR interaction:
 #look at the effect of Hemifield for 10_10_repeat only  -
-summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|ID)+(1|ITI) + (1|Hemifield)+ (1|Trial), data = data2[data2$DAT1_3UTR=="10_10_repeat",], REML=FALSE, na.action = na.omit)))
+summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|Site/ID)+(1|ITI) + (1|Hemifield)+ (1|Trial), data = data2[data2$DAT1_3UTR=="10_10_repeat",], REML=FALSE, na.action = na.omit)))
 #look at the effect of Hemifield for non10_10_repeat only - 
-summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|ID)+(1|ITI) + (1|Hemifield)+ (1|Trial), data = data2[data2$DAT1_3UTR=="non10_10_repeat",], REML=FALSE, na.action = na.omit)))
+summary(glht(lmer(log(RT) ~ Hemifield + (Hemifield|Site/ID)+(1|ITI) + (1|Hemifield)+ (1|Trial), data = data2[data2$DAT1_3UTR=="non10_10_repeat",], REML=FALSE, na.action = na.omit)))
 
 ```
 
