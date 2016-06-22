@@ -40,7 +40,7 @@ if (location=="Monash") {
 
 #Remove # in front of the line below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
 
-# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","ggplot2","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl"))
+# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","ggplot2","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx"))
 
 ###################################################################################################################################
 
@@ -199,6 +199,18 @@ summary(DAT1$DAT1_3UTR) #So 4 participant have missing DAT1 genotype
 data<-merge(data, DAT1, by.x = "ID", by.y = "ID") 
 
 ################################################################################################
+#########Creat ordered DAT1 genotype .xlsx file for matlab:
+
+# ID_Order <- read_excel("ID_Order_for_Matlab.xlsx") 
+# DAT1<-merge(DAT1, ID_Order, by.x = "ID", by.y = "ID") 
+# 
+# DAT1$DAT1_10_10  <- revalue(DAT1$DAT1_10_10_repeats , 
+#                                        c("Zero"="0", 
+#                                          "One"="1", 
+#                                          "Two"="2"))
+# DAT1<-dplyr::arrange(DAT1, Order)
+# DAT1genotypes_for_Matlab<-dplyr::select(DAT1, ID, DAT1_10_10) 
+# xlsx::write.xlsx2(DAT1genotypes_for_Matlab, file = "C:/GitHub/big_dots/DAT1genotypes_for_Matlab.xlsx", row.names = F)
 
 
 
