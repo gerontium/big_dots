@@ -1,23 +1,23 @@
-% clear
-% close all
-% clc
-% subject_folder = {'059M_HP','093M_BR'};
-% allsubj = {'HP1M','BR2M'};
-% 
-% s = 1;
-% blocks = [1:16];
-% badchans = [];
-% path_temp = 'D:\Participant Folders_new\';
-% 
-% clear paths files matfiles ET_files ET_matfiles; k=0;
-% for n=1:length(blocks)
-%     k=k+1;
-%     paths{k} = [path_temp subject_folder{s} '\'];
-%     files{k} = [allsubj{s} num2str(blocks(n)) '.vhdr'];    
-%     matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '.mat'];
-%     ET_files{k}=[path_temp 'Samples_and_Events\' allsubj{s} num2str(blocks(n)) '.asc'];
-%     ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '_ET.mat'];
-% end
+clear
+close all
+clc
+subject_folder = {'059M_HP','093M_BR'};
+allsubj = {'HP1M','BR2M'};
+
+s = 1;
+blocks = [1:16];
+badchans = [];
+path_temp = 'D:\Participant Folders_new\';
+
+clear paths files matfiles ET_files ET_matfiles; k=0;
+for n=1:length(blocks)
+    k=k+1;
+    paths{k} = [path_temp subject_folder{s} '\'];
+    files{k} = [allsubj{s} num2str(blocks(n)) '.vhdr'];    
+    matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '.mat'];
+    ET_files{k}=[path_temp 'Samples_and_Events\' allsubj{s} num2str(blocks(n)) '.asc'];
+    ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '_ET.mat'];
+end
 
 % LK has coherence 35%!!!
 % for i = 1:length(conditiondescrip)
@@ -29,7 +29,6 @@
 % Trigger 4: coherence 50, motion dir 270, ITI 5.17, patch 2
 % Trigger 5: coherence 50, motion dir 270, ITI 7.29, patch 1
 % Trigger 6: coherence 50, motion dir 270, ITI 7.29, patch 2
-
 %% CSD
 
 % E = textread('chans65_monash.asc','%s');
