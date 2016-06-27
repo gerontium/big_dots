@@ -106,7 +106,7 @@ end
 % AR_08_04_14 & MH_14_04_14: No ITI 3, side 2... 2,3
 % 414M_LA: zscore RT index > 3; 74
 % AA_15_04_14: zscore RT index > 2.5; 4
-duds = [1,74,dud_temp,dud_temp_slf];
+duds = [74,dud_temp_slf];
 single_participants = [];
 
 if ~isempty(duds) && isempty(single_participants)
@@ -116,7 +116,7 @@ if ~isempty(duds) && isempty(single_participants)
     DAT1_nosplit([duds]) = [];
     subject_location([duds]) = [];
     test_times([duds]) = [];
-    SLF_measures([duds]) = [];
+    SLF_measures([duds],:) = [];
 end
 
 if ~isempty(single_participants)
@@ -126,7 +126,7 @@ if ~isempty(single_participants)
     DAT1_nosplit = DAT1_nosplit(single_participants);
     subject_location = subject_location(single_participants);
     test_times = test_times(single_participants);
-    SLF_measures = SLF_measures(single_participants);
+    SLF_measures = SLF_measures(single_participants,:);
 end
 
 %% Define channels, having combined Brain Products and Biosemi data
@@ -258,10 +258,53 @@ for s=1:length(allsubj)
     RT_log_index(s) = (RT_log_all(s,1)-RT_log_all(s,2))/((RT_log_all(s,1)+RT_log_all(s,2))/2);
     RT_index_zs(s) = (RT_all_zs(s,1)-RT_all_zs(s,2))/((RT_all_zs(s,1)+RT_all_zs(s,2))/2);        
     
+    SLF_left(s,:) = SLF_measures(s,[1:3]);
+    SLF_right(s,:) = SLF_measures(s,[4:6]);
+    for branch = 1:3
+        SLF_index(s,branch) = (SLF_left(s,branch)-SLF_right(s,branch))/((SLF_left(s,branch)+SLF_right(s,branch))/2);
+    end
     disp(['Subject ',allsubj{s},' Total Valid Trials: ',num2str(length([conds{s,:,:}])), ...
         ' = ',num2str(round(100*(length([conds{s,:,:}]))/(16*18))),'%'])
 end
 
+%% SLF analysis x DAT1 (Nowt!!!)
+
+% for branch = 1:3
+%     [~,p,~,stats] = ttest(SLF_index(:,branch));
+%     disp(['SLF ',num2str(branch),' to zero: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
+%     [~,p,~,stats] = ttest2(SLF_index(find(DAT1_nosplit==1),branch),SLF_index(find(DAT1_nosplit==2),branch));
+%     disp(['SLF ',num2str(branch),' x DAT1: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
+% end
+
+%% SLF analysis corr with RT index
+
+for branch = 1:3
+    [~,p,~,stats] = ttest(SLF_index(:,branch));
+    disp(['SLF ',num2str(branch),' to zero: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
+    
+    [R,P] = corrcoef(SLF_index(:,branch),RT_index);
+    disp(['SLF ',num2str(branch),' vs RT index: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
+    
+    figure
+    scatter(SLF_index(:,branch),RT_index), hold on
+    lsline
+end
+
+for branch = 1:3
+    [R,P] = corrcoef(SLF_left(:,branch),RT_all(:,2));
+    disp(['Left SLF ',num2str(branch),' vs Right RT: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
+    
+    [R,P] = corrcoef(SLF_right(:,branch),RT_all(:,1));
+    disp(['Right SLF ',num2str(branch),' vs Left RT: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
+    
+    [R,P] = corrcoef(SLF_left(:,branch),RT_all(:,1));
+    disp(['Left SLF ',num2str(branch),' vs Left RT: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
+    
+    [R,P] = corrcoef(SLF_right(:,branch),RT_all(:,2));
+    disp(['Right SLF ',num2str(branch),' vs Right RT: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
+end
+
+return
 %% Trial counts
 
 for s = 1:length(allsubj)
@@ -310,7 +353,7 @@ end
 % RT_log_index = RT_log_index';
 % figure, histogram(RT_log_index,15)
 % figure, plot(zscore(RT_log_index))
-return
+
 %% RTs and RT index x DAT1
 
 clear counts edges
