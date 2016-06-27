@@ -270,7 +270,11 @@ for side = 1:2
 end
 RT_index = RT_index';
 figure, histogram(RT_index,15)
-figure, plot(zscore(RT_index))
+for dat = 1:2
+    figure, plot(zscore(RT_index(find(DAT1_nosplit==dat))))
+end
+% a = find(DAT1_nosplit==2);
+% open a
 
 % % Log RTs
 % clear counts edges
@@ -286,7 +290,7 @@ figure, plot(zscore(RT_index))
 % RT_log_index = RT_log_index';
 % figure, histogram(RT_log_index,15)
 % figure, plot(zscore(RT_log_index))
-
+return
 %% RTs and RT index x DAT1
 
 clear counts edges

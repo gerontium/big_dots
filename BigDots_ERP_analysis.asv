@@ -88,6 +88,14 @@ side_tags = {'Left','Right'};
 % 414M_LA: zscore RT index > 3; 74
 % AA_15_04_14: zscore RT index > 2.5; 4
 
+% 301M_MO: crazy CPP % 27
+% PR_20_04_14
+% 036M_JK
+% 226M_SM
+% 331M_CL
+% 061M_LG
+% 377M_BL
+
 large_CPP = {'301M_MO'};
 large_N2c = {'PR_20_04_14','036M_JK','226M_SM','331M_CL','061M_LG','377M_BL'};
 
@@ -113,7 +121,7 @@ for s2 = 1:length(subject_folder)
         end
     end
 end
-duds = [1,74];
+duds = [1,74,large_CPP_index,large_N2c_index,dud_temp];
 single_participants = [];
 
 if ~isempty(duds) && isempty(single_participants)
@@ -188,9 +196,9 @@ ch_CPP = [31];
 % ch_rl = [23;60];
 
 % ch_lr{1} = [53,60];
-ch_lr{2} = [23,25];
+% ch_lr{2} = [23,25];
 ch_lr{1} = [60];
-% ch_lr{2} = [23];
+ch_lr{2} = [23];
 ch_rl{1} = [23];
 ch_rl{2} = [60];
 
@@ -298,8 +306,6 @@ disp(['RT index to zero: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
 [~,p,~,stats] = ttest2(RT_index(find(DAT1_nosplit==1)),RT_index(find(DAT1_nosplit==2)));
 disp(['RT index x DAT1: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
 
-figure
-plot(zscore(RT_index))
 %% Grand average ERP
 % chan x time x side
 ERP_group_side = squeeze(mean(ERP_side(:,:,:,:),1));
@@ -473,7 +479,6 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,side_tags, ...
     'FontSize',16,'Location','NorthWest');
 
-return
 %% CPP x DAT1
 colors = {'b','r'};
 linestyles = {'-','--'};
@@ -544,7 +549,7 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
     'FontSize',16,'Location','NorthWest');
 
-t1 = 250; t2 = 290;
+t1 = 260; t2 = 290;
 stat_temp = squeeze(mean(N2c_side(:,find(t>=t1 & t<=t2),:),2)); % subj x side
 stat_temp = [stat_temp,DAT1_nosplit'];
 %% N2i x DAT1

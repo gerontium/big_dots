@@ -87,33 +87,7 @@ side_tags = {'Left','Right'};
 % AR_08_04_14 & MH_14_04_14: No ITI 3, side 2... 2,3
 % 414M_LA: zscore RT index > 3; 74
 % AA_15_04_14: zscore RT index > 2.5; 4
-
-large_CPP = {'301M_MO'};
-large_N2c = {'PR_20_04_14','036M_JK','226M_SM','331M_CL','061M_LG','377M_BL'};
-
-for s2 = 1:length(subject_folder)
-    for s = 1:length(TCD_bigdots)
-        if strcmp(TCD_bigdots{s},subject_folder{s2})
-            TCD_index(s) = s2;
-        end
-    end
-    for s = 1:length(Monash_bigdots)
-        if strcmp(Monash_bigdots{s},subject_folder{s2})
-            Monash_index(s) = s2;
-        end
-    end
-    for s = 1:length(large_CPP)
-        if strcmp(large_CPP{s},subject_folder{s2})
-            large_CPP_index(s) = s2;
-        end
-    end
-    for s = 1:length(large_N2c)
-        if strcmp(large_N2c{s},subject_folder{s2})
-            large_N2c_index(s) = s2;
-        end
-    end
-end
-duds = [1,74];
+duds = [1,74,dud_temp];
 single_participants = [];
 
 if ~isempty(duds) && isempty(single_participants)
@@ -184,15 +158,8 @@ ch_CPP = [31];
 
 % ch_lr = [60,62;23,25];
 % ch_rl = [23,25;60,62];
-% ch_lr = [60;23];
-% ch_rl = [23;60];
-
-% ch_lr{1} = [53,60];
-ch_lr{2} = [23,25];
-ch_lr{1} = [60];
-% ch_lr{2} = [23];
-ch_rl{1} = [23];
-ch_rl{2} = [60];
+ch_lr = [60;23];
+ch_rl = [23;60];
 
 % stim-locked erps
 ts = -0.500*Fs:1.800*Fs;
@@ -210,9 +177,9 @@ z_thresh = 3;
 %% Start loop
 for s=1:length(allsubj)
     pause(1)
-    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','allRT','allrespLR','allTrig','allblock_count',...
+    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz_CSD','allRT','allrespLR','allTrig','allblock_count',...
         'BL_resp_artrej','ET_BL_resp_artrej');
-    erp = erp_LPF_8Hz;
+    erp = erp_LPF_8Hz_CSD;
                 
     % Baseline erp
     baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
@@ -275,31 +242,94 @@ for s=1:length(allsubj)
     disp(['Subject ',allsubj{s},' Total Valid Trials: ',num2str(length([conds{s,:,:}])), ...
         ' = ',num2str(round(100*(length([conds{s,:,:}]))/(16*18))),'%'])
     
-    for side = 1:2
-        ERP_side(s,:,:,side) = squeeze(mean(erp(1:numch,:,[conds{s,:,side}]),3));
-        ERPr_side(s,:,:,side) = squeeze(mean(erpr(1:numch,:,[conds{s,:,side}]),3));
-        CPP_side(s,:,side) = squeeze(mean(mean(erp(ch_CPP,:,[conds{s,:,side}]),1),3));
-        CPPr_side(s,:,side) = squeeze(mean(mean(erpr(ch_CPP,:,[conds{s,:,side}]),1),3));
-        N2c_side(s,:,side) = squeeze(mean(mean(erp(ch_lr{side},:,[conds{s,:,side}]),1),3));
-        N2i_side(s,:,side) = squeeze(mean(mean(erp(ch_rl{side},:,[conds{s,:,side}]),1),3));
-    end
+%     % zscore inside trial
+%     erp_z = zeros(size(erp));
+%     erpr_z = zeros(size(erpr));
+%     CPP_temp = zeros(size(erp,2),size(erp,3));
+%     CPPr_temp = zeros(size(erpr,2),size(erpr,3));
+%     N2c_temp = zeros(size(erp,2),size(erp,3));
+%     N2i_temp = zeros(size(erp,2),size(erp,3));
+%     for side = 1:2
+%         for iti = 1:3
+%             all_trials = [conds{s,iti,side}];
+%             for trial = 1:length(all_trials)
+%                 for chan = 1:numch
+%                     erp_z(chan,:,all_trials(trial)) = zscore(erp(chan,:,all_trials(trial)),[],2);
+%                     erpr_z(chan,:,all_trials(trial)) = zscore(erpr(chan,:,all_trials(trial)),[],2);
+%                 end
+%                 CPP_temp(:,all_trials(trial)) = zscore(squeeze(mean(erp(ch_CPP,:,all_trials(trial)),1)));
+%                 CPPr_temp(:,all_trials(trial)) = zscore(squeeze(mean(erpr(ch_CPP,:,all_trials(trial)),1)));
+%                 N2c_temp(:,all_trials(trial)) = zscore(squeeze(mean(erp(ch_lr(side,:),:,all_trials(trial)),1)));
+%                 N2i_temp(:,all_trials(trial)) = zscore(squeeze(mean(erp(ch_rl(side,:),:,all_trials(trial)),1)));
+%             end
+%         end
+%     end
+%     
+%     % Baseline erp_z, erpr_z
+%     baseline_erp = mean(erp_z(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
+%     erp_z = erp_z-repmat(baseline_erp,[1,size(erp_z,2),1]); % baseline full erp
+%     erpr_z = erpr_z-repmat(baseline_erp,[1,size(erpr_z,2),1]); % baseline full erpr
+%     
+%     for side = 1:2
+%         ERP_side(s,:,:,side) = squeeze(mean(erp_z(1:numch,:,[conds{s,:,side}]),3));
+%         ERPr_side(s,:,:,side) = squeeze(mean(erpr_z(1:numch,:,[conds{s,:,side}]),3));
+%     end
+%     
+%     % Baseline CPP_temp etc
+%     baseline = mean(CPP_temp(find(t>=BL_erp(1) & t<=BL_erp(2)),:),1);
+%     CPP_temp = CPP_temp-repmat(baseline,[size(CPP_temp,1),1]);
+%     baseline = mean(CPP_temp(find(t>=BL_erp(1) & t<=BL_erp(2)),:),1);
+%     CPPr_temp = CPPr_temp-repmat(baseline,[size(CPPr_temp,1),1]);
+%     baseline = mean(N2c_temp(find(t>=BL_erp(1) & t<=BL_erp(2)),:),1);
+%     N2c_temp = N2c_temp-repmat(baseline,[size(N2c_temp,1),1]);
+%     baseline = mean(N2i_temp(find(t>=BL_erp(1) & t<=BL_erp(2)),:),1);
+%     N2i_temp = N2i_temp-repmat(baseline,[size(N2i_temp,1),1]);
+%     
+%     for side = 1:2
+%         CPP_side(s,:,side) = squeeze(mean(CPP_temp(:,[conds{s,:,side}]),2));
+%         CPPr_side(s,:,side) = squeeze(mean(CPPr_temp(:,[conds{s,:,side}]),2));
+%         N2c_side(s,:,side) = squeeze(mean(N2c_temp(:,[conds{s,:,side}]),2));
+%         N2i_side(s,:,side) = squeeze(mean(N2i_temp(:,[conds{s,:,side}]),2));
+%     end
+    
+%     % zscore inside subject and side
+%     for side = 1:2
+%         ERP_side(s,:,:,side) = squeeze(mean(erp(1:numch,:,[conds{s,:,side}]),3));
+%         ERPr_side(s,:,:,side) = squeeze(mean(erpr(1:numch,:,[conds{s,:,side}]),3));
+%         CPP_side(s,:,side) = squeeze(mean(mean(erp(ch_CPP,:,[conds{s,:,side}]),1),3));
+%         CPPr_side(s,:,side) = squeeze(mean(mean(erpr(ch_CPP,:,[conds{s,:,side}]),1),3));
+%         N2c_side(s,:,side) = squeeze(mean(mean(erp(ch_lr(side,:),:,[conds{s,:,side}]),1),3));
+%         N2i_side(s,:,side) = squeeze(mean(mean(erp(ch_rl(side,:),:,[conds{s,:,side}]),1),3));
+%     end
 
-% %     erp_mean = (squeeze(mean(mean(mean(ERP_uptarg(s,:,:,:,:,:),4),5),6))+squeeze(mean(mean(mean(ERP_righttarg(s,:,:,:,:,:),4),5),6)))/2;
-% %     figure
-% %     plottopo(erp_mean(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-% %         min(min(min(erp_mean(plot_chans,:))))  max(max(max(erp_mean(plot_chans,:))))], ...
-% %         'title',[allsubj{s}],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','off','ydir',1)
-% %     pause(1)
+    for side = 1:2       
+        CPP_side(s,:,side) = zscore(squeeze(mean(mean(erp(ch_CPP,:,[conds{s,:,side}]),1),3)));
+        CPPr_side(s,:,side) = zscore(squeeze(mean(mean(erpr(ch_CPP,:,[conds{s,:,side}]),1),3)));
+        N2c_side(s,:,side) = zscore(squeeze(mean(mean(erp(ch_lr(side,:),:,[conds{s,:,side}]),1),3)));
+        N2i_side(s,:,side) = zscore(squeeze(mean(mean(erp(ch_rl(side,:),:,[conds{s,:,side}]),1),3)));
+    end
+    
+    % zscore inside subject
+    CPP_cat = zscore(cat(2,CPP_side(s,:,1),CPP_side(s,:,2))); 
+    CPP_cat = reshape(CPP_cat,[size(CPP_side(s,:,:))]);
+    baseline = mean(CPP_cat(1,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
+    CPP_side(s,:,:) = CPP_cat-repmat(baseline,[1,size(CPP_cat,2),1]);
+    
+    CPPr_cat = zscore(cat(2,CPPr_side(s,:,1),CPPr_side(s,:,2))); 
+    CPPr_cat = reshape(CPPr_cat,[size(CPPr_side(s,:,:))]);
+    CPPr_side(s,:,:) = CPPr_cat-repmat(baseline,[1,size(CPPr_cat,2),1]);
+    
+    N2c_cat = zscore(cat(2,N2c_side(s,:,1),N2c_side(s,:,2))); 
+    N2c_cat = reshape(N2c_cat,[size(N2c_side(s,:,:))]);
+    baseline = mean(N2c_cat(s,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
+    N2c_side(s,:,:) = N2c_cat-repmat(baseline,[1,size(N2c_cat,2),1]);
+    
+    N2i_cat = zscore(cat(2,N2i_side(s,:,1),N2i_side(s,:,2))); 
+    N2i_cat = reshape(N2i_cat,[size(N2i_side(s,:,:))]);   
+    baseline = mean(N2i_cat(s,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
+    N2i_side(s,:,:) = N2i_cat-repmat(baseline,[1,size(N2i_cat,2),1]);
 end
 
-%% Quick check of RT index
-[~,p,~,stats] = ttest(RT_index);
-disp(['RT index to zero: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
-[~,p,~,stats] = ttest2(RT_index(find(DAT1_nosplit==1)),RT_index(find(DAT1_nosplit==2)));
-disp(['RT index x DAT1: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
-
-figure
-plot(zscore(RT_index))
 %% Grand average ERP
 % chan x time x side
 ERP_group_side = squeeze(mean(ERP_side(:,:,:,:),1));
@@ -333,14 +363,6 @@ end
 %     [min(plot_mean) max(plot_mean)], ...
 %     'electrodes','numbers','plotchans',plot_chans);
 
-t1 = 260; t2 = 280;
-for side = 1:2
-    plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>=t1 & t<t2),side),2),3));
-    figure
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(plot_mean) max(plot_mean)], ...
-        'electrodes','numbers','plotchans',plot_chans);
-end
 %% Grand average ERPr
 % chan x time x side
 ERPr_group_side = squeeze(mean(ERPr_side(:,:,:,:),1));
@@ -390,21 +412,6 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,side_tags, ...
     'FontSize',16,'Location','NorthWest');
 
-% figure
-% for s = 1:length(allsubj)
-%     CPP = squeeze(mean(CPP_side(s,:,:),3));
-%     if max(CPP)>60
-%         disp(subject_folder{s})
-%     end
-%     plot(t,CPP,'LineWidth',1,'LineStyle','-');hold on
-% end
-% set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-% ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-% xlabel('Time (ms)','FontName','Arial','FontSize',16)
-% title('CPP: Left vs Right Hemifield Targets')
-% line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-% line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-
 %% Plot CPPr x target side
 CPPr = squeeze(mean(CPPr_side,1)); % time x side
 clear h
@@ -439,23 +446,6 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,side_tags, ...
     'FontSize',16,'Location','NorthWest');
 
-% figure
-% for s = 1:length(allsubj)
-%     N2c = squeeze(mean(N2c_side(s,:,:),3));
-%     if min(N2c(find(t<500)))<-5
-%         disp(subject_folder{s})
-%     else
-% %         plot(t,N2c,'LineWidth',1,'LineStyle','-');hold on
-%     end
-%     plot(t,N2c,'LineWidth',1,'LineStyle','-');hold on
-% end
-% set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-% ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-% xlabel('Time (ms)','FontName','Arial','FontSize',16)
-% title('CPP: Left vs Right Hemifield Targets')
-% line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-% line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-
 %% Plot N2i x target side
 N2i = squeeze(mean(N2i_side,1)); % time x side
 clear h
@@ -473,7 +463,6 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,side_tags, ...
     'FontSize',16,'Location','NorthWest');
 
-return
 %% CPP x DAT1
 colors = {'b','r'};
 linestyles = {'-','--'};
@@ -496,10 +485,9 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
     'FontSize',16,'Location','NorthWest');
 
-t1 = 270; t2 = 470;
+t1 = 260; t2 = 460;
 stat_temp = squeeze(mean(CPP_side(:,find(t>=t1 & t<=t2),:),2)); % subj x side
 stat_temp = [stat_temp,DAT1_nosplit'];
-
 %% CPPr x DAT1
 colors = {'b','r'};
 linestyles = {'-','--'};
@@ -544,7 +532,7 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
     'FontSize',16,'Location','NorthWest');
 
-t1 = 250; t2 = 290;
+t1 = 260; t2 = 280;
 stat_temp = squeeze(mean(N2c_side(:,find(t>=t1 & t<=t2),:),2)); % subj x side
 stat_temp = [stat_temp,DAT1_nosplit'];
 %% N2i x DAT1
