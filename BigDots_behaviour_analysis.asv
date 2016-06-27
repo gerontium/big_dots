@@ -86,26 +86,7 @@ load('test_times.mat')
 %% Load SLF
 
 load('slf_mat.mat')
-SLF_measures=[]; dud_temp_slf=[];
-for s = 1:length(subject_folder)
-    for i = 1:size(slf_subj,1)
-        if strcmp(subject_folder{s},subject_ID{i,1})
-            SLF_measures(s,:) = slf_subj(i,:);
-            else
-                DAT1_split(s) = NaN;
-                DAT1_nosplit(s) = NaN;
-                dud_temp = [dud_temp,s];
-            end
-        end
-    end
-    if ismember(subject_folder{s},TCD_bigdots)
-        subject_location(s) = 1;
-    elseif ismember(subject_folder{s},Monash_bigdots)
-        subject_location(s) = 2;
-    else
-        keyboard
-    end
-end
+
 %% Get rid of duds/include only particular subjects
 
 % LK_07_04_14: coherence at 35%; 1
