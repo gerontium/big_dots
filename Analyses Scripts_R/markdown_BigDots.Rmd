@@ -94,7 +94,7 @@ SLF2<-merge(SLF2, ID_Order, by.x = "ID", by.y = "ID", all=T)
 
 SLF2<-dplyr::arrange(SLF2, Order)
 
-xlsx::write.xlsx(SLF2, "SLF.xlsx", row.names=F)
+# xlsx::write.xlsx(SLF2, "SLF.xlsx", row.names=F)
 
 #########################################################################################################################
 #data_ParticipantLevel:
@@ -213,11 +213,6 @@ data<-merge(data, DAT1, by.x = "ID", by.y = "ID")
 
 ### Merge in the SLF data
 SLF2 <-SLF2[SLF2$ID %in% data$ID, ] 
-
-SLF2<-SLF2[,(SLF2$ID %in% data$data)]
-
-data <-data[data$ID %in% data_participant_level$ID, ] 
-
 data<-merge(data, SLF2, by.x = "ID", by.y = "ID") 
 
 ################################################################################################
@@ -338,6 +333,58 @@ ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fi
 #Calculate the number of trials each participant has left after fixation break trials are kicked out:
 num_trials2 <- ddply(data, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
+```
+
+
+#First look at SLF (SLF I, II add III) 
+```{r, echo=FALSE, warning=FALSE}
+######Calculate RT asymmetry Index and add it to "data_participant_level"######
+#Collapse each participant's trials accross ITI
+RT_collapsed<-ddply(data, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
+#Bring Target-Hemifield up into wide format
+RT_collapsed <- dcast(RT_collapsed, ID  ~ Hemifield, value.var="RT", fun.aggregate=mean)
+RT_collapsed<-rename(RT_collapsed, c("Left"="RT_Left", "Right"="RT_Right"))
+#Calculate RT asymmetry
+RT_collapsed$RT_Asym<-(RT_collapsed$RT_Left-RT_collapsed$RT_Right)/(RT_collapsed$RT_Left+RT_collapsed$RT_Right)
+RT_collapsed<-merge(RT_collapsed, DAT1, by.x = "ID", by.y = "ID") 
+
+#Remove outliers
+RT_collapsed$RT_Asym.Z<-scale(RT_collapsed$RT_Asym)
+RT_collapsed<-RT_collapsed[abs(RT_collapsed$RT_Asym.Z)<3,]
+
+#Add in the SLF data
+RT_collapsed<-merge(RT_collapsed, SLF2, by.x = "ID", by.y = "ID") 
+
+
+##Between DAT1_3UTRs t-test for LI_SLF1
+t.test(RT_collapsed$LI_SLF1 ~ RT_collapsed$DAT1_3UTR)
+##Between DAT1_3UTRs t-test for LI_SLF2
+t.test(RT_collapsed$LI_SLF2 ~ RT_collapsed$DAT1_3UTR)
+##Between DAT1_3UTRs t-test for LI_SLF3
+t.test(RT_collapsed$LI_SLF3 ~ RT_collapsed$DAT1_3UTR)
+
+
+
+##Look for correlation between RT-asym and SLF-asym
+dplyr::select(RT_collapsed, RT_Asym, LI_SLF1, LI_SLF2, LI_SLF3)
+
+cor(dplyr::select(RT_collapsed, RT_Asym, LI_SLF1, LI_SLF2, LI_SLF3), use = "pairwise.complete.obs",
+    method = c("pearson"))
+
+
+cor_matrix<-cor(as.matrix(dplyr::select(RT_collapsed, RT_Asym, LI_SLF1, LI_SLF2, LI_SLF3)), use="na.or.complete")
+cor_data<-melt(cor_matrix)
+require(plyr)
+cor_data<-rename(cor_data, c("value"="Pearson_r"))
+cor_data$abs_Pearson_r<-abs(cor_data$Pearson_r)
+
+####Plot:
+qplot(x=Var1, y=Var2, data=cor_data, fill=Pearson_r, geom="tile")+ 
+    theme(axis.title.x = element_text(face="bold", size=9),
+          axis.text.x  = element_text(face="bold", angle=-90,  size=9)) +
+    theme(axis.title.y = element_text(face="bold", size=9),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=9)) 
+
 ```
 
 #First Look at the effect of Hemifield on RT, regardless of DAT1 genotype (because we loose 4 participants with failed genotypes later when testing for effect of DAT1 genotype)
