@@ -218,18 +218,17 @@ data<-merge(data, SLF2, by.x = "ID", by.y = "ID")
 ################################################################################################
 #########Creat ordered DAT1 genotype .xlsx file for matlab:
 
-# ID_Order <- read_excel("ID_Order_for_Matlab.xlsx") 
-# DAT1<-merge(DAT1, ID_Order, by.x = "ID", by.y = "ID") 
-# 
-# DAT1$DAT1_10_10  <- revalue(DAT1$DAT1_10_10_repeats , 
-#                                        c("Zero"="0", 
-#                                          "One"="1", 
-#                                          "Two"="2"))
-# DAT1<-dplyr::arrange(DAT1, Order)
-# DAT1genotypes_for_Matlab<-dplyr::select(DAT1, ID, DAT1_10_10) 
-# xlsx::write.xlsx2(DAT1genotypes_for_Matlab, file = "C:/GitHub/big_dots/DAT1genotypes_for_Matlab.xlsx", row.names = F)
-
-
+ # ID_Order <- read_excel("ID_Order_for_Matlab.xlsx")
+ # DAT1<-merge(DAT1, ID_Order, by.x = "ID", by.y = "ID")
+ # 
+ # DAT1$DAT1_10_10  <- revalue(DAT1$DAT1_10_10_repeats ,
+ #                                        c("Zero"="0",
+ #                                          "One"="1",
+ #                                          "Two"="2"))
+ # DAT1<-dplyr::arrange(DAT1, Order)
+ # DAT1genotypes_for_Matlab<-dplyr::select(DAT1, ID, DAT1_10_10)
+ # xlsx::write.xlsx(DAT1genotypes_for_Matlab, file = "C:/GitHub/big_dots/DAT1genotypes_for_Matlab.xlsx", row.names = F)
+ 
 
 ###############Data Cleaning For Single Trial Data######################
 
@@ -387,7 +386,7 @@ qplot(x=Var1, y=Var2, data=cor_data, fill=Pearson_r, geom="tile")+
 
 ```
 
-#First Look at the effect of Hemifield on RT, regardless of DAT1 genotype (because we loose 4 participants with failed genotypes later when testing for effect of DAT1 genotype)
+#First Look at the effect of Hemifield on RT, regardless of DAT1 genotype 
 ```{r, echo=FALSE, warning=FALSE}
 RT_random_effects_only<-lmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data, REML=FALSE, na.action = na.omit)
 RT_Hemifield<-update(RT_random_effects_only, .~. + Hemifield)
@@ -449,7 +448,7 @@ ggplot(data, aes(x=data$Trial, y=data$RT,fill=Hemifield,colour=Hemifield)) +
 
 #Check for difference in behavioural accuracy between 10_10_repeat and non10_10_repeat participants?
 ```{r, echo=FALSE, warning=FALSE}
-data2<-data[complete.cases(data$DAT1_3UTR),]####### This kicks out 4 the participants for which we didn't have DAT1 genotpes  
+data2<-data[complete.cases(data$DAT1_3UTR),]####### 
 
 
 Accuracy_collapsed<-ddply(data2, .(ID, DAT1_3UTR), summarise, Accuracy=mean(Accuracy_overall))
@@ -632,6 +631,24 @@ RT_Hemifield<-update(RT_DAT1_3UTR, .~. + Hemifield)
 RT_HemifieldbyDAT1_3UTR<-update(RT_Hemifield, .~. + Hemifield:DAT1_3UTR)
 anova(RT_random_intercepts_only, RT_DAT1_3UTR, RT_Hemifield, RT_HemifieldbyDAT1_3UTR)
 
+
+source("summarySE.R") 
+source("summarySEwithin.R") #function to calculate Std.Er of mean
+source("normDataWithin.R")
+plotdata <- summarySEwithin(data, measurevar="RT", withinvars=c("Hemifield"), betweenvars=c("DAT1_3UTR"), idvar="ID")
+ggplot(plotdata, aes(x=Hemifield, y=RT, fill=Hemifield)) +
+    geom_bar(position=position_dodge(.9), colour="Black", stat="identity") + 
+    geom_errorbar(position=position_dodge(.9), width=.3, aes(ymin=RT-ci, ymax=RT+ci)) + #can change "se" to "ci" if I want to use 95%ci instead
+    geom_hline(yintercept=0) +  coord_cartesian(ylim = c(400, 600)) +
+    xlab("Hemifield") + ylab("RT (ms)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
+    theme(axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
+    theme(legend.title = element_text(size=11, face="bold")) +
+    theme(legend.text = element_text(size = 11, face = "bold")) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) + facet_wrap(~DAT1_3UTR) 
 
 
 
