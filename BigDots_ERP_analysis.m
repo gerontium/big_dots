@@ -295,7 +295,7 @@ for s=1:length(allsubj)
         %DN: in Ger's N2/CPP paper this is set to 10, but our dots
         consecutive_windows=10;%Number of consecutive windows that p must be less than .05 for in order to call it a CPP onset
                 
-        CPP_temp = squeeze(mean(erp(ch_CPP,:,[conds{s,side,:}]),1)); % time x trial
+        CPP_temp = squeeze(mean(erp(ch_CPP,:,[conds{s,:,side}]),1)); % time x trial
         CPPs(:,side) = squeeze(mean(CPP_temp(:,:),2)); % average across trial for plot later on, not used to find onsets.
         % constrain the search window according to parameters above.
         CPP_temp = squeeze(CPP_temp(find(t>=CPP_search_t(1) & t<=CPP_search_t(2)),:));
