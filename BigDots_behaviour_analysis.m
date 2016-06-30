@@ -106,7 +106,7 @@ end
 % AR_08_04_14 & MH_14_04_14: No ITI 3, side 2... 2,3
 % 414M_LA: zscore RT index > 3; 74
 % AA_15_04_14: zscore RT index > 2.5; 4
-duds = [1,74,dud_temp,dud_temp_slf];
+duds = [1,4,74];
 single_participants = [];
 
 if ~isempty(duds) && isempty(single_participants)
@@ -116,7 +116,7 @@ if ~isempty(duds) && isempty(single_participants)
     DAT1_nosplit([duds]) = [];
     subject_location([duds]) = [];
     test_times([duds]) = [];
-    SLF_measures([duds]) = [];
+%     SLF_measures([duds]) = [];
 end
 
 if ~isempty(single_participants)
@@ -126,7 +126,7 @@ if ~isempty(single_participants)
     DAT1_nosplit = DAT1_nosplit(single_participants);
     subject_location = subject_location(single_participants);
     test_times = test_times(single_participants);
-    SLF_measures = SLF_measures(single_participants);
+%     SLF_measures = SLF_measures(single_participants);
 end
 
 %% Define channels, having combined Brain Products and Biosemi data
@@ -310,7 +310,7 @@ end
 % RT_log_index = RT_log_index';
 % figure, histogram(RT_log_index,15)
 % figure, plot(zscore(RT_log_index))
-return
+
 %% RTs and RT index x DAT1
 
 clear counts edges

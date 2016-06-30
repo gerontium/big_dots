@@ -114,7 +114,7 @@ for s2 = 1:length(subject_folder)
         end
     end
 end
-duds = [1,74];
+duds = [1,4,74];
 single_participants = [];
 
 if ~isempty(duds) && isempty(single_participants)
@@ -189,9 +189,9 @@ ch_CPP = [31];
 % ch_rl = [23;60];
 
 % ch_lr{1} = [53,60];
-ch_lr{2} = [23,25];
+% ch_lr{2} = [23,25];
 ch_lr{1} = [60];
-% ch_lr{2} = [23];
+ch_lr{2} = [23];
 ch_rl{1} = [23];
 ch_rl{2} = [60];
 
@@ -358,47 +358,47 @@ for s=1:length(allsubj)
 % %     Make sure the 10 (DN:30) following p-values from onset are also lower than
 % %     0.05.
         
-        if side==1
-            figure
-            subplot(3,2,1)
-            plot(win_mean_inds,mean(win_mean,2))
-            title(subject_folder{s})
-            subplot(3,2,3)
-            plot(win_mean_inds,tstats)
-            subplot(3,2,5)
-            plot(win_mean_inds,ps), hold on
-            line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
-            if ~isempty(onsetp05)
-                line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
-            else
-                line([0,0],ylim,'Color','r','LineWidth',1);
-            end
-        else
-            subplot(3,2,2)
-            plot(win_mean_inds,mean(win_mean,2))
-            title(subject_folder{s})
-            subplot(3,2,4)
-            plot(win_mean_inds,tstats)
-            subplot(3,2,6)
-            plot(win_mean_inds,ps), hold on
-            line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
-            if ~isempty(onsetp05)
-                line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
-            else
-                line([0,0],ylim,'Color','r','LineWidth',1);
-            end
-        end
+%         if side==1
+%             figure
+%             subplot(3,2,1)
+%             plot(win_mean_inds,mean(win_mean,2))
+%             title(subject_folder{s})
+%             subplot(3,2,3)
+%             plot(win_mean_inds,tstats)
+%             subplot(3,2,5)
+%             plot(win_mean_inds,ps), hold on
+%             line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
+%             if ~isempty(onsetp05)
+%                 line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
+%             else
+%                 line([0,0],ylim,'Color','r','LineWidth',1);
+%             end
+%         else
+%             subplot(3,2,2)
+%             plot(win_mean_inds,mean(win_mean,2))
+%             title(subject_folder{s})
+%             subplot(3,2,4)
+%             plot(win_mean_inds,tstats)
+%             subplot(3,2,6)
+%             plot(win_mean_inds,ps), hold on
+%             line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
+%             if ~isempty(onsetp05)
+%                 line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
+%             else
+%                 line([0,0],ylim,'Color','r','LineWidth',1);
+%             end
+%         end
     end
 %%   plot CPP with onset marked 
-    colors = {'b' 'r' 'g' 'm' 'c'};
-    figure
-    for side = 1:2
-        plot(t,squeeze(CPPs(:,side)),'Color',colors{side},'LineWidth',2), hold on
-        line([mean(CPP_side_onsets(s,side),1),mean(CPP_side_onsets(s,side),1)],ylim,'Color',colors{side},'LineWidth',1.5);
-        line([0,0],ylim,'Color','k','LineWidth',1);
-        line(xlim,[0,0],'Color','k','LineWidth',1);
-    end
-    title(subject_folder{s})
+%     colors = {'b' 'r' 'g' 'm' 'c'};
+%     figure
+%     for side = 1:2
+%         plot(t,squeeze(CPPs(:,side)),'Color',colors{side},'LineWidth',2), hold on
+%         line([mean(CPP_side_onsets(s,side),1),mean(CPP_side_onsets(s,side),1)],ylim,'Color',colors{side},'LineWidth',1.5);
+%         line([0,0],ylim,'Color','k','LineWidth',1);
+%         line(xlim,[0,0],'Color','k','LineWidth',1);
+%     end
+%     title(subject_folder{s})
 
 % %     erp_mean = (squeeze(mean(mean(mean(ERP_uptarg(s,:,:,:,:,:),4),5),6))+squeeze(mean(mean(mean(ERP_righttarg(s,:,:,:,:,:),4),5),6)))/2;
 % %     figure
@@ -589,7 +589,7 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,side_tags, ...
     'FontSize',16,'Location','NorthWest');
 
-return
+% return
 %% CPP x DAT1
 colors = {'b','r'};
 linestyles = {'-','--'};
@@ -684,84 +684,6 @@ line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
 line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
     'FontSize',16,'Location','NorthWest');
-
-return
-%% Trial counts
-
-for s = 1:length(allsubj)
-    trial_counts(s) = length([RTs{s,:,:}]);
-end
-figure, plot(trial_counts)
-figure, plot(zscore(trial_counts)) % 1, 42, 55 had low trial numbers
-
-%% Behavioural analysis
-
-% Regular RT: x side and x index
-% RTs{s,iti,side}
-% percentiles = prctile([RTs{:,:,:}],[0.5 1 5 95 99 99.5])
-clear counts edges
-figure
-for side = 1:2
-    histogram([RTs{:,:,side}],25), hold on
-    [counts{side},edges{side}] = histcounts([RTs{:,:,side}],25);
-end
-figure
-for side = 1:2
-    plot(edges{side}(1:end-1),counts{side}), hold on
-end
-RT_index = RT_index';
-figure, histogram(RT_index,15)
-figure, plot(zscore(RT_index))
-
-%% RTs and RT index x DAT1
-
-clear counts edges
-for dat = 1:2
-    figure
-    for side = 1:2
-        histogram([RTs{find(DAT1_nosplit==dat),:,side}],25), hold on
-        [counts{dat,side},edges{dat,side}] = histcounts([RTs{find(DAT1_nosplit==dat),:,side}],25);
-    end
-    title(['RT x side: ',DAT1_tags{dat}])
-end
-for dat = 1:2
-    figure
-    for side = 1:2
-        plot(edges{dat,side}(1:end-1),counts{dat,side}), hold on
-    end
-    title(['RT x side: ',DAT1_tags{dat}])
-end
-
-        
-RT_side_mat = [RT_all,DAT1_nosplit',subject_location'];
-
-% % RT_factors(s,iti,side). NB can't include AR_08_04_14 & MH_14_04_14 if
-% % looking at this.
-% RT_iti_side_mat = [squeeze(RT_factors(:,1,1)),squeeze(RT_factors(:,1,2)), ...
-%     squeeze(RT_factors(:,2,1)),squeeze(RT_factors(:,2,2)), ...
-%     squeeze(RT_factors(:,3,1)),squeeze(RT_factors(:,3,1))]; % side then iti
-% RT_iti_side_mat = [RT_iti_side_mat,DAT1_nosplit'];
-% RT_iti_index = [RT_iti_index,DAT1_nosplit'];
-
-clear h
-figure
-for dat = 1:2
-    h(dat) = histogram(RT_index(find(DAT1_nosplit==dat)),12); hold on    
-end
-title(['RT index: ',DAT1_tags{1},' vs ',DAT1_tags{2}])
-legend(h,{DAT1_tags{1},DAT1_tags{2}}, ...
-    'FontSize',12,'Location','NorthWest');
-
-[~,p,~,stats] = ttest(RT_index);
-disp(['RT index to zero: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
-[~,p,~,stats] = ttest2(RT_index(find(DAT1_nosplit==1)),RT_index(find(DAT1_nosplit==2)));
-disp(['RT index x DAT1: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
-
-% % zscore eliminated below threshold
-% [~,p,~,stats] = ttest(RT_index_zs);
-% disp(['RT index to zero (zscore eliminated): t = ' num2str(stats.tstat) ', p = ' num2str(p)])
-% [~,p,~,stats] = ttest2(RT_index_zs(find(DAT1_nosplit==1)),RT_index_zs(find(DAT1_nosplit==2)));
-% disp(['RT index x DAT1 (zscore eliminated): t = ' num2str(stats.tstat) ', p = ' num2str(p)])
 
 return
 
