@@ -13,12 +13,12 @@ output:
 
 ####Which computer/directory is this being run on?
 location<-"Monash"
-# location<-"DansLaptop"
+# location<-"GersLaptop"
 
 if (location=="Monash") {
     setwd(("C:/GitHub/big_dots/Analyses Scripts_R"))
-} else if (location=="DansLaptop") {
-    setwd(("C:/Users/Dan/Documents/GitHub/big_dots/Analyses Scripts_R"))
+} else if (location=="GersLaptop") {
+    setwd(("C:/Users/loughnge/Documents/GitHub/big_dots/Analyses Scripts_R"))
 } else setwd(("~"))
 
 
@@ -65,13 +65,13 @@ library(readxl)
 ###### Import single trial data:
 if (location=="Monash") {
 data <- read.csv("C:/GitHub/big_dots/master_matrix_R_BigDots.csv", header=FALSE)
-} else if (location=="DansLaptop") {
+} else if (location=="GersLaptop") {
 data <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_BigDots.csv", header=FALSE)
 } else setwd(("~"))
 #Import IDs:
 if (location=="Monash") {
 ID <- read.table("C:/GitHub/big_dots/ID_vector_BigDots.csv", quote="\"")
-} else if (location=="DansLaptop") {
+} else if (location=="GersLaptop") {
 ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_BigDots.csv", quote="\"")
 } else setwd(("~"))
 
@@ -102,7 +102,7 @@ SLF2<-dplyr::arrange(SLF2, Order)
 # ###### Import data_ParticipantLevel:
 # if (location=="Monash") {
 # data_participant_level <- read.csv("C:/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
-# } else if (location=="DansLaptop") {
+# } else if (location=="GersLaptop") {
 # data_participant_level <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
 # } else setwd(("~"))
 # 
@@ -110,7 +110,7 @@ SLF2<-dplyr::arrange(SLF2, Order)
 # #Import IDs:
 # if (location=="Monash") {
 # ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/11.Megan_ONeill/Analysis Scripts_Matlab/IDs.csv", quote="\"")
-# } else if (location=="DansLaptop") {
+# } else if (location=="GersLaptop") {
 # ID <- read.csv("C:/Users/Dan/Documents/GitHub/10_10_repeatvsnon10_10_repeat/Analyses Scripts_Matlab/IDs.csv", header=F)
 # } else setwd(("~"))
 # ID<-plyr::rename(ID,c("V1"="ID"))
@@ -122,7 +122,7 @@ SLF2<-dplyr::arrange(SLF2, Order)
 # #import demographic data
 # if (location=="Monash") {
 # Demographics<-read.csv("S:/R-MNHS-SPP/Bellgrove-data/11.Megan_ONeill/Analysis Scripts_R/10_10_repeat_non10_10_repeat_Demographics_etc.csv", header=T)
-# } else if (location=="DansLaptop") {
+# } else if (location=="GersLaptop") {
 # Demographics<-read.csv("C:/Users/Dan/Documents/GitHub/10_10_repeatvsnon10_10_repeat/Analyses Scripts_R/10_10_repeat_non10_10_repeat_Demographics_etc.csv", header=T)
 # } else setwd(("~"))
 # 
