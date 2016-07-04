@@ -1,3 +1,4 @@
+% Created by Ger Loughnane on 04/07/2016. gerontium@gmail.com
 clear
 close all
 clc
