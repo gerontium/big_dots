@@ -85,7 +85,7 @@ data<-data[,!(names(data) %in% drops)]
 
 
 ###Read in SLF data from the SPSS file Tim Sent
-SLF<-haven::read_sav("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/SLF_volumes.sav")
+SLF<-haven::read_sav("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/SLF_metrics_290616.sav")
 DARIS_ID<-readxl::read_excel("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/DARIS_ID.xlsx")
 SLF2<-merge(SLF, DARIS_ID, by.x = "DARIS", by.y = "DARIS")
 ID_Order <- read_excel("ID_Order_for_Matlab.xlsx")
@@ -95,42 +95,6 @@ SLF2<-merge(SLF2, ID_Order, by.x = "ID", by.y = "ID", all=T)
 SLF2<-dplyr::arrange(SLF2, Order)
 
 # xlsx::write.xlsx(SLF2, "SLF.xlsx", row.names=F)
-
-#########################################################################################################################
-#data_ParticipantLevel:
-
-# ###### Import data_ParticipantLevel:
-# if (location=="Monash") {
-# data_participant_level <- read.csv("C:/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
-# } else if (location=="GersLaptop") {
-# data_participant_level <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
-# } else setwd(("~"))
-# 
-# 
-# #Import IDs:
-# if (location=="Monash") {
-# ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/11.Megan_ONeill/Analysis Scripts_Matlab/IDs.csv", quote="\"")
-# } else if (location=="GersLaptop") {
-# ID <- read.csv("C:/Users/Dan/Documents/GitHub/10_10_repeatvsnon10_10_repeat/Analyses Scripts_Matlab/IDs.csv", header=F)
-# } else setwd(("~"))
-# ID<-plyr::rename(ID,c("V1"="ID"))
-# data_participant_level$ID<-ID$ID
-# rm(ID)
-# # drops <- c("ID")
-# # data_participant_level<-data_participant_level[,!(names(data_participant_level) %in% drops)]
-# 
-# #import demographic data
-# if (location=="Monash") {
-# Demographics<-read.csv("S:/R-MNHS-SPP/Bellgrove-data/11.Megan_ONeill/Analysis Scripts_R/10_10_repeat_non10_10_repeat_Demographics_etc.csv", header=T)
-# } else if (location=="GersLaptop") {
-# Demographics<-read.csv("C:/Users/Dan/Documents/GitHub/10_10_repeatvsnon10_10_repeat/Analyses Scripts_R/10_10_repeat_non10_10_repeat_Demographics_etc.csv", header=T)
-# } else setwd(("~"))
-# 
-# 
-# 
-# #Merge Demographics into data_participant_level:
-# data_participant_level <- merge(data_participant_level, Demographics, by.x = "ID", by.y = "ID")
-# rm(Demographics)
 
 #########################################################################################################################
 
@@ -288,54 +252,13 @@ ggplot(data, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="
 ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") 
 
 
-#################################################################################################################################
-#################################################################################################################################
-#################################################################################################################################
-#################################################################################################################################
-# Participant level data
-
-# #Rename data_participant_level columns of data_participant_level:
-# data_participant_level<-rename(data_participant_level, c("V1"="ValidPreAlphaTrials",
-#                      "V2"="ValidERPTrials","V3"="PreAlpha_LeftHemi",
-#                      "V4"="PreAlpha_RightHemi","V5"="N2c_LeftTarget_PA","V6"="N2c_RightTarget_PA",
-#                      "V7"="N2i_LeftTarget_PA","V8"="N2i_RightTarget_PA","V9"="AlphaDesync_LeftHemi_LeftTarget",
-#                      "V10"="AlphaDesync_LeftHemi_RightTarget","V11"="AlphaDesync_RightHemi_LeftTarget",
-#                      "V12"="AlphaDesync_RightHemi_RightTarget",
-#                      "V13"="CPPonset_LeftTarget","V14"="CPPonset_RightTarget","V15"="N2c_latency_LeftTarget",
-#                      "V16"="N2c_latency_RightTarget","V17"="N2i_latency_LeftTarget","V18"="N2i_latency_RightTarget",
-#                      "V19"="CPPslope_LeftTarget","V20"="CPPslope_RightTarget","V21"="DAT1_3UTR"))
-# 
-# 
-# #NOTE: FOR N2c/i ,  the _GA or _PA suffix indicates whether N2c/i is measured with a measurement window based  
-# #on Grand average (GA) peak N2c/i latency ,  or based on Participant level average (PA) peak N2c/i latency
-# 
-# #Look at Column names:
-# colnames(data_participant_level)
-#              
-# #Make the required columns into factors:
-# data_participant_level$DAT1_3UTR <- factor(data_participant_level$DAT1_3UTR)
-# data_participant_level$Gender <- factor(data_participant_level$Gender)
-# 
-# #Rename factor Levels:
-# data_participant_level$DAT1_3UTR <- revalue(data_participant_level$DAT1_3UTR, c("1"="10_10_repeat", "2"="non10_10_repeat"))
-# 
-# #add in accuracy
-# data_participant_level <- merge(data_participant_level, Accuracy_checker, by.x = "ID", by.y = "ID")
-# data <- merge(data, Accuracy_checker, by.x = "ID", by.y = "ID")
-# 
-# ###Incorporate the demographic variables from data_participant_level into the single trial 'data' dataframe 
-# target<-dplyr::select(data_participant_level, ID, Gender, Age,  Years_of_Education, Greyscale_correct, Greyscales_L_chosen, Bells_Cancellation, CoC_Index, Extinction,          Landmark_Spatial_Index)
-# 
-# data<-merge(data, target, by.x="ID", by.y = "ID")
-# rm(target)
-
 #Calculate the number of trials each participant has left after fixation break trials are kicked out:
 num_trials2 <- ddply(data, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
 ```
 
 
-#First look at SLF (SLF I, II add III) 
+#First look at SLF (SLF I, II add III) - no relationship with DAT1 genotype 
 ```{r, echo=FALSE, warning=FALSE}
 ######Calculate RT asymmetry Index and add it to "data_participant_level"######
 #Collapse each participant's trials accross ITI
@@ -354,39 +277,103 @@ RT_collapsed<-RT_collapsed[abs(RT_collapsed$RT_Asym.Z)<3,]
 #Add in the SLF data
 RT_collapsed<-merge(RT_collapsed, SLF2, by.x = "ID", by.y = "ID") 
 
-
-##Between DAT1_3UTRs t-test for LI_SLF1
-t.test(RT_collapsed$LI_SLF1 ~ RT_collapsed$DAT1_3UTR)
-##Between DAT1_3UTRs t-test for LI_SLF2
-t.test(RT_collapsed$LI_SLF2 ~ RT_collapsed$DAT1_3UTR)
-##Between DAT1_3UTRs t-test for LI_SLF3
-t.test(RT_collapsed$LI_SLF3 ~ RT_collapsed$DAT1_3UTR)
+#Remove DAT1 Int8 measures, only interested in 3'UTR
+RT_collapsed<-dplyr::select(RT_collapsed, -contains("int"))
 
 
+##Between DAT1_3UTRs t-test for VOL_LI_SLF1
+t.test(RT_collapsed$VOL_LI_SLF1 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for VOL_LI_SLF2
+t.test(RT_collapsed$VOL_LI_SLF2 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for VOL_LI_SLF3
+t.test(RT_collapsed$VOL_LI_SLF3 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
 
-##Look for correlation between RT-asym and SLF-asym
-dplyr::select(RT_collapsed, RT_Asym, LI_SLF1, LI_SLF2, LI_SLF3)
+##Between DAT1_3UTRs t-test for FA_LI_SLF1
+t.test(RT_collapsed$FA_LI_SLF1 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for FA_LI_SLF2
+t.test(RT_collapsed$FA_LI_SLF2 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for FA_LI_SLF3
+t.test(RT_collapsed$FA_LI_SLF3 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
 
-cor(dplyr::select(RT_collapsed, RT_Asym, LI_SLF1, LI_SLF2, LI_SLF3), use = "pairwise.complete.obs",
-    method = c("pearson"))
+##Between DAT1_3UTRs t-test for MD_LI_SLF1
+t.test(RT_collapsed$MD_LI_SLF1 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for MD_LI_SLF2
+t.test(RT_collapsed$MD_LI_SLF2 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for MD_LI_SLF3
+t.test(RT_collapsed$MD_LI_SLF3 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
 
+##Between DAT1_3UTRs t-test for AD_LI_SLF1
+t.test(RT_collapsed$AD_LI_SLF1 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for AD_LI_SLF2
+t.test(RT_collapsed$AD_LI_SLF2 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for AD_LI_SLF3
+t.test(RT_collapsed$AD_LI_SLF3 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
 
-cor_matrix<-cor(as.matrix(dplyr::select(RT_collapsed, RT_Asym, LI_SLF1, LI_SLF2, LI_SLF3)), use="na.or.complete")
-cor_data<-melt(cor_matrix)
-require(plyr)
-cor_data<-rename(cor_data, c("value"="Pearson_r"))
-cor_data$abs_Pearson_r<-abs(cor_data$Pearson_r)
-
-####Plot:
-qplot(x=Var1, y=Var2, data=cor_data, fill=Pearson_r, geom="tile")+ 
-    theme(axis.title.x = element_text(face="bold", size=9),
-          axis.text.x  = element_text(face="bold", angle=-90,  size=9)) +
-    theme(axis.title.y = element_text(face="bold", size=9),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=9)) 
+##Between DAT1_3UTRs t-test for RD_LI_SLF1
+t.test(RT_collapsed$RD_LI_SLF1 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for RD_LI_SLF2
+t.test(RT_collapsed$RD_LI_SLF2 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+##Between DAT1_3UTRs t-test for RD_LI_SLF3
+t.test(RT_collapsed$RD_LI_SLF3 ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
 
 ```
 
-#First Look at the effect of Hemifield on RT, regardless of DAT1 genotype 
+#Test relationship between RT_Asym and SLF (SLF I, II add III) Asym
+
+```{r, echo=FALSE, warning=FALSE}
+
+##Now grab only the Asym/lateralistion index (_LI_) measures 
+data_for_cor<-dplyr::select(RT_collapsed, contains("_LI_"), contains("Asym"), -contains(".Z"))
+
+##look at r-values, p-palues, and CIs  
+print(corr.test(data_for_cor, method="pearson", adjust="holm", alpha=.05,ci=TRUE),short=F)
+
+#Make correlation matrix for corPlot()
+cor_matrix<-cor(as.matrix(data_for_cor), use="na.or.complete")
+
+#Save the corPlot() as a .png image
+png("Correlation betweem RT_Asymmetry & SLF_Asymmetry.png",  width = 10*600, height = 10*600, units = "px", res = 600)
+corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry & SLF_Asymmetry",  show.legend=F, upper=F,  cex = 1)
+dev.off()
+corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry & SLF_Asymmetry",  show.legend=F, upper=F,  cex = 1)
+
+#Scatter plot of the only significant relationship with RT_asym
+png("scatter plot of RT_Asym vs AD_LI_SLF1.png",  width = 10*300, height = 10*300, units = "px", res = 600)
+ggplot(data_for_cor, aes(x=RT_Asym, y=AD_LI_SLF1)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+dev.off()
+
+ggplot(data_for_cor, aes(x=RT_Asym, y=AD_LI_SLF1)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+#Make histograms of all asymmetry_indexes
+hist_data<-tidyr::gather(data_for_cor, measure, asymmetry_index, na.rm = T, convert = T, factor_key = T)
+png("histograms of all asymmetry_indexes.png",  width = 10*600, height = 10*600, units = "px", res = 600)
+ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measure, scales="free")
+dev.off()
+ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measure, scales="free")
+
+##Make correlation matrix using ggplot:
+# require(plyr)
+# cor_data<-cor(data_for_cor, use = "pairwise.complete.obs",method = c("pearson"))
+# cor_data<-melt(cor_matrix)
+# cor_data<-rename(cor_data, c("value"="Pearson_r"))
+# cor_data$abs_Pearson_r<-abs(cor_data$Pearson_r)
+# 
+# ####Plot:
+# qplot(x=Var1, y=Var2, data=cor_data, fill=Pearson_r, geom="tile")+
+#     theme(axis.title.x = element_text(face="bold", size=9),
+#           axis.text.x  = element_text(face="bold", angle=-90,  size=9)) +
+#     theme(axis.title.y = element_text(face="bold", size=9),
+#           axis.text.y  = element_text(angle=0, vjust=0.5, size=9))
+########################################
+```
+
+#Look at the effect of Hemifield on RT, regardless of DAT1 genotype 
 ```{r, echo=FALSE, warning=FALSE}
 RT_random_effects_only<-lmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data, REML=FALSE, na.action = na.omit)
 RT_Hemifield<-update(RT_random_effects_only, .~. + Hemifield)
