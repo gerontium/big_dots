@@ -114,9 +114,10 @@ for s2 = 1:length(subject_folder)
         end
     end
 end
+%%
 duds = [1,4,74];
-single_participants = [16,24,58];
-
+single_participants = [];
+%%
 if ~isempty(duds) && isempty(single_participants)
     subject_folder([duds]) = [];
     allsubj([duds]) = [];
@@ -290,11 +291,16 @@ for s=1:length(allsubj)
         CPP_search_ts  = [find(t==CPP_search_t(1)),find(t==CPP_search_t(2))];
         % Size of sliding window. This is in fact 1/4 of the search window in ms.
         % So 25 is 100ms. (25 samples x 2ms either side of a particular sample).
-        max_search_window = 30;
+        max_search_window = 25;
         
-        %DN: in Ger's N2/CPP paper this is set to 10, but our dots
-        consecutive_windows=15;%Number of consecutive windows that p must be less than .05 for in order to call it a CPP onset
-                
+
+%         consecutive_windows=10;%Number of consecutive windows that p must be less than .05 for in order to call it a CPP onset       
+        if any(strcmp(subject_folder(s),{'ND_16_05_14'})) || any(strcmp(subject_folder(s),{'036M_JK'}))
+             consecutive_windows=50;%had to make it longer for these participants otherwise it records a false CPP onset
+        else
+            consecutive_windows=15;%15 works well for everybody else
+        end
+        %%        
         CPP_temp = squeeze(mean(erp(ch_CPP,:,[conds{s,:,side}]),1)); % time x trial
         CPPs(:,side) = squeeze(mean(CPP_temp(:,:),2)); % average across trial for plot later on, not used to find onsets.
         % constrain the search window according to parameters above.
@@ -358,48 +364,50 @@ for s=1:length(allsubj)
 % %     Make sure the 10 (DN:30) following p-values from onset are also lower than
 % %     0.05.
         
-        if side==1
-            figure
-            subplot(3,2,1)
-            plot(win_mean_inds,mean(win_mean,2))
-            title(subject_folder{s})
-            subplot(3,2,3)
-            plot(win_mean_inds,tstats)
-            subplot(3,2,5)
-            plot(win_mean_inds,ps), hold on
-            line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
-            if ~isempty(onsetp05)
-                line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
-            else
-                line([0,0],ylim,'Color','r','LineWidth',1);
-            end
-        else
-            subplot(3,2,2)
-            plot(win_mean_inds,mean(win_mean,2))
-            title(subject_folder{s})
-            subplot(3,2,4)
-            plot(win_mean_inds,tstats)
-            subplot(3,2,6)
-            plot(win_mean_inds,ps), hold on
-            line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
-            if ~isempty(onsetp05)
-                line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
-            else
-                line([0,0],ylim,'Color','r','LineWidth',1);
-            end
-        end
+%         if side==1
+%             figure
+%             subplot(3,2,1)
+%             plot(win_mean_inds,mean(win_mean,2))
+%             title(subject_folder{s})
+%             subplot(3,2,3)
+%             plot(win_mean_inds,tstats)
+%             subplot(3,2,5)
+%             plot(win_mean_inds,ps), hold on
+%             line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
+%             if ~isempty(onsetp05)
+%                 line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
+%             else
+%                 line([0,0],ylim,'Color','r','LineWidth',1);
+%             end
+%         else
+%             subplot(3,2,2)
+%             plot(win_mean_inds,mean(win_mean,2))
+%             title(subject_folder{s})
+%             subplot(3,2,4)
+%             plot(win_mean_inds,tstats)
+%             subplot(3,2,6)
+%             plot(win_mean_inds,ps), hold on
+%             line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
+%             if ~isempty(onsetp05)
+%                 line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
+%             else
+%                 line([0,0],ylim,'Color','r','LineWidth',1);
+%             end
+%         end
     end
+%           pause(1)
 %%   plot CPP with onset marked 
-    colors = {'b' 'r' 'g' 'm' 'c'};
-    figure
-    for side = 1:2
-        plot(t,squeeze(CPPs(:,side)),'Color',colors{side},'LineWidth',2), hold on
-        line([mean(CPP_side_onsets(s,side),1),mean(CPP_side_onsets(s,side),1)],ylim,'Color',colors{side},'LineWidth',1.5);
-        line([0,0],ylim,'Color','k','LineWidth',1);
-        line(xlim,[0,0],'Color','k','LineWidth',1);
-    end
-    title(subject_folder{s})
-
+%     colors = {'b' 'r' 'g' 'm' 'c'};
+%     figure
+%     for side = 1:2
+%         plot(t,squeeze(CPPs(:,side)),'Color',colors{side},'LineWidth',2), hold on
+%         line([mean(CPP_side_onsets(s,side),1),mean(CPP_side_onsets(s,side),1)],ylim,'Color',colors{side},'LineWidth',1.5);
+%         line([0,0],ylim,'Color','k','LineWidth',1);
+%         line(xlim,[0,0],'Color','k','LineWidth',1);
+%     end
+%     title(subject_folder{s})
+%     pause(1)
+    
 %     erp_mean = (squeeze(mean(mean(mean(ERP_uptarg(s,:,:,:,:,:),4),5),6))+squeeze(mean(mean(mean(ERP_righttarg(s,:,:,:,:,:),4),5),6)))/2;
 %     figure
 %     plottopo(erp_mean(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
@@ -663,6 +671,7 @@ legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right
 t1 = 250; t2 = 290;
 stat_temp = squeeze(mean(N2c_side(:,find(t>=t1 & t<=t2),:),2)); % subj x side
 stat_temp = [stat_temp,DAT1_nosplit'];
+
 %% N2i x DAT1
 colors = {'b','r'};
 linestyles = {'-','--'};
@@ -685,319 +694,84 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
     'FontSize',16,'Location','NorthWest');
 
-return
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% RT Stats
-% RT_means_side(s,side,targdir)
-% RT_means_side2 = reshape(RT_means_side,size(RT_means_side,1),4); % side then targdir
-RT_means_side2 = [squeeze(RT_means_side(:,1,1)),squeeze(RT_means_side(:,2,1)),squeeze(RT_means_side(:,1,2)),squeeze(RT_means_side(:,2,2))];
-RT_means_coh2 = [squeeze(RT_means_coh(:,1,1)),squeeze(RT_means_coh(:,2,1)),squeeze(RT_means_coh(:,1,2)),squeeze(RT_means_coh(:,2,2))];
-% RT_all(s,coh,iti,side,targdir)
-RT_all2 = reshape(RT_all,size(RT_all,1),2*2*2); % coh, side, targdir
-hit_rate2 = reshape(hit_rate,size(hit_rate,1),2*2*2); % coh, side, targdir
-
-%% Plots
-close all
-cohs = [1,2];
-N2c_amp1 = squeeze(mean(N2c_amp(:,cohs,:,:),4)); % subj x dir
-N2c_amp2 = [squeeze(mean(N2c_amp(:,cohs,:,1),2)),squeeze(mean(N2c_amp(:,cohs,:,2),2))]; % subj x dir, relative to actual motion dir
-N2c_amp3 = [squeeze(mean(N2c_amp(:,cohs,:,1),2)),fliplr(squeeze(mean(N2c_amp(:,cohs,:,2),2)))]; % subj x dir, relative to target dir
-
-N2c_amp_coh = [squeeze(mean(N2c_amp(:,1,:,1),2)),squeeze(mean(N2c_amp(:,1,:,2),2)),...
-    squeeze(mean(N2c_amp(:,2,:,1),2)),squeeze(mean(N2c_amp(:,2,:,2),2))]; % motion dir, targ dir, coherence
-N2c_amp_sub = squeeze(mean(N2c_amp(:,cohs,:,1),2))-squeeze(mean(N2c_amp(:,cohs,:,2),2));
-
-all_N2c = squeeze(mean(N2c_amp_coh,2));
-
-colors3 = {'b' 'r' 'g' 'c' 'm'};
-N2c_amp_means = squeeze(mean(N2c_amp2,1));
-N2c_amp_stds = squeeze(std(N2c_amp2,[],1));
-figure
-clear h
-for i = 1:4
-    h(i) = plot([1,2],[N2c_amp_means(i),N2c_amp_means(i+4)],'Color',colors3{i},'LineWidth',2); hold on
+%% Extract Response Locked CPP slope"
+%CPP build-up defined as the slope of a straight line fitted to the
+%response-locked waveform at during "slope_timeframe_index" defined for
+%each participant here:
+clear slope_timeframe_index 
+for s=1:length(allsubj)
+ slope_timeframe_index(s,2)=find(mean(CPPr_side(s,:,:),3)==max(mean(CPPr_side(s,find(tr<0),:),3)));%max amplitude index
 end
-set(gca,'FontSize',16,'ylim',[-2.5,0],'xlim',[0,3],'xtick',[1,2],'xticklabel',{'Upward Targets','Rightward Targets'});%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Target Condition','FontName','Arial','FontSize',16)
-title('N2c amplitude across target conditions')
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',8,'Location','SouthEast');
+slope_timeframe_index(:,1)=slope_timeframe_index(:,2)-50;%subtract 50samples (i.e. 100ms) from max amplitude index to form slope_timeframe window
 
-% figure
-% clear h
-% for i = 1:4
-%     h(i) = errorbar([N2c_amp_means(i),N2c_amp_means(i+4)],[N2c_amp_stds(i),N2c_amp_stds(i+4)],'Color',colors3{i},'LineWidth',2); hold on
-% end
 
-% CPP_uptarg(s,:,coh,side,motion)
-CPP_uptarg2 = squeeze(mean(mean(mean(CPP_uptarg(:,:,cohs,:,:),4),3),1)); % time x motion
-CPP_righttarg2 = squeeze(mean(mean(mean(CPP_righttarg(:,:,cohs,:,:),4),3),1)); % time x motion
-N2c_uptarg2 = squeeze(mean(mean(mean(N2c_uptarg(:,:,cohs,:,:),4),3),1)); % time x motion
-N2c_righttarg2 = squeeze(mean(mean(mean(N2c_righttarg(:,:,cohs,:,:),4),3),1)); % time x motion
-N2i_uptarg2 = squeeze(mean(mean(mean(N2i_uptarg(:,:,cohs,:,:),4),3),1)); % time x motion
-N2i_righttarg2 = squeeze(mean(mean(mean(N2i_righttarg(:,:,cohs,:,:),4),3),1)); % time x motion
+%Plot each individual participant
+for s=1:length(allsubj)
+    clear h
+    figure
+    for side = 1:2
+        h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
+        coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
+        CPP_slope(s,side)=coef(1);
+        r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
+        plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
+    end
+    
+    set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
+    ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+    xlabel('Time (ms)','FontName','Arial','FontSize',16)
+    title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
+    line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+    line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+    legend(h,side_tags,'FontSize',16,'Location','NorthWest');
+   pause(1) 
+end
 
-CPP_motion = (CPP_uptarg2+fliplr(CPP_righttarg2))/2;
-N2c_motion = (N2c_uptarg2+fliplr(N2c_righttarg2))/2;
-N2i_motion = (N2i_uptarg2+fliplr(N2i_righttarg2))/2;
-N2c_motion2 = (N2c_uptarg2+N2c_righttarg2)/2;
 
+
+%% Extract N2c and N2i amplitude and latency, using amplitude latency window based on each INDIVIDNAL PARTICIPANT'S N2c/i:
+window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
+%N2 amplitude for Stats
+for s = 1:size(allsubj,2)
+    for side=1:2
+        %         to use each participant's average N2c/i to get their peak latency index around which we measure peak amplitude:
+        avN2c=N2c_side(s, :, side); 
+        avN2i=N2i_side(s, :, side); 
+        avN2c_peak_amp=min(avN2c(find(t==150):find(t==450)));
+        avN2i_peak_amp=min(avN2i(find(t==150):find(t==450)));
+        avN2c_peak_amp_index(s,side)=find(avN2c==avN2c_peak_amp);%Find Left target max peak latency for N2c
+        avN2i_peak_amp_index(s,side)=find(avN2i==avN2i_peak_amp);%Find Left target max peak latency for N2i
+        avN2c_peak_amp_index_t(s,side)=t(avN2c_peak_amp_index(s,side));%now in ms
+        avN2i_peak_amp_index_t(s,side)=t(avN2i_peak_amp_index(s,side));%now in ms
+        max_peak_N2c(s,side)=squeeze(mean(N2c_side(s,avN2c_peak_amp_index(s)-window:avN2c_peak_amp_index(s)+window, side),2));
+        max_peak_N2i(s,side)=squeeze(mean(N2i_side(s,avN2c_peak_amp_index(s)-window:avN2c_peak_amp_index(s)+window, side),2)); 
+    end
+    avN2c_ParticipantLevel_peak_amp_index_s=avN2c_peak_amp_index(s,:);
+     save([path_temp, subject_folder{s} '\avN2c_ParticipantLevel_peak_amp_index.mat'],'avN2c_ParticipantLevel_peak_amp_index_s');
+    avN2i_ParticipantLevel_peak_amp_index_s=avN2i_peak_amp_index(s,:);
+     save([path_temp, subject_folder{s} '\avN2i_ParticipantLevel_peak_amp_index.mat'],'avN2i_ParticipantLevel_peak_amp_index_s');
+end
+N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
+
+%%N2c Latency:
+N2cN2i_latency_ByTargetSide = [avN2c_peak_amp_index_t,avN2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
+
+
+
+for s = 1:size(allsubj,2)
 clear h
 figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(N2c_motion2(:,motion)),'Color',colors3{motion},'LineWidth',2,'LineStyle','-'); hold on
+for side = 1:2
+    h(side) = plot(t,squeeze(N2i_side(s,:,side)),'LineWidth',3,'LineStyle',':', 'Color',colors{side});hold on
+    h(side) = plot(t,squeeze(N2c_side(s,:,side)),'LineWidth',3,'LineStyle','-', 'Color',colors{side});hold on
 end
 
 set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
 ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
 xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2c: Collapsed across target motion')
+title(['Participant,'N2c(-) & N2i(:) by Hemifield'])
 line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
 line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',8,'Location','SouthEast');
-
-% return
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(CPP_uptarg2(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
+legend(h,side_tags, 'FontSize',16,'Location','NorthWest');
 end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP: Target = Upward motion')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',16,'Location','NorthWest');
-
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(CPP_righttarg2(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP: Target = Rightward motion')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',16,'Location','NorthWest');
-
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(N2c_uptarg2(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2c: Target = Upward motion')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',16,'Location','SouthEast');
-
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(N2c_righttarg2(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-15,4]);%,'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2c: Target = Rightward motion')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',16,'Location','SouthEast');
-
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(N2i_uptarg2(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2i: Target = Upward motion')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',16,'Location','SouthEast');
-
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(N2i_righttarg2(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-15,4]);%,'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2i: Target = Rightward motion')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'90 deg (up)','60 deg','30 deg','0 deg (right)'}, ...
-    'FontSize',16,'Location','SouthEast');
-
-% Combine upwards and rightwards targets
-clear h
-figure
-for motion = 1:4
-    h(motion) = plot(t,squeeze(CPP_motion(:,motion)),'Color',colors3{motion},'LineWidth',3,'LineStyle','-');hold on
-    plot(t,squeeze(N2c_motion(:,motion)),'Color',colors3{motion},'LineWidth',2,'LineStyle','--');
-    plot(t,squeeze(N2i_motion(:,motion)),'Color',colors3{motion},'LineWidth',2,'LineStyle',':');
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP & N2c: Target vs non target motions')
-h(motion+1) = line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-h(motion+2) = line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle',':');
-h(motion+3) = line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'Target Dir','30 deg','60 deg','90 deg','N2c','N2i','CPP'}, ...
-    'FontSize',8,'Location','NorthWest');
-
-return
-ERP_uptarg_avg = squeeze(mean(ERP_uptarg,1)); % chan x time x coh x side x motion
-ERP_righttarg_avg = squeeze(mean(ERP_righttarg,1)); % chan x time x coh x side x motion
-
-% chan x time x coh x motion
-ERP_uptarg_conip(right_hemi,:,:,:) = squeeze(ERP_uptarg_avg(right_hemi,:,:,1,:)+ERP_uptarg_avg(left_hemi,:,:,2,:))/2;
-ERP_uptarg_conip(left_hemi,:,:,:) = squeeze(ERP_uptarg_avg(right_hemi,:,:,2,:)+ERP_uptarg_avg(left_hemi,:,:,1,:))/2;
-ERP_uptarg_conip(centre_chans,:,:,:) = squeeze(ERP_uptarg_avg(centre_chans,:,:,2,:)+ERP_uptarg_avg(centre_chans,:,:,1,:))/2;
-ERP_uptarg_conip(exclude_chans,:,:,:) = 0;
-
-% chan x time x coh x motion
-ERP_righttarg_conip(right_hemi,:,:,:) = squeeze(ERP_righttarg_avg(right_hemi,:,:,1,:)+ERP_righttarg_avg(left_hemi,:,:,2,:))/2;
-ERP_righttarg_conip(left_hemi,:,:,:) = squeeze(ERP_righttarg_avg(right_hemi,:,:,2,:)+ERP_righttarg_avg(left_hemi,:,:,1,:))/2;
-ERP_righttarg_conip(centre_chans,:,:,:) = squeeze(ERP_righttarg_avg(centre_chans,:,:,2,:)+ERP_righttarg_avg(centre_chans,:,:,1,:))/2;
-ERP_righttarg_conip(exclude_chans,:,:,:) = 0;
-
-% chan x time x motion
-ERP_uptarg_conip_no_coh = squeeze(mean(ERP_uptarg_conip(:,:,:,:),3));
-ERP_righttarg_conip_no_coh = squeeze(mean(ERP_righttarg_conip(:,:,:,:),3));
-
-figure
-plottopo(ERP_uptarg_conip_no_coh(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_uptarg_conip_no_coh(plot_chans,:,:))))  max(max(max(ERP_uptarg_conip_no_coh(plot_chans,:,:))))], ...
-    'title',['Contra and ipsi upwards targets'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
-
-figure
-plottopo(ERP_righttarg_conip_no_coh(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_righttarg_conip_no_coh(plot_chans,:,:))))  max(max(max(ERP_righttarg_conip_no_coh(plot_chans,:,:))))], ...
-    'title',['Contra and ipsi rightwards targets'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
-
-temp = (ERP_uptarg_conip_no_coh + ERP_righttarg_conip_no_coh)/2;
-erp_group = squeeze(mean(temp,3));
-figure
-plottopo(erp_group(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(erp_group(plot_chans,:))))  max(max(max(erp_group(plot_chans,:))))], ...
-    'title',['Group ERP'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','off','ydir',1)
-
-clear time_windows
-time_windows(1,:) = [150:50:550];
-time_windows(2,:) = time_windows(1,:)+50;
-figure
-for t_temp = 1:size(time_windows,2)
-    plot_mean = squeeze(mean(erp_group(:,find(t>time_windows(1,t_temp) & t<time_windows(2,t_temp))),2));
-    subplot(3,3,t_temp)
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(min(erp_group(:,find(t>time_windows(1,1) & t<time_windows(2,end)))))...
-        max(max(erp_group(:,find(t>time_windows(1,1) & t<time_windows(2,end)))))], ...
-        'electrodes','off','plotchans',plot_chans);
-    title(['All targets: ',num2str(time_windows(1,t_temp)),' ms to ',num2str(time_windows(2,t_temp)),' ms']);
-    colorbar
-end
-
-erp_group_no_targ = squeeze(mean(temp(:,:,[2:4]),3));
-% figure
-% plottopo(erp_group(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-%     min(min(min(erp_group(plot_chans,:))))  max(max(max(erp_group(plot_chans,:))))], ...
-%     'title',['Group ERP'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','off','ydir',1)
-
-clear time_windows
-time_windows(1,:) = [150:50:550];
-time_windows(2,:) = time_windows(1,:)+50;
-figure
-for t_temp = 1:size(time_windows,2)
-    plot_mean = squeeze(mean(erp_group_no_targ(:,find(t>time_windows(1,t_temp) & t<time_windows(2,t_temp))),2));
-    subplot(3,3,t_temp)
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(min(erp_group_no_targ(:,find(t>time_windows(1,1) & t<time_windows(2,end)))))...
-        max(max(erp_group_no_targ(:,find(t>time_windows(1,1) & t<time_windows(2,end)))))], ...
-        'electrodes','off','plotchans',plot_chans);
-    title(['All targets: ',num2str(time_windows(1,t_temp)),' ms to ',num2str(time_windows(2,t_temp)),' ms']);
-    colorbar
-end
-
-% return
-
-t1 = 575; t2 = 625;
-plot_mean = squeeze(mean(erp_group(:,find(t>t1 & t<t2)),2));
-figure
-topoplot(plot_mean,chanlocs,'maplimits', ...
-    [min(plot_mean) max(plot_mean)], 'electrodes','numbers','plotchans',plot_chans);
-
-t1 = 240; t2 = 280;
-plot_mean = squeeze(mean(erp_group(:,find(t>t1 & t<t2)),2));
-figure
-topoplot(plot_mean,chanlocs,'maplimits', ...
-    [min(plot_mean) max(plot_mean)], 'electrodes','numbers','plotchans',plot_chans);
-
-ERP_uptarg_con_minus_ip(right_hemi,:,:) = ERP_uptarg_conip_no_coh(right_hemi,:,:)-ERP_uptarg_conip_no_coh(left_hemi,:,:);
-ERP_righttarg_con_minus_ip(right_hemi,:,:) = ERP_righttarg_conip_no_coh(right_hemi,:,:)-ERP_righttarg_conip_no_coh(left_hemi,:,:);
-
-figure
-plottopo(ERP_uptarg_con_minus_ip(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_uptarg_con_minus_ip(plot_chans,:,:))))  max(max(max(ERP_uptarg_con_minus_ip(plot_chans,:,:))))], ...
-    'title',['Contra minus ipsi upwards targets'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
-
-figure
-plottopo(ERP_righttarg_con_minus_ip(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_righttarg_con_minus_ip(plot_chans,:,:))))  max(max(max(ERP_righttarg_con_minus_ip(plot_chans,:,:))))], ...
-    'title',['Contra minus ipsi rightwards targets'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
-
-return
-ERP_uptarg_conip_high_coh = squeeze(mean(ERP_uptarg_conip(:,:,2,:),3));
-ERP_righttarg_conip_high_coh = squeeze(mean(ERP_righttarg_conip(:,:,2,:),3));
-
-figure
-plottopo(ERP_uptarg_conip_high_coh(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_uptarg_conip_high_coh(plot_chans,:,:))))  max(max(max(ERP_uptarg_conip_high_coh(plot_chans,:,:))))], ...
-    'title',['Contra and ipsi upwards targets, high coh'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
-
-figure
-plottopo(ERP_righttarg_conip_high_coh(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_righttarg_conip_high_coh(plot_chans,:,:))))  max(max(max(ERP_righttarg_conip_high_coh(plot_chans,:,:))))], ...
-    'title',['Contra and ipsi rightwards targets, high coh'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
-return
