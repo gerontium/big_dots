@@ -114,10 +114,9 @@ for s2 = 1:length(subject_folder)
         end
     end
 end
-%%
 duds = [1,4,74];
-single_participants = [];
-%%
+single_participants = [16,24,58];
+
 if ~isempty(duds) && isempty(single_participants)
     subject_folder([duds]) = [];
     allsubj([duds]) = [];
@@ -291,16 +290,11 @@ for s=1:length(allsubj)
         CPP_search_ts  = [find(t==CPP_search_t(1)),find(t==CPP_search_t(2))];
         % Size of sliding window. This is in fact 1/4 of the search window in ms.
         % So 25 is 100ms. (25 samples x 2ms either side of a particular sample).
-        max_search_window = 25;
+        max_search_window = 30;
         
-
-%         consecutive_windows=10;%Number of consecutive windows that p must be less than .05 for in order to call it a CPP onset       
-        if any(strcmp(subject_folder(s),{'ND_16_05_14'})) || any(strcmp(subject_folder(s),{'036M_JK'}))
-             consecutive_windows=50;%had to make it longer for these participants otherwise it records a false CPP onset
-        else
-            consecutive_windows=15;%15 works well for everybody else
-        end
-        %%        
+        %DN: in Ger's N2/CPP paper this is set to 10, but our dots
+        consecutive_windows=15;%Number of consecutive windows that p must be less than .05 for in order to call it a CPP onset
+                
         CPP_temp = squeeze(mean(erp(ch_CPP,:,[conds{s,:,side}]),1)); % time x trial
         CPPs(:,side) = squeeze(mean(CPP_temp(:,:),2)); % average across trial for plot later on, not used to find onsets.
         % constrain the search window according to parameters above.
@@ -395,7 +389,6 @@ for s=1:length(allsubj)
             end
         end
     end
-          pause(1)
 %%   plot CPP with onset marked 
     colors = {'b' 'r' 'g' 'm' 'c'};
     figure
@@ -406,8 +399,7 @@ for s=1:length(allsubj)
         line(xlim,[0,0],'Color','k','LineWidth',1);
     end
     title(subject_folder{s})
-    pause(1)
-    
+
 %     erp_mean = (squeeze(mean(mean(mean(ERP_uptarg(s,:,:,:,:,:),4),5),6))+squeeze(mean(mean(mean(ERP_righttarg(s,:,:,:,:,:),4),5),6)))/2;
 %     figure
 %     plottopo(erp_mean(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
@@ -1009,6 +1001,3 @@ plottopo(ERP_righttarg_conip_high_coh(:,:,:),'chanlocs',chanlocs,'limits',[t(1) 
     min(min(min(ERP_righttarg_conip_high_coh(plot_chans,:,:))))  max(max(max(ERP_righttarg_conip_high_coh(plot_chans,:,:))))], ...
     'title',['Contra and ipsi rightwards targets, high coh'],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','on','ydir',1)
 return
-
-
-%%
