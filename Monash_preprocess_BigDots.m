@@ -1,23 +1,23 @@
-clear
-close all
-clc
-subject_folder = {'059M_HP','093M_BR'};
-allsubj = {'HP1M','BR2M'};
-
-s = 1;
-blocks = [1:16];
-badchans = [];
-path_temp = 'D:\Participant Folders_new\';
-
-clear paths files matfiles ET_files ET_matfiles; k=0;
-for n=1:length(blocks)
-    k=k+1;
-    paths{k} = [path_temp subject_folder{s} '\'];
-    files{k} = [allsubj{s} num2str(blocks(n)) '.vhdr'];    
-    matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '.mat'];
-    ET_files{k}=[path_temp 'Samples_and_Events\' allsubj{s} num2str(blocks(n)) '.asc'];
-    ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '_ET.mat'];
-end
+% clear
+% close all
+% clc
+% subject_folder = {'059M_HP','093M_BR'};
+% allsubj = {'HP1M','BR2M'};
+% 
+% s = 1;
+% blocks = [1:16];
+% badchans = [];
+% path_temp = 'D:\Participant Folders_new\';
+% 
+% clear paths files matfiles ET_files ET_matfiles; k=0;
+% for n=1:length(blocks)
+%     k=k+1;
+%     paths{k} = [path_temp subject_folder{s} '\'];
+%     files{k} = [allsubj{s} num2str(blocks(n)) '.vhdr'];    
+%     matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '.mat'];
+%     ET_files{k}=[path_temp 'Samples_and_Events\' allsubj{s} num2str(blocks(n)) '.asc'];
+%     ET_matfiles{k} = [path_temp subject_folder{s} '\' allsubj{s} num2str(blocks(n)) '_ET.mat'];
+% end
 
 % LK has coherence 35%!!!
 % for i = 1:length(conditiondescrip)
@@ -43,7 +43,9 @@ nchan = 65;
 
 fs = 500; % new sample rate
 
-ts = -0.5*fs:1.800*fs;
+% ts = -0.500*fs:1.800*fs;
+% t = ts*1000/fs;
+ts = -0.700*fs:1.800*fs;
 t = ts*1000/fs;
 
 BL_time = [-100 0];   % baseline interval in ms
@@ -340,7 +342,7 @@ erp_LPF_8Hz = single(erp_LPF_8Hz);
 erp_LPF_35Hz = single(erp_LPF_35Hz);
 erp_LPF_8Hz_CSD = single(erp_LPF_8Hz_CSD);
 erp_LPF_35Hz_CSD = single(erp_LPF_35Hz_CSD);
-
+        
 %% reorganise chanlocs
 chanlocs_TCD = readlocs('cap64.loc');
 chanlocs_Monash = readlocs('actiCAP65_ThetaPhi.elp','filetype','besa'); %DN for actiCAP
@@ -394,10 +396,23 @@ erp_LPF_35Hz_CSD = erp_TCD(1:64,:,:);
 %     min(min(erp_temp(:,:)))  max(max(erp_temp(:,:)))], ...
 %     'title',['ERP'],'ydir',1)
 
-save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','erp_LPF_8Hz_CSD','erp_LPF_35Hz_CSD', ...
-    'allRT','allrespLR','allTrig','allblock_count','t','ET_trials', ...
-    'artifchans_pretarg','artifchans_BL_resp','artifchans_resp','artifchans_1000ms', ...
-    'pretarg_artrej','BL_resp_artrej','resp_artrej','t1000ms_artrej', ...
-    'ET_pretarg_artrej','ET_BL_resp_artrej','ET_resp_artrej','ET_t1000ms_artrej')
+% save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','erp_LPF_8Hz_CSD','erp_LPF_35Hz_CSD', ...
+%     'allRT','allrespLR','allTrig','allblock_count','t','ET_trials', ...
+%     'artifchans_pretarg','artifchans_BL_resp','artifchans_resp','artifchans_1000ms', ...
+%     'pretarg_artrej','BL_resp_artrej','resp_artrej','t1000ms_artrej', ...
+%     'ET_pretarg_artrej','ET_BL_resp_artrej','ET_resp_artrej','ET_t1000ms_artrej')
+
+%% Longer epochs for alpha
+
+erp_LPF_35Hz_long = erp_LPF_35Hz;
+erp_LPF_35Hz_CSD_long = erp_LPF_35Hz_CSD;
+pretarg_artrej_long = pretarg_artrej;
+resp_artrej_long = resp_artrej;
+ET_pretarg_artrej_long = ET_pretarg_artrej;
+ET_resp_artrej_long = ET_resp_artrej;
+t_long = t;
+
+save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_35Hz_long','erp_LPF_35Hz_CSD_long', ...
+    'pretarg_artrej_long','resp_artrej_long','ET_pretarg_artrej_long','ET_resp_artrej_long','t_long','-append')
 
 return;
