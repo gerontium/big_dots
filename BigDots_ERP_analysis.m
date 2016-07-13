@@ -733,7 +733,7 @@ end
 %     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
 %    pause(1) 
 % end
-% 
+
 
 
 %% Extract N2c and N2i latency :
@@ -742,8 +742,8 @@ for s = 1:size(allsubj,2)
         %         to use each participant's average N2c/i to get their peak latency index:
         N2c=N2c_side(s, :, side); 
         N2i=N2i_side(s, :, side); 
-        N2c_peak_amp_index_t(s,side)=t(N2c==min(N2c(find(t==150):find(t==450))));%Find max peak latency for N2c in ms
-        N2i_peak_amp_index_t(s,side)=t(N2i==min(N2i(find(t==150):find(t==450))));%Find max peak latency for N2i in ms
+        N2c_peak_amp_index_t(s,side)=t(N2c==min(N2c(find(t==150):find(t==400))));%Find max peak latency for N2c in ms
+        N2i_peak_amp_index_t(s,side)=t(N2i==min(N2i(find(t==200):find(t==450))));%Find max peak latency for N2i in ms
     end
 end
 %N2 Latency:
@@ -784,3 +784,18 @@ for s = 1:size(allsubj,2)
     end
 end
 N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
+
+
+%% Make participant level matrix for export into SPSS or R
+participant_level(:,1:2)=max_peak_N2c; %N2c amplitude (LeftTarget, RightTarget)
+participant_level(:,3:4)=max_peak_N2i; %N2i amplitude (LeftTarget, RightTarget)
+participant_level(:,5:6)=N2c_peak_amp_index_t; %N2c latency (LeftTarget, RightTarget)
+participant_level(:,7:8)=N2i_peak_amp_index_t; %N2i latency (LeftTarget, RightTarget)
+participant_level(:,9:10)=CPP_side_onsets; %CPP onset (LeftTarget, RightTarget)
+participant_level(:,11:12)=CPPr_slope; %response locked CPP slope (LeftTarget, RightTarget)
+open participant_level
+
+csvwrite (['participant_level_matrix.csv'],participant_level)
+
+subject_folder=subject_folder';
+cell2csv ('IDs.csv',subject_folder)
