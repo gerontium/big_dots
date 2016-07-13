@@ -704,44 +704,50 @@ for s=1:length(allsubj)
  slope_timeframe_index(s,2)=find(mean(CPPr_side(s,:,:),3)==max(mean(CPPr_side(s,find(tr<0),:),3)));%max amplitude index
 end
 slope_timeframe_index(:,1)=slope_timeframe_index(:,2)-50;%subtract 50samples (i.e. 100ms) from max amplitude index to form slope_timeframe window
-
-
-%Plot each individual participant
+%Now find and save CPPr slope
 for s=1:length(allsubj)
-    clear h
-    figure
-    for side = 1:2
-        h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
+    for side = 1:2  
         coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
-        CPP_slope(s,side)=coef(1);
-        r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
-        plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
+        CPPr_slope(s,side)=coef(1);  
     end
-    
-    set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-    ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-    xlabel('Time (ms)','FontName','Arial','FontSize',16)
-    title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
-    line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-    line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-    legend(h,side_tags,'FontSize',16,'Location','NorthWest');
-   pause(1) 
 end
 
+%%%%Plot each individual participant's CPPr_slope 
+% for s=1:length(allsubj)
+%     clear h
+%     figure
+%     for side = 1:2
+%         h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
+%         coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
+%         CPP_slope(s,side)=coef(1);
+%         r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
+%         plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
+%     end
+%     
+%     set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
+%     ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+%     xlabel('Time (ms)','FontName','Arial','FontSize',16)
+%     title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
+%     line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+%     line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+%     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
+%    pause(1) 
+% end
+% 
 
 
 %% Extract N2c and N2i latency :
 for s = 1:size(allsubj,2)
     for side=1:2
         %         to use each participant's average N2c/i to get their peak latency index:
-        avN2c=N2c_side(s, :, side); 
-        avN2i=N2i_side(s, :, side); 
-        avN2c_peak_amp_index_t(s,side)=t(avN2c==min(avN2c(find(t==150):find(t==450))));%Find max peak latency for N2c in ms
-        avN2i_peak_amp_index_t(s,side)=t(avN2i==min(avN2i(find(t==150):find(t==450))));%Find max peak latency for N2i in ms
+        N2c=N2c_side(s, :, side); 
+        N2i=N2i_side(s, :, side); 
+        N2c_peak_amp_index_t(s,side)=t(N2c==min(N2c(find(t==150):find(t==450))));%Find max peak latency for N2c in ms
+        N2i_peak_amp_index_t(s,side)=t(N2i==min(N2i(find(t==150):find(t==450))));%Find max peak latency for N2i in ms
     end
 end
 %N2 Latency:
-N2cN2i_latency_ByTargetSide = [avN2c_peak_amp_index_t,avN2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
+N2cN2i_latency_ByTargetSide = [N2c_peak_amp_index_t,N2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
 
 % %Plot N2c and N2i per subject showing peak amplitude 
 % for s = 1:size(allsubj,2)
@@ -766,27 +772,15 @@ N2cN2i_latency_ByTargetSide = [avN2c_peak_amp_index_t,avN2i_peak_amp_index_t]; %
 
 %% Extract N2c and N2i Amplitude :
 window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
-window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
-%N2 amplitude for Stats
+N2c = squeeze(mean(mean(N2c_side,1),3)); % time 
+N2i = squeeze(mean(mean(N2i_side,1),3)); % time 
+N2c_peak_amp_index=find(N2c==min(N2c(find(t==150):find(t==450))));%Find Left target max peak latency for N2c
+N2i_peak_amp_index=find(N2i==min(N2i(find(t==150):find(t==450))));%Find Left target max peak latency for N2i
+
 for s = 1:size(allsubj,2)
     for side=1:2
-        %         to use each participant's average N2c/i to get their peak latency index:
-        avN2c=N2c_side(s, :, side); 
-        avN2i=N2i_side(s, :, side); 
-        avN2c_peak_amp=min(avN2c(find(t==150):find(t==450)));
-        avN2i_peak_amp=min(avN2i(find(t==150):find(t==450)));
-        avN2c_peak_amp_index(s,side)=find(avN2c==avN2c_peak_amp);%Find Left target max peak latency for N2c
-        avN2i_peak_amp_index(s,side)=find(avN2i==avN2i_peak_amp);%Find Left target max peak latency for N2i
-        avN2c_peak_amp_index_t(s,side)=t(avN2c_peak_amp_index(s,side));%now in ms
-        avN2i_peak_amp_index_t(s,side)=t(avN2i_peak_amp_index(s,side));%now in ms
-        max_peak_N2c(s,side)=squeeze(mean(N2c_side(s,avN2c_peak_amp_index(s)-window:avN2c_peak_amp_index(s)+window, side),2));
-        max_peak_N2i(s,side)=squeeze(mean(N2i_side(s,avN2c_peak_amp_index(s)-window:avN2c_peak_amp_index(s)+window, side),2)); 
+        max_peak_N2c(s,side)=squeeze(mean(N2c_side(s,N2c_peak_amp_index-window:N2c_peak_amp_index+window, side),2));
+        max_peak_N2i(s,side)=squeeze(mean(N2i_side(s,N2i_peak_amp_index-window:N2i_peak_amp_index+window, side),2)); 
     end
-    avN2c_ParticipantLevel_peak_amp_index_s=avN2c_peak_amp_index(s,:);
-     save([path_temp, subject_folder{s} '\avN2c_ParticipantLevel_peak_amp_index.mat'],'avN2c_ParticipantLevel_peak_amp_index_s');
-    avN2i_ParticipantLevel_peak_amp_index_s=avN2i_peak_amp_index(s,:);
-     save([path_temp, subject_folder{s} '\avN2i_ParticipantLevel_peak_amp_index.mat'],'avN2i_ParticipantLevel_peak_amp_index_s');
 end
 N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
-%%N2c Latency:
-N2cN2i_latency_ByTargetSide = [avN2c_peak_amp_index_t,avN2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
