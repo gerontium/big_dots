@@ -43,7 +43,9 @@ nchan = 64;
 
 fs = 500; % new sample rate
 
-ts = -0.5*fs:1.800*fs;
+% ts = -0.500*fs:1.800*fs;
+% t = ts*1000/fs;
+ts = -0.700*fs:1.800*fs;
 t = ts*1000/fs;
 
 BL_time = [-100 0];   % baseline interval in ms
@@ -359,10 +361,23 @@ erp_LPF_35Hz = single(erp_LPF_35Hz);
 erp_LPF_8Hz_CSD = single(erp_LPF_8Hz_CSD);
 erp_LPF_35Hz_CSD = single(erp_LPF_35Hz_CSD);
 
-save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','erp_LPF_8Hz_CSD','erp_LPF_35Hz_CSD', ...
-    'allRT','allrespLR','allTrig','allblock_count','t','ET_trials', ...
-    'artifchans_pretarg','artifchans_BL_resp','artifchans_resp','artifchans_1000ms', ...
-    'pretarg_artrej','BL_resp_artrej','resp_artrej','t1000ms_artrej', ...
-    'ET_pretarg_artrej','ET_BL_resp_artrej','ET_resp_artrej','ET_t1000ms_artrej')
+% save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','erp_LPF_8Hz_CSD','erp_LPF_35Hz_CSD', ...
+%     'allRT','allrespLR','allTrig','allblock_count','t','ET_trials', ...
+%     'artifchans_pretarg','artifchans_BL_resp','artifchans_resp','artifchans_1000ms', ...
+%     'pretarg_artrej','BL_resp_artrej','resp_artrej','t1000ms_artrej', ...
+%     'ET_pretarg_artrej','ET_BL_resp_artrej','ET_resp_artrej','ET_t1000ms_artrej')
+
+%% Longer epochs for alpha
+
+erp_LPF_35Hz_long = erp_LPF_35Hz;
+erp_LPF_35Hz_CSD_long = erp_LPF_35Hz_CSD;
+pretarg_artrej_long = pretarg_artrej;
+resp_artrej_long = resp_artrej;
+ET_pretarg_artrej_long = ET_pretarg_artrej;
+ET_resp_artrej_long = ET_resp_artrej;
+t_long = t;
+
+save([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_35Hz_long','erp_LPF_35Hz_CSD_long', ...
+    'pretarg_artrej_long','resp_artrej_long','ET_pretarg_artrej_long','ET_resp_artrej_long','t_long','-append')
 
 return;
