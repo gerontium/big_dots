@@ -730,12 +730,47 @@ end
 
 
 
-%% Extract N2c and N2i amplitude and latency, using amplitude latency window based on each INDIVIDNAL PARTICIPANT'S N2c/i:
+%% Extract N2c and N2i latency :
+for s = 1:size(allsubj,2)
+    for side=1:2
+        %         to use each participant's average N2c/i to get their peak latency index:
+        avN2c=N2c_side(s, :, side); 
+        avN2i=N2i_side(s, :, side); 
+        avN2c_peak_amp_index_t(s,side)=t(avN2c==min(avN2c(find(t==150):find(t==450))));%Find max peak latency for N2c in ms
+        avN2i_peak_amp_index_t(s,side)=t(avN2i==min(avN2i(find(t==150):find(t==450))));%Find max peak latency for N2i in ms
+    end
+end
+%N2 Latency:
+N2cN2i_latency_ByTargetSide = [avN2c_peak_amp_index_t,avN2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
+
+% %Plot N2c and N2i per subject showing peak amplitude 
+% for s = 1:size(allsubj,2)
+% clear h
+% figure
+% for side = 1:2
+%     h(side) = plot(t,squeeze(N2i_side(s,:,side)),'LineWidth',3,'LineStyle',':', 'Color',colors{side});hold on
+%     h(side) = plot(t,squeeze(N2c_side(s,:,side)),'LineWidth',3,'LineStyle','-', 'Color',colors{side});hold on
+%     line([avN2i_peak_amp_index_t(s,side),avN2i_peak_amp_index_t(s,side)],ylim,'Color',colors{side}, 'Linewidth',2,'LineStyle',':');
+%     line([avN2c_peak_amp_index_t(s,side),avN2c_peak_amp_index_t(s,side)],ylim,'Color',colors{side}, 'Linewidth',2,'LineStyle','-');
+% end
+% 
+% set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
+% ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+% xlabel('Time (ms)','FontName','Arial','FontSize',16)
+% title(['Subj: ',num2str(s),' N2c & N2i(:) by Hemifield'])
+% line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+% line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+% legend(h,side_tags, 'FontSize',16,'Location','NorthWest');
+% pause(1) 
+% end
+
+%% Extract N2c and N2i Amplitude :
+window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
 window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
 %N2 amplitude for Stats
 for s = 1:size(allsubj,2)
     for side=1:2
-        %         to use each participant's average N2c/i to get their peak latency index around which we measure peak amplitude:
+        %         to use each participant's average N2c/i to get their peak latency index:
         avN2c=N2c_side(s, :, side); 
         avN2i=N2i_side(s, :, side); 
         avN2c_peak_amp=min(avN2c(find(t==150):find(t==450)));
@@ -753,29 +788,5 @@ for s = 1:size(allsubj,2)
      save([path_temp, subject_folder{s} '\avN2i_ParticipantLevel_peak_amp_index.mat'],'avN2i_ParticipantLevel_peak_amp_index_s');
 end
 N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
-
 %%N2c Latency:
 N2cN2i_latency_ByTargetSide = [avN2c_peak_amp_index_t,avN2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
-
-%Plot N2c and N2i per subject showing peak amplitude 
-for s = 1:size(allsubj,2)
-clear h
-figure
-for side = 1:2
-    h(side) = plot(t,squeeze(N2i_side(s,:,side)),'LineWidth',3,'LineStyle',':', 'Color',colors{side});hold on
-    h(side) = plot(t,squeeze(N2c_side(s,:,side)),'LineWidth',3,'LineStyle','-', 'Color',colors{side});hold on
-    line([avN2i_peak_amp_index_t(s,side),avN2i_peak_amp_index_t(s,side)],ylim,'Color',colors{side}, 'Linewidth',2,'LineStyle',':');
-    line([avN2c_peak_amp_index_t(s,side),avN2c_peak_amp_index_t(s,side)],ylim,'Color',colors{side}, 'Linewidth',2,'LineStyle','-');
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title(['Subj: ',num2str(s),' N2c & N2i(:) by Hemifield'])
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,side_tags, 'FontSize',16,'Location','NorthWest');
-pause(1) 
-end
-
-
