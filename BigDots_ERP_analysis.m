@@ -115,7 +115,7 @@ for s2 = 1:length(subject_folder)
     end
 end
 %%
-duds = [1,4,74];
+duds = [1]; %4 and 74 could also be kicked out as they are RT outliers
 single_participants = [];
 %%
 if ~isempty(duds) && isempty(single_participants)
