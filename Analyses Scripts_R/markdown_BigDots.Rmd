@@ -255,6 +255,34 @@ ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fi
 #Calculate the number of trials each participant has left after fixation break trials are kicked out:
 num_trials2 <- ddply(data, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
+
+
+####Import participant_level_matrix with ERP measures
+if (location=="Monash") {
+data_participant_level <- read.csv("C:/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
+} else if (location=="DansLaptop") {
+data_participant_level <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
+} else setwd(("~"))
+#Import IDs:
+if (location=="Monash") {
+ID <- read.table("C:/GitHub/big_dots/IDs.csv", quote="\"")
+} else if (location=="DansLaptop") {
+ID <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/IDs.csv", header=F)
+} else setwd(("~"))
+ID<-plyr::rename(ID,c("V1"="ID"))
+data_participant_level$ID<-ID$ID
+rm(ID)
+
+data_participant_level<-rename(data_participant_level, c("V1"="N2c_LeftTarget", "V2"="N2c_RightTarget","V3"="N2i_LeftTarget","V4"="N2i_RightTarget","V5"="N2c_latency_LeftTarget",
+"V6"="N2c_latency_RightTarget","V7"="N2i_latency_LeftTarget","V8"="N2i_latency_RightTarget",
+"V9"="CPPonset_LeftTarget","V10"="CPPonset_RightTarget","V11"="CPPslope_LeftTarget","V12"="CPPslope_RightTarget"))
+
+###Calculate Asymmetry meeasres
+library(dplyr)
+data_participant_level %>% mutate(.,N2c_Asym = )
+
+detach("package:dplyr", unload=TRUE)
+
 ```
 
 

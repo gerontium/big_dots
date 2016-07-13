@@ -176,7 +176,7 @@ targcodes(2,:) = [103,104];
 targcodes(3,:) = [105,106];
 
 %% 
-Fs=500;
+fs=500;
 numch=64;
 rtlim=[0.300 1.500];
 % rtlim=[0.300 1.200];
@@ -197,12 +197,14 @@ ch_rl{1} = [23];
 ch_rl{2} = [60];
 
 % stim-locked erps
-ts = -0.500*Fs:1.800*Fs;
-t = ts*1000/Fs;
+% ts = -0.500*fs:1.800*fs;
+% t = ts*1000/fs;
+ts = -0.700*fs:1.800*fs;
+t = ts*1000/fs;
 
 % resp-locked erps
-trs = [-.500*Fs:Fs*.100];
-tr = trs*1000/Fs;
+trs = [-.700*fs:fs*.100];
+tr = trs*1000/fs;
 
 BL_erp = [-100,0];
 
@@ -226,7 +228,7 @@ for s=1:length(allsubj)
     
     validrlock = zeros(1,length(allRT)); % length of RTs.
     for n=1:length(allRT);
-        [blah,RTsamp] = min(abs(t*Fs/1000-allRT(n))); % get the sample point of the RT.
+        [blah,RTsamp] = min(abs(t*fs/1000-allRT(n))); % get the sample point of the RT.
         if RTsamp+trs(1) >0 & RTsamp+trs(end)<=length(t) & allRT(n)>0 % is the RT larger than 1st stim RT point, smaller than last RT point.
             erpr(:,:,n) = erp(:,RTsamp+trs,n);
             validrlock(n)=1;
@@ -239,17 +241,17 @@ for s=1:length(allsubj)
             % calcs the indices of the triggers for each
             % appropriate trial type.
 %             conds{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==1 & ...
-%                 allRT>rtlim(1)*Fs & allRT<rtlim(2)*Fs & ET_BL_resp_artrej==1);
+%                 allRT>rtlim(1)*fs & allRT<rtlim(2)*fs & ET_BL_resp_artrej==1);
             conds{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==1 & ...
-                allRT>rtlim(1)*Fs & allRT<rtlim(2)*Fs & BL_resp_artrej==1 & ET_BL_resp_artrej & validrlock);
+                allRT>rtlim(1)*fs & allRT<rtlim(2)*fs & BL_resp_artrej==1 & ET_BL_resp_artrej & validrlock);
 
-            RTs{s,iti,side} = allRT([conds{s,iti,side}])*1000/Fs;
-            RTs_log{s,iti,side} = log(allRT([conds{s,iti,side}])*1000/Fs);
+            RTs{s,iti,side} = allRT([conds{s,iti,side}])*1000/fs;
+            RTs_log{s,iti,side} = log(allRT([conds{s,iti,side}])*1000/fs);
             RT_zs{s,iti,side} = zscore([RTs_log{s,iti,side}]);
             RT_factors(s,iti,side) = mean([RTs{s,iti,side}]); % can't include AR_08_04_14 & MH_14_04_14 because of mistake
             
             hit{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==1 & ...
-                allRT>rtlim(1)*Fs & allRT<rtlim(2)*Fs);
+                allRT>rtlim(1)*fs & allRT<rtlim(2)*fs);
             miss{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==3);
             
             if (strcmp(subject_folder{s},'AR_08_04_14') | strcmp(subject_folder{s},'MH_14_04_14')) & iti==3
