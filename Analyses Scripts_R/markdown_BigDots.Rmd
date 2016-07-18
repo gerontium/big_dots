@@ -23,8 +23,6 @@ if (location=="Monash") {
 
 
 
-
-
 ####################################
 #######  How to use ################
 ####################################
@@ -43,24 +41,22 @@ if (location=="Monash") {
 # install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","ggplot2","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx", "haven","schoRsch"))
 
 ###################################################################################################################################
-detach("package:dplyr", unload=TRUE)
-## Install relevant libraries 
+## load relevant libraries 
 library(foreign)
 library(car)
 library(nlme)
 library(ggplot2)
 library(pastecs)
 library(psych)
-library(plyr)
 library(multcomp)
-library(reshape2)
 library(compute.es)
 library(ez)
-library(lattice)
 library(lme4)
 library(png)
 library(grid)
 library(readxl)
+library(dplyr)
+library(tidyr)
 
 ###### Import single trial data:
 if (location=="Monash") {
@@ -87,63 +83,53 @@ data<-data[,!(names(data) %in% drops)]
 ###Read in SLF data from the SPSS file Tim Sent
 SLF<-haven::read_sav("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/SLF_metrics_290616.sav")
 DARIS_ID<-readxl::read_excel("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/DARIS_ID.xlsx")
-SLF2<-merge(SLF, DARIS_ID, by.x = "DARIS", by.y = "DARIS")
+SLF<-merge(SLF, DARIS_ID, by.x = "DARIS", by.y = "DARIS")
 ID_Order <- read_excel("ID_Order_for_Matlab.xlsx")
 
-SLF2<-merge(SLF2, ID_Order, by.x = "ID", by.y = "ID", all=T) 
+SLF<-merge(SLF, ID_Order, by.x = "ID", by.y = "ID", all=T) 
 
-SLF2<-dplyr::arrange(SLF2, Order)
+SLF<-dplyr::arrange(SLF, Order)
 
-# xlsx::write.xlsx(SLF2, "SLF.xlsx", row.names=F)
+# xlsx::write.xlsx(SLF, "SLF.xlsx", row.names=F)
 
 #########################################################################################################################
 
+data<- data %>% #Rename data columns:
+    rename(., 
+            ID=V1,
+            TotalTrialNumber=V2,
+            Trial=V3,
+            ITI=V4,
+            Hemifield=V5,
+            Accuracy=V6,
+            Art_neg500_0=V7,
+            Art_neg100_100PR=V8,
+            Art_neg500_100PR=V9,
+            Art_neg100_1000=V10,
+            FixBreak_neg500_0=V11,
+            FixBreak_neg100_100PR=V12,
+            FixBreak_neg500_100PR=V13,
+            FixBreak_neg100_1000=V14,
+            RT=V15) %>% #next make the required columns into factors:
+    mutate_each_(funs(factor), c("ITI", "Hemifield", "Accuracy")) %>% #next re-class required vectors into Logicals:
+    mutate_at(vars(starts_with("Art_")), funs(as.logical)) %>% 
+    mutate_at(vars(starts_with("FixBreak_")), funs(as.logical)) %>% #next use the ! negation operator to reverse of a TRUE/FALSE vectors: 
+    mutate_if(purrr::is_logical, funs(!.)) %>% #next Rename factor Levels:
+    mutate(Hemifield = ifelse(Hemifield==1, "Left", "Right"), 
+           Accuracy= ifelse(Accuracy==1, "Hit", ifelse(Accuracy==2, "WrongButton", "Miss")))
 
-#Rename data columns:
-data<-rename(data, c("V1"="ID","V2"="TotalTrialNumber","V3"="Trial","V4"="ITI","V5"="Hemifield", "V6"="Accuracy",
-                     "V7"="Art_neg500_0", "V8"="Art_neg100_100PR","V9"="Art_neg500_100PR", "V10"="Art_neg100_1000",
-                     "V11"="FixBreak_neg500_0", "V12"="FixBreak_neg100_100PR","V13"="FixBreak_neg500_100PR", "V14"="FixBreak_neg100_1000",
-                     "V15"="RT"))   
-
-# data<-dplyr::rename(data, "V1"="ID","V2"="TotalTrialNumber","V3"="Trial","V4"="ITI","V5"="Hemifield", "V6"="Accuracy",
-#                      "V7"="Art_neg500_0", "V8"="Art_neg100_100PR","V9"="Art_neg500_100PR", "V10"="Art_neg100_1000",
-#                      "V11"="FixBreak_neg500_0", "V12"="FixBreak_neg100_100PR","V13"="FixBreak_neg500_100PR", "V14"="FixBreak_neg100_1000",
-#                      "V15"="RT")   
-
-#NOTE: FOR N2c/i,  the _GA or _PA suffix indicates whether N2c/i is measured with a measurement window based
-#on Grand average (GA) peak N2c/i latency,  or based on Participant level average (PA) peak N2c/i latency
-             
-#Make the required columns into factors:
-data$ITI <- factor(data$ITI)
-data$Hemifield <- factor(data$Hemifield)
-data$Accuracy <- factor(data$Accuracy)
-
-#Rename factor Levels:
-data$Hemifield <- revalue(data$Hemifield, c("1"="Left", "2"="Right"))
-data$Accuracy <- revalue(data$Accuracy, c("1"="Hit", "0"="RejectedTrial", "2"="WrongButton", "3"="Miss"))
-
-
-#Re-class required vectors into Logicals:
-data$Art_neg500_0<-!as.logical(data$Art_neg500_0)
-data$Art_neg100_100PR<-!as.logical(data$Art_neg100_100PR)
-data$Art_neg500_100PR<-!as.logical(data$Art_neg500_100PR)
-data$Art_neg100_1000<-!as.logical(data$Art_neg100_1000)
-data$FixBreak_neg500_0<-!as.logical(data$FixBreak_neg500_0)
-data$FixBreak_neg100_100PR<-!as.logical(data$FixBreak_neg100_100PR)
-data$FixBreak_neg500_100PR<-!as.logical(data$FixBreak_neg500_100PR)
-data$FixBreak_neg100_1000<-!as.logical(data$FixBreak_neg100_1000)
-
-
+#Only keep SLF measures for the participants who we actually tested on big dots 
+#(there are a few extra participants who we got SLF from who were not tested on big dots)
+SLF <-SLF[SLF$ID %in% data$ID, ]
+    
 
 ############################################ Import DAT1 Data ##############################################
 DAT1 <- read_excel("DAT1genotypes_forR.xlsx") 
 #Make the required columns into factors:
-DAT1$DAT1_3UTR_VNTRraw <- factor(DAT1$DAT1_3UTR_VNTRraw)
-DAT1$DAT1_Int8_VNTRraw <- factor(DAT1$DAT1_Int8_VNTRraw)
-DAT1$Site <- factor(DAT1$Site)
-DAT1$ID<-as.factor(DAT1$ID)
+DAT1<- DAT1 %>%  mutate_each_(funs(factor), c("DAT1_3UTR_VNTRraw", "DAT1_Int8_VNTRraw", "Site","ID"))
 
-DAT1$DAT1_10_10_repeats  <- revalue(DAT1$DAT1_3UTR_VNTRraw , 
+#Revalue the factors
+DAT1$DAT1_10_10_repeats  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw , 
                                        c("10 10"="Two", 
                                          "10 11"="One", 
                                          "7 10"="One",
@@ -153,7 +139,7 @@ DAT1$DAT1_10_10_repeats  <- revalue(DAT1$DAT1_3UTR_VNTRraw ,
                                          "9 9"="Zero"))
 summary(DAT1$DAT1_10_10_repeats)
 
-DAT1$DAT1_3UTR  <- revalue(DAT1$DAT1_3UTR_VNTRraw , 
+DAT1$DAT1_3UTR  <- plyr::revalue(DAT1$DAT1_3UTR_VNTRraw , 
                                  c("10 10"="10_10_repeat", 
                                    "10 11"="non10_10_repeat", 
                                    "7 10"="non10_10_repeat",
@@ -163,7 +149,7 @@ DAT1$DAT1_3UTR  <- revalue(DAT1$DAT1_3UTR_VNTRraw ,
                                   "9 9"="non10_10_repeat"))
 summary(DAT1$DAT1_3UTR)
 
-DAT1$DAT1_int8  <- revalue(DAT1$DAT1_Int8_VNTRraw , 
+DAT1$DAT1_int8  <- plyr::revalue(DAT1$DAT1_Int8_VNTRraw , 
                                  c("6 6"="6_6_repeat", 
                                    "5 6"="non6_6_repeat", 
                                    "5 5"="non6_6_repeat"))
@@ -179,11 +165,9 @@ summary(DAT1$DAT1_3UTR) #So 4 participant have missing DAT1 genotype
 #### Merge the data sets together
 data<-merge(data, DAT1, by.x = "ID", by.y = "ID") 
 
-
-
 ### Merge in the SLF data
-SLF2 <-SLF2[SLF2$ID %in% data$ID, ] 
-data<-merge(data, SLF2, by.x = "ID", by.y = "ID") 
+SLF <-SLF[SLF$ID %in% data$ID, ] 
+data<-merge(data, SLF, by.x = "ID", by.y = "ID") 
 
 ################################################################################################
 #########Creat ordered DAT1 genotype .xlsx file for matlab:
@@ -191,7 +175,7 @@ data<-merge(data, SLF2, by.x = "ID", by.y = "ID")
  # ID_Order <- read_excel("ID_Order_for_Matlab.xlsx")
  # DAT1<-merge(DAT1, ID_Order, by.x = "ID", by.y = "ID")
  # 
- # DAT1$DAT1_10_10  <- revalue(DAT1$DAT1_10_10_repeats ,
+ # DAT1$DAT1_10_10  <- plyr::revalue(DAT1$DAT1_10_10_repeats ,
  #                                        c("Zero"="0",
  #                                          "One"="1",
  #                                          "Two"="2"))
@@ -205,30 +189,27 @@ data<-merge(data, SLF2, by.x = "ID", by.y = "ID")
 
 #Check number of Trials for each participant by running the function 'length', 
 #on "data$RT" for each DAT1_3UTR, broken down by ID + Light
-num_trials1 <- ddply(data, c("ID"), summarise,
-               Trials    = length(RT))
+num_trials1 <- data %>% group_by(ID) %>% summarise( Trials = length(RT))
 summary(num_trials1$Trials)
-mean(num_trials1$Trials)
+
 
 ##################Accuracy ##########################
-Accuracy_checker <- ddply(data, c("ID"), summarise,
-               Hits  = sum(Accuracy=="Hit"),
-               Misses = sum(Accuracy=="Miss" | Accuracy=="WrongButton"))
-Accuracy_checker$Total=Accuracy_checker$Hits+Accuracy_checker$Misses
-Accuracy_checker$Accuracy_overall=(Accuracy_checker$Hits/Accuracy_checker$Total)*100
+Accuracy_checker <- data %>% group_by(ID) %>% 
+                    summarise(Hits  = sum(Accuracy=="Hit"),
+                               Misses = sum(Accuracy=="Miss" | Accuracy=="WrongButton")) %>%
+                    mutate(Total=Hits+Misses,
+                           Accuracy_overall= (Hits/Total)*100) 
 summary(Accuracy_checker$Accuracy_overall)
 
 ##Add in overall accuracy 
 data <- merge(data, Accuracy_checker, by.x = "ID", by.y = "ID")
 
-#Remove trials where RT=0 (i.e. they did not respond)
-data<-data[data$RT!=0,]
-#Remove trials where RT longer than 1000ms (i.e. after target finished)
-data<-data[data$RT<1500,]
-#Remove trials where RT faster than 100ms (i.e. too fast must be false alarm)
-data<-data[data$RT>150,]
+###Remove trials where:
+#RT longer than 1000ms (i.e. after target finished)
+#RT faster than 100ms (i.e. too fast must be false alarm) or RT=0 (i.e. they did not respond)
 #Kick out trials with fixation breaks:
-data<-data[!data$FixBreak_neg100_100PR,]
+data<-filter(data, RT<1500 & RT>150 & !FixBreak_neg100_100PR)
+
 
 ############################################ Log transform:
 ##############################################################################################
@@ -236,19 +217,10 @@ data$log_RT<-log(data$RT) #log
 #####Z-score each participant's log_RT data ####
 data$IDbyITIbyHemifield<-interaction(data$ID, data$ITI, data$Hemifield)
 #calculate mean and sd 
-m <- tapply(data$log_RT,data$IDbyITIbyHemifield,mean)
-s <- sqrt(tapply(data$log_RT,data$IDbyITIbyHemifield,var))
+m <- tapply(data$log_RT,data$IDbyITIbyHemifield,mean, na.rm = T)
+s <- sqrt(tapply(data$log_RT,data$IDbyITIbyHemifield,var, na.rm = T))
 #calculate log_RT.Z and save it inside data.frame
 data$log_RT.Z <- (data$log_RT-m[data$IDbyITIbyHemifield])/s[data$IDbyITIbyHemifield]
-#check that Z scores have mean=0 and std=1 
-log_RT.Z_checker <- ddply(data, c("ID", "ITI", "Hemifield"), summarise,
-               N    = length(log_RT.Z ),
-               mean = round(mean(log_RT.Z )),
-               sd   = sd(log_RT.Z ),
-               se   = sd / sqrt(N))
-summary(log_RT.Z_checker$mean)#make sure mean is 0
-summary(log_RT.Z_checker$sd) #Make sure SD is 1
-
 #Remove trials where absolute log_RT.Z>3 (i.e. remove outlier RTs)
 data<-data[!abs(data$log_RT.Z)>3,]
 
@@ -259,8 +231,8 @@ ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fi
 
 
 #Calculate the number of trials each participant has left after fixation break trials are kicked out:
-num_trials2 <- ddply(data, c("ID"), summarise,
-               Num_RT_Trials    = length(RT))
+num_trials2 <- data %>% group_by(ID) %>% summarise( Trials = length(RT))
+summary(num_trials2$Trials)
 
 
 ####Import participant_level_matrix with ERP measures
@@ -279,13 +251,21 @@ ID<-plyr::rename(ID,c("V1"="ID"))
 data_participant_level$ID<-ID$ID
 rm(ID)
 
-data_participant_level<-rename(data_participant_level, c("V1"="N2c_LeftTarget", "V2"="N2c_RightTarget","V3"="N2i_LeftTarget","V4"="N2i_RightTarget","V5"="N2c_latency_LeftTarget",
-"V6"="N2c_latency_RightTarget","V7"="N2i_latency_LeftTarget","V8"="N2i_latency_RightTarget",
-"V9"="CPPonset_LeftTarget","V10"="CPPonset_RightTarget","V11"="CPPslope_LeftTarget","V12"="CPPslope_RightTarget"))
-
-###Calculate Asymmetry meeasres
-library(dplyr)
-data_participant_level<-data_participant_level %>% mutate(., 
+data_participant_level<- data_participant_level %>% #Rename data columns:
+                            rename(., 
+                                    N2c_LeftTarget=V1,
+                                    N2c_RightTarget=V2,
+                                    N2i_LeftTarget=V3,
+                                    N2i_RightTarget=V4,
+                                    N2c_latency_LeftTarget=V5,
+                                    N2c_latency_RightTarget=V6,
+                                    N2i_latency_LeftTarget=V7,
+                                    N2i_latency_RightTarget=V8,
+                                    CPPonset_LeftTarget=V9,
+                                    CPPonset_RightTarget=V10,
+                                    CPPslope_LeftTarget=V11,
+                                    CPPslope_RightTarget=V12) %>% #next calculate the ERP asymmetry measures: 
+                            mutate(., 
                                   N2c_Asym = (N2c_LeftTarget-N2c_RightTarget)/(N2c_LeftTarget+N2c_RightTarget), 
                                   N2i_Asym = (N2i_LeftTarget-N2i_RightTarget)/(N2i_LeftTarget+N2i_RightTarget),
                                   N2c_latency_Asym = (N2c_latency_LeftTarget-N2c_latency_RightTarget)/(N2c_latency_LeftTarget+N2c_latency_RightTarget), 
@@ -293,9 +273,6 @@ data_participant_level<-data_participant_level %>% mutate(.,
                                   CPPonset_Asym = (CPPonset_LeftTarget-CPPonset_RightTarget)/(CPPonset_LeftTarget+CPPonset_RightTarget),
                                   CPPslope_Asym = (CPPslope_LeftTarget-CPPslope_RightTarget)/(CPPslope_LeftTarget+CPPslope_RightTarget)
                                   )
-
-detach("package:dplyr", unload=TRUE)
-library(plyr)
 
 ```
 
@@ -305,77 +282,68 @@ library(plyr)
 ```{r, echo=FALSE, warning=FALSE}
 ######Calculate RT asymmetry Index and add it to "data_participant_level"######
 #Collapse each participant's trials accross ITI
-RT_collapsed<-ddply(data, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
-#Bring Target-Hemifield up into wide format
-RT_collapsed <- dcast(RT_collapsed, ID  ~ Hemifield, value.var="RT", fun.aggregate=mean)
-RT_collapsed<-rename(RT_collapsed, c("Left"="RT_Left", "Right"="RT_Right"))
-#Calculate RT asymmetry
-RT_collapsed$RT_Asym<-(RT_collapsed$RT_Left-RT_collapsed$RT_Right)/(RT_collapsed$RT_Left+RT_collapsed$RT_Right)
+RT_collapsed<- data %>% 
+            group_by(ID, Hemifield, DAT1_3UTR) %>%
+            summarise(RT=mean(RT)) %>% #next bring Target-Hemifield up into wide format:
+            spread(Hemifield, RT) %>% #next rename
+            rename(RT_Left=Left, RT_Right=Right) %>% # next Calculate RT asymmetry:
+            mutate(RT_Asym=(RT_Left-RT_Right)/(RT_Left+RT_Right)) 
 
-#Add in the DAT1 measures
-RT_collapsed<-merge(RT_collapsed, DAT1, by.x = "ID", by.y = "ID") 
+            # %>% #next add in the ERP measures:
+            # left_join(data_participant_level, by="ID") %>% #next add in the SLF data: 
+            # left_join(SLF, by="ID") #DON'T WORRY ABOUT "coercing to character vector" it's just changing ID from a factor class to an character class
 
 #Add in the ERP measures
 RT_collapsed<-merge(RT_collapsed, data_participant_level, by.x = "ID", by.y = "ID") 
 
 #Add in the SLF data
-RT_collapsed<-merge(RT_collapsed, SLF2, by.x = "ID", by.y = "ID") 
-
-#Remove DAT1 Int8 measures, only interested in 3'UTR
-RT_collapsed<-dplyr::select(RT_collapsed, -contains("int"))
-
-#Remove outliers
-# RT_collapsed$RT_Asym.Z<-scale(RT_collapsed$RT_Asym)
-# RT_collapsed<-RT_collapsed[abs(RT_collapsed$RT_Asym.Z)<3,]
-# 
-# t.test(RT_collapsed$RT_Asym ~ RT_collapsed$DAT1_3UTR, na.action=na.omit)
+RT_collapsed<-merge(RT_collapsed, SLF, by.x = "ID", by.y = "ID") 
 
 
-library(dplyr)
-library(tidyr)
 #Get the required data i.e. ID, DAT1_3UTR and all the asymmeyry index measures
-Asym_data<-RT_collapsed %>% select(., ID, DAT1_3UTR, contains("_LI_"), contains("Asym"), -contains(".Z"))
+Asym_data<-RT_collapsed %>% select(., ID, DAT1_3UTR, contains("_LI_"), contains("Asym"))
+
 #Transform it to long format
 Asym_data_long<-Asym_data %>%
-                    gather(key, asymmetry_index, -ID, -DAT1_3UTR) %>%
+                    gather(measure, asymmetry_index, -ID, -DAT1_3UTR) %>%
                     na.omit()
 
 #Plot density plots before outlier removal
-ggplot(Asym_data_long, aes(asymmetry_index))  + geom_density() + facet_wrap(~ key, scales="free")
+ggplot(Asym_data_long, aes(asymmetry_index))  + geom_density() + facet_wrap(~ measure, scales="free")
 
-#Calculate Z scores inside measure type
-#####Z-score each participant's asymmetry_index inside key ####
+#################################################################
+#Calculate Z scores inside measure type TO REMOVE OUTLIERS
+#Z-score each participant's asymmetry_index inside measure ####
 #calculate mean and sd 
-m <- tapply(Asym_data_long$asymmetry_index,Asym_data_long$key,mean, na.rm = T)
-s <- sqrt(tapply(Asym_data_long$asymmetry_index,Asym_data_long$key,var, na.rm = T))
+m <- tapply(Asym_data_long$asymmetry_index,Asym_data_long$measure,mean, na.rm = T)
+s <- sqrt(tapply(Asym_data_long$asymmetry_index,Asym_data_long$measure,var, na.rm = T))
 #calculate asymmetry_index.Z and save it inside Asym_data_long
-Asym_data_long$asymmetry_index.Z <- (Asym_data_long$asymmetry_index-m[Asym_data_long$key])/s[Asym_data_long$key]
+Asym_data_long$asymmetry_index.Z <- (Asym_data_long$asymmetry_index-m[Asym_data_long$measure])/s[Asym_data_long$measure]
 
 #Remove trials where absolute asymmetry_index.Z>3 (i.e. remove outlier RTs)
 Asym_data_long<-Asym_data_long[!abs(Asym_data_long$asymmetry_index.Z)>3,]
+#################################################################
 
 #Plot density plots again after outlier removal
-ggplot(Asym_data_long, aes(asymmetry_index))  + geom_density() + facet_wrap(~ key, scales="free")
+ggplot(Asym_data_long, aes(asymmetry_index))  + geom_density() + facet_wrap(~ measure, scales="free")
 
+Asym_data_long$measure<-as.factor(Asym_data_long$measure)
 
+#Put it back into long format so I can use lapply to do t-test on every column 
 Asym_data_wide<-Asym_data_long %>% select(., -asymmetry_index.Z)  %>% 
-                    spread(key, asymmetry_index) 
+                    spread(measure, asymmetry_index) 
 
+#use lapply to do t-test on every column 
+lapply(select(Asym_data_wide, contains("_LI_"), contains("Asym")), function(x) t.test(x ~ Asym_data_wide$DAT1_3UTR, na.action=na.omit))
+#Save it into a data frame
+t_test_results<-as.data.frame(sapply(select(Asym_data_wide, contains("_LI_"), contains("Asym")), function(x) t.test(x ~ Asym_data_wide$DAT1_3UTR, na.action=na.omit)))
 
-lapply(dplyr::select(Asym_data_wide, contains("_LI_"), contains("Asym"), -contains(".Z")), function(x) t.test(x ~ Asym_data_wide$DAT1_3UTR, na.action=na.omit))
-
-
-t_test_results<-as.data.frame(sapply(dplyr::select(Asym_data_wide, contains("_LI_"), contains("Asym"), -contains(".Z")), function(x) t.test(x ~ Asym_data_wide$DAT1_3UTR, na.action=na.omit)))
-
-
+#Convert t-test results data frame into tidy format
 t_test_results<-t_test_results %>% tibble::rownames_to_column(.) %>%
   gather(var, val, - rowname) %>%
   spread(rowname, val)
 
 
-
-detach("package:dplyr", unload=TRUE)
-library(plyr)
 ```
 
 
@@ -386,10 +354,10 @@ library(plyr)
 ```{r, echo=FALSE, warning=FALSE}
 
 ##Now grab only the Asym/lateralistion index (_LI_) measures 
-data_for_cor<-dplyr::select(Asym_data_wide, -ID, -DAT1_3UTR)
+data_for_cor<-select(Asym_data_wide, -ID, -DAT1_3UTR)
 
 ##Re order the columns
-data_for_cor <- dplyr::select(data_for_cor, RT_Asym, N2c_Asym, N2c_latency_Asym, N2i_Asym, N2i_latency_Asym, CPPonset_Asym, CPPslope_Asym, AD_LI_SLF1, AD_LI_SLF2 ,AD_LI_SLF3,FA_LI_SLF1,FA_LI_SLF2,FA_LI_SLF3,MD_LI_SLF1,MD_LI_SLF2,MD_LI_SLF3,RD_LI_SLF1,RD_LI_SLF2,RD_LI_SLF3,VOL_LI_SLF1,VOL_LI_SLF2,VOL_LI_SLF3)
+data_for_cor <- select(data_for_cor, RT_Asym, N2c_Asym, N2c_latency_Asym, N2i_Asym, N2i_latency_Asym, CPPonset_Asym, CPPslope_Asym, AD_LI_SLF1, AD_LI_SLF2 ,AD_LI_SLF3,FA_LI_SLF1,FA_LI_SLF2,FA_LI_SLF3,MD_LI_SLF1,MD_LI_SLF2,MD_LI_SLF3,RD_LI_SLF1,RD_LI_SLF2,RD_LI_SLF3,VOL_LI_SLF1,VOL_LI_SLF2,VOL_LI_SLF3)
 
 ##look at r-values, p-palues, and CIs  
 print(corr.test(data_for_cor, method="pearson", adjust="none", alpha=.05,ci=TRUE),short=F)
@@ -401,8 +369,8 @@ cor_pvalues<-as.data.frame(cor_pram_list$p)
 #######################################
 ##Plot p-value matrix using ggplot:
 png("P_values less than 05 uncorrected.png",  width = 10*600, height = 10*600, units = "px", res = 600)
-p_data<-melt(as.matrix(cor_pvalues))
-p_data<-rename(p_data, c("value"="p_value"))
+p_data<-reshape2::melt(as.matrix(cor_pvalues))
+p_data<-plyr::rename(p_data, c("value"="p_value"))
 p_data<-dplyr::mutate(p_data, p_value = replace(p_value, p_value>.05, NA)) #only plot uncorected p-values less than .04
 ####Plot:
 qplot(x=Var1, y=Var2, data=p_data, fill=p_value, geom="tile")+
@@ -505,7 +473,6 @@ png("histograms of all asymmetry_indexes.png",  width = 10*600, height = 10*600,
 ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measure, scales="free")
 dev.off()
 ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measure, scales="free")
-ggplot(hist_data, aes(asymmetry_index))  + geom_density() + facet_wrap(~ measure, scales="free")
 
 ```
 
@@ -574,7 +541,7 @@ ggplot(data, aes(x=data$Trial, y=data$RT,fill=Hemifield,colour=Hemifield)) +
 data2<-data[complete.cases(data$DAT1_3UTR),]####### 
 
 
-Accuracy_collapsed<-ddply(data2, .(ID, DAT1_3UTR), summarise, Accuracy=mean(Accuracy_overall))
+Accuracy_collapsed<-plyr::ddply(data2, .(ID, DAT1_3UTR), summarise, Accuracy=mean(Accuracy_overall))
 ###Check for Accuracy_overall outliers
 min(Accuracy_collapsed$Accuracy)
 #Plot the Accuracy distribution for each DAT1_3UTR
@@ -599,14 +566,14 @@ print(Accuracy_DAT1_3UTR);
 #Simple effects of Genotype inside each DAT1 Group show that non10_10_repeat participants have significant leftward RT asymmetry, and the 10_10_repeat participants do not
 ```{r, echo=FALSE, warning=FALSE}
 #Calculate the number of trials each participant has left after NAs are kicked out:
-num_trials2 <- ddply(data2, c("ID"), summarise,
+num_trials2 <- plyr::ddply(data2, c("ID"), summarise,
                Num_RT_Trials    = length(RT))
 
 summary(num_trials2)
 
 
 #So get participant level RT into long format so I can run permutated t-tests  
-RT_collapsed<-ddply(data2, .(ID, Hemifield, DAT1_3UTR, Site, DAT1_10_10_repeats), summarise, RT=mean(RT))
+RT_collapsed<-plyr::ddply(data2, .(ID, Hemifield, DAT1_3UTR, Site, DAT1_10_10_repeats), summarise, RT=mean(RT))
 
 #Plot RT by DAT1_3UTR and hemifield:
 RT_collapsed$DAT1_3UTR_by_Hemifield<-interaction(RT_collapsed$Hemifield, RT_collapsed$DAT1_3UTR)
@@ -685,10 +652,10 @@ ezANOVA(
 
 ######Calculate RT asymmetry Index and add it to "data_participant_level"######
 #Collapse each participant's trials accross ITI
-RT_collapsed<-ddply(data2, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
+RT_collapsed<-plyr::ddply(data2, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
 #Bring Target-Hemifield up into wide format
-RT_collapsed <- dcast(RT_collapsed, ID  ~ Hemifield, value.var="RT", fun.aggregate=mean)
-RT_collapsed<-rename(RT_collapsed, c("Left"="RT_Left", "Right"="RT_Right"))
+RT_collapsed <- reshape2::dcast(RT_collapsed, ID  ~ Hemifield, value.var="RT", fun.aggregate=mean)
+RT_collapsed<-plyr::rename(RT_collapsed, c("Left"="RT_Left", "Right"="RT_Right"))
 #Calculate RT asymmetry
 RT_collapsed$RT_Asym<-(RT_collapsed$RT_Left-RT_collapsed$RT_Right)/(RT_collapsed$RT_Left+RT_collapsed$RT_Right)
 RT_collapsed<-merge(RT_collapsed, DAT1, by.x = "ID", by.y = "ID") 
@@ -706,7 +673,7 @@ RT_collapsed<-RT_collapsed[abs(RT_collapsed$RT_Asym.Z)<3,]
 ggplot(RT_collapsed, aes(RT_Asym, colour = DAT1_3UTR))  + 
     geom_density(alpha = 0.1) 
 
-RT_Asym.mean <- ddply(RT_collapsed, "DAT1_3UTR", summarise, RT_Asym.mean=mean(RT_Asym))
+RT_Asym.mean <- plyr::ddply(RT_collapsed, "DAT1_3UTR", summarise, RT_Asym.mean=mean(RT_Asym))
 RT_Asym.mean
 ##Between DAT1_3UTRs t-test for RT_Asym
 t.test(RT_collapsed$RT_Asym ~ RT_collapsed$DAT1_3UTR)
