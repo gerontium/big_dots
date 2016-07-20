@@ -950,4 +950,330 @@ Daniel Newman
 
 ![](markdown_BigDots_files/figure-html/unnamed-chunk-2-2.png)<!-- -->
 
+#Look at the effect of Hemifield on RT, regardless of DAT1 genotype 
 
+```
+## Data: data
+## Models:
+## RT_random_effects_only: log(RT) ~ 1 + (Hemifield | ID) + (1 | ITI) + (1 | Trial)
+## RT_Hemifield: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + Hemifield
+## RT_Hemifield_by_TOT: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + Hemifield + 
+## RT_Hemifield_by_TOT:     Trial + Hemifield:Trial
+##                        Df     AIC     BIC logLik deviance   Chisq Chi Df
+## RT_random_effects_only  7 -8990.2 -8934.6 4502.1  -9004.2               
+## RT_Hemifield            8 -8995.2 -8931.6 4505.6  -9011.2  6.9803      1
+## RT_Hemifield_by_TOT    10 -9034.5 -8955.1 4527.3  -9054.5 43.3258      2
+##                        Pr(>Chisq)    
+## RT_random_effects_only               
+## RT_Hemifield             0.008241 ** 
+## RT_Hemifield_by_TOT     3.908e-10 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+```
+## Automatically converting the following non-factors to factors: Hemifield
+```
+
+```
+## Loading required package: plyr
+```
+
+```
+## -------------------------------------------------------------------------
+```
+
+```
+## You have loaded plyr after dplyr - this is likely to cause problems.
+## If you need functions from both plyr and dplyr, please load plyr first, then dplyr:
+## library(plyr); library(dplyr)
+```
+
+```
+## -------------------------------------------------------------------------
+```
+
+```
+## 
+## Attaching package: 'plyr'
+```
+
+```
+## The following objects are masked from 'package:dplyr':
+## 
+##     arrange, count, desc, failwith, id, mutate, rename, summarise,
+##     summarize
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-3-1.png)<!-- -->![](markdown_BigDots_files/figure-html/unnamed-chunk-3-2.png)<!-- -->
+
+**So this ^ shows that regardless of DAT1 genotype, participants tended to react faster to left hemifield targets, but this leftward advangate decreased over time**
+
+#Check for difference in behavioural accuracy between 10_10_repeat and non10_10_repeat participants?
+
+```
+## [1] 92.01389
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+```
+## [1] "Factorial Permutation test for the effect of DAT1_3UTR on Accuracy:"
+```
+
+```
+##      Effect     p p<.05
+## 1 DAT1_3UTR 0.113
+```
+
+**So this ^ shows shows no significant difference in accuracy between the DAT1 genotype groups** 
+
+#Simple effects of Genotype inside each DAT1 Group show that non10_10_repeat participants have significant leftward RT asymmetry, and the 10_10_repeat participants do not
+
+```
+##        ID     Num_RT_Trials  
+##  036M_JK: 1   Min.   :163.0  
+##  037M_JD: 1   1st Qu.:254.0  
+##  059M_HP: 1   Median :265.5  
+##  061M_LG: 1   Mean   :260.8  
+##  068M_CB: 1   3rd Qu.:278.0  
+##  091M_SW: 1   Max.   :286.0  
+##  (Other):74
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-5-2.png)<!-- -->![](markdown_BigDots_files/figure-html/unnamed-chunk-5-3.png)<!-- -->
+
+```
+## [1] "Factorial Permutation test for the simple effect of Target Hemifield on RT in the non10_10_repeat group:"
+```
+
+```
+##      Effect     p p<.05
+## 1 Hemifield 0.002     *
+```
+
+```
+## [1] "Factorial Permutation test for the simple effect of Target Hemifield on RT in the 10_10_repeat group:"
+```
+
+```
+##      Effect    p p<.05
+## 1 Hemifield 0.14
+```
+
+
+###However, the difference the DAT1Group x Hemifield interaction in RT is not significant, and also there is no significant difference in RT-asymmetry between the 10_10_repeat and non10_10_repeat DAT1_3UTRs:
+
+
+```
+## [1] "Factorial Permutation test for Hemifield x DAT1 group interaction on RT:"
+```
+
+```
+##                         Effect     p p<.05
+## 1           DAT1_10_10_repeats 0.986      
+## 2                    Hemifield 0.001     *
+## 3 DAT1_10_10_repeats:Hemifield 0.680
+```
+
+```
+## $ANOVA
+##                Effect DFn DFd          F           p p<.05          ges
+## 2           DAT1_3UTR   1  78 0.03824116 0.845468218       0.0004716510
+## 3           Hemifield   1  78 9.31197355 0.003111224     * 0.0044131025
+## 4 DAT1_3UTR:Hemifield   1  78 0.79513103 0.375295667       0.0003784964
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-6-1.png)<!-- -->![](markdown_BigDots_files/figure-html/unnamed-chunk-6-2.png)<!-- -->![](markdown_BigDots_files/figure-html/unnamed-chunk-6-3.png)<!-- -->
+
+```
+##         DAT1_3UTR RT_Asym.mean
+## 1    10_10_repeat -0.004923184
+## 2 non10_10_repeat -0.014747589
+```
+
+```
+## 
+## 	Welch Two Sample t-test
+## 
+## data:  RT_collapsed$RT_Asym by RT_collapsed$DAT1_3UTR
+## t = 1.4689, df = 70.12, p-value = 0.1463
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -0.00351494  0.02316375
+## sample estimates:
+##    mean in group 10_10_repeat mean in group non10_10_repeat 
+##                  -0.004923184                  -0.014747589
+```
+
+```
+## [1] "Factorial Permutation test for effect if DAT1 group RT Asymmetry:"
+```
+
+```
+##      Effect    p p<.05
+## 1 DAT1_3UTR 0.14
+```
+
+
+#Try linear mixed model approach to test the DAT1_3UTR x Hemifield effect on log(RTs) in the single trial data:
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-7-1.png)<!-- -->![](markdown_BigDots_files/figure-html/unnamed-chunk-7-2.png)<!-- -->![](markdown_BigDots_files/figure-html/unnamed-chunk-7-3.png)<!-- -->
+
+```
+## Data: data2
+## Models:
+## RT_random_intercepts_only: log(RT) ~ 1 + (Hemifield | ID) + (1 | ITI) + (1 | Trial)
+## RT_DAT1_3UTR: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + DAT1_3UTR
+## RT_Hemifield: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + DAT1_3UTR + 
+## RT_Hemifield:     Hemifield
+## RT_HemifieldbyDAT1_3UTR: log(RT) ~ (Hemifield | ID) + (1 | ITI) + (1 | Trial) + DAT1_3UTR + 
+## RT_HemifieldbyDAT1_3UTR:     Hemifield + DAT1_3UTR:Hemifield
+##                           Df     AIC     BIC logLik deviance  Chisq Chi Df
+## RT_random_intercepts_only  7 -8990.2 -8934.6 4502.1  -9004.2              
+## RT_DAT1_3UTR               8 -8988.2 -8924.7 4502.1  -9004.2 0.0005      1
+## RT_Hemifield               9 -8993.2 -8921.7 4505.6  -9011.2 6.9803      1
+## RT_HemifieldbyDAT1_3UTR   10 -8991.7 -8912.3 4505.9  -9011.7 0.5190      1
+##                           Pr(>Chisq)   
+## RT_random_intercepts_only              
+## RT_DAT1_3UTR                0.981924   
+## RT_Hemifield                0.008241 **
+## RT_HemifieldbyDAT1_3UTR     0.471275   
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+```
+## Data: data2
+## Models:
+## RT_random_intercepts_only: log(RT) ~ 1 + (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial)
+## RT_DAT1_3UTR: log(RT) ~ (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial) + 
+## RT_DAT1_3UTR:     DAT1_3UTR
+## RT_Hemifield: log(RT) ~ (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial) + 
+## RT_Hemifield:     DAT1_3UTR + Hemifield
+## RT_HemifieldbyDAT1_3UTR: log(RT) ~ (1 | Site/DAT1_3UTR/ID) + (1 | ITI) + (1 | Trial) + 
+## RT_HemifieldbyDAT1_3UTR:     DAT1_3UTR + Hemifield + DAT1_3UTR:Hemifield
+##                           Df     AIC     BIC logLik deviance   Chisq
+## RT_random_intercepts_only  7 -8639.6 -8584.0 4326.8  -8653.6        
+## RT_DAT1_3UTR               8 -8637.6 -8574.1 4326.8  -8653.6  0.0424
+## RT_Hemifield               9 -8680.8 -8609.2 4349.4  -8698.8 45.1268
+## RT_HemifieldbyDAT1_3UTR   10 -8682.1 -8602.6 4351.0  -8702.1  3.3204
+##                           Chi Df Pr(>Chisq)    
+## RT_random_intercepts_only                      
+## RT_DAT1_3UTR                   1    0.83692    
+## RT_Hemifield                   1  1.847e-11 ***
+## RT_HemifieldbyDAT1_3UTR        1    0.06843 .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+```
+## Automatically converting the following non-factors to factors: Hemifield
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-7-4.png)<!-- -->
+
+**So the linear mixed model approach ^ shows no significant DAT1_3UTR x Hemifield effect**
+
+##However simple effects of hemifield inside DAT1_3UTR linear mixed model approach confirms that non10_10_repeat participants have signficantly faster RTs to left targets and 10_10_repeat participants do not: 
+
+```
+## 
+## 	 Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: lmer(formula = log(RT) ~ Hemifield + (Hemifield | Site/ID) + 
+##     (1 | ITI) + (1 | Hemifield) + (1 | Trial), data = data2[data2$DAT1_3UTR == 
+##     "10_10_repeat", ], REML = FALSE, na.action = na.omit)
+## 
+## Linear Hypotheses:
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept) == 0     6.30084    0.04388 143.599   <1e-10 ***
+## HemifieldRight == 0  0.01432    0.01169   1.225    0.392    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+```
+
+```
+## 
+## 	 Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: lmer(formula = log(RT) ~ Hemifield + (Hemifield | Site/ID) + 
+##     (1 | ITI) + (1 | Hemifield) + (1 | Trial), data = data2[data2$DAT1_3UTR == 
+##     "non10_10_repeat", ], REML = FALSE, na.action = na.omit)
+## 
+## Linear Hypotheses:
+##                     Estimate Std. Error z value Pr(>|z|)    
+## (Intercept) == 0    6.303572   0.043357  145.39  < 1e-10 ***
+## HemifieldRight == 0 0.023861   0.006836    3.49 0.000965 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+```
+
+###So non10_10_repeat have significant pseudoneglect (i.e. faster RTs to left hemifield targets), and 10_10_repeat do not, but this is only seen in the simple effects (doing seperate test for each DAT1_3UTR). The factorial design gives no significant DAT1_3UTR x Hemifield effect
+
+
+
+##Look at the DAT1Group x Hemifield x Time-on-task interaction in the single trial data:
+
+```
+## Data: data2
+## Models:
+## RT_random_effects_only: log(RT) ~ 1 + (1 | ID) + (1 | ITI) + (1 | Trial)
+## RT_Hemifield: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield
+## RT_DAT1: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield + DAT1_3UTR
+## RT_TOT: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield + DAT1_3UTR + 
+## RT_TOT:     Trial
+## RT_Hemifield_by_DAT1: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield + DAT1_3UTR + 
+## RT_Hemifield_by_DAT1:     Trial + Hemifield:DAT1_3UTR
+## RT_Hemifield_by_TOT: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield + DAT1_3UTR + 
+## RT_Hemifield_by_TOT:     Trial + Hemifield:DAT1_3UTR + Hemifield:Trial
+## RT_DAT1_by_TOT: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield + DAT1_3UTR + 
+## RT_DAT1_by_TOT:     Trial + Hemifield:DAT1_3UTR + Hemifield:Trial + DAT1_3UTR:Trial
+## RT_Hemifield_by_DAT1_by_TOT: log(RT) ~ (1 | ID) + (1 | ITI) + (1 | Trial) + Hemifield + DAT1_3UTR + 
+## RT_Hemifield_by_DAT1_by_TOT:     Trial + Hemifield:DAT1_3UTR + Hemifield:Trial + DAT1_3UTR:Trial + 
+## RT_Hemifield_by_DAT1_by_TOT:     Hemifield:DAT1_3UTR:Trial
+##                             Df     AIC     BIC logLik deviance   Chisq
+## RT_random_effects_only       5 -8643.6 -8603.9 4326.8  -8653.6        
+## RT_Hemifield                 6 -8686.7 -8639.0 4349.4  -8698.7 45.1271
+## RT_DAT1                      7 -8684.8 -8629.1 4349.4  -8698.8  0.0420
+## RT_TOT                       8 -8721.7 -8658.1 4368.8  -8737.7 38.9067
+## RT_Hemifield_by_DAT1         9 -8723.0 -8651.5 4370.5  -8741.0  3.3190
+## RT_Hemifield_by_TOT         10 -8725.1 -8645.7 4372.6  -8745.1  4.1472
+## RT_DAT1_by_TOT              11 -8725.5 -8638.1 4373.8  -8747.5  2.4039
+## RT_Hemifield_by_DAT1_by_TOT 12 -8724.6 -8629.3 4374.3  -8748.6  1.0754
+##                             Chi Df Pr(>Chisq)    
+## RT_random_effects_only                           
+## RT_Hemifield                     1  1.847e-11 ***
+## RT_DAT1                          1    0.83758    
+## RT_TOT                           1  4.445e-10 ***
+## RT_Hemifield_by_DAT1             1    0.06848 .  
+## RT_Hemifield_by_TOT              1    0.04170 *  
+## RT_DAT1_by_TOT                   1    0.12104    
+## RT_Hemifield_by_DAT1_by_TOT      1    0.29973    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+![](markdown_BigDots_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+
+###So there is no evidence for a 3-way DAT1Group x Hemifield x Time-on-task interaction. I haven't included random slopes directly above, so if there was any hint on a 3-way DAT1Group x Hemifield x Time-on-task interaction this model should have detected it!

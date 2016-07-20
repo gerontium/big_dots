@@ -349,7 +349,7 @@ t_test_results<-t_test_results %>% tibble::rownames_to_column(.) %>%
 
 ###So the above ^ shows that there AD_LI_SLF1 is the only asymmetry measure with significant relationship with DAT1 genotype
 
-#Test relationship between N2_Asym, CPP_Asym, RT_Asym and SLF (SLF I, II add III) Asym
+#Test relationship between N2_Asym, CPP_Asym, RT_Asym and SLF (I, II add III) Asym
 
 ```{r, echo=FALSE, warning=FALSE}
 
