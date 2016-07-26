@@ -1,11 +1,11 @@
 % clear
 % close all
 % clc
-% subject_folder = {'059M_HP','093M_BR'};
-% allsubj = {'HP1M','BR2M'};
+% subject_folder = {'059M_HP','093M_BR','331M_CL'};
+% allsubj = {'HP1M','BR2M','CL21M'};
 % 
-% s = 1;
-% blocks = [1:16];
+% s = 3;
+% blocks = [1:16]; % 1:16
 % badchans = [];
 % path_temp = 'D:\Participant Folders_new\';
 % 
