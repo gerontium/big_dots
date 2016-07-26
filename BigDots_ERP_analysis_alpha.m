@@ -121,7 +121,7 @@ for s2 = 1:length(subject_folder)
     end
 end
 %%
-duds = []; %4 and 74 could also be kicked out as they are RT outliers. 1 because of coherence
+duds = [low_alpha_trials_index]; %4 and 74 could also be kicked out as they are RT outliers. 1 because of coherence
 single_participants = [];
 %%
 if ~isempty(duds) && isempty(single_participants)
@@ -190,10 +190,14 @@ rtlim=[0.200 1.500];
 
 % ch_CPP = [31,32];
 ch_CPP = [31];
+% ch_alpha_asym = [40];
+% ch_alpha_asym = [39,40];
 % ch_alpha_asym = [62];
-ch_alpha_asym = [62,63,64];
+ch_alpha_asym = [62,64];
 % ch_alpha_asym = [59,60,62,63,64];
-% ch_alpha_asym = [54:60,62:64];
+% ch_alpha_asym = [55:56];
+alpha_t1 = 299;
+alpha_t2 = 349;
 
 % ch_lr = [60,62;23,25];
 % ch_rl = [23,25;60,62];
@@ -225,7 +229,7 @@ BL_alpha = [-100];
 % zscore threshold
 z_thresh = 3;
 
-no_of_bins = 3;
+no_of_bins = 2;
 bin_counter = fliplr(1:no_of_bins);
 % plotting parameters
 for bin = 1:no_of_bins
@@ -343,7 +347,7 @@ for s=1:length(allsubj)
     disp(['Subject ',allsubj{s},' Total Valid Trials: ',num2str(length([conds{s,:,:}])), ...
         ' = ',num2str(round(100*(length([conds{s,:,:}]))/(16*18))),'%'])
     
-    clear alpha_asym_bins RT_bins
+    clear alpha_asym_bins RT_bins RT_bins_all
     for side = 1:2
         counters = ones(1,no_of_bins);
         
@@ -359,11 +363,15 @@ for s=1:length(allsubj)
         alpha_asym_side(s,:,:,side) = squeeze(mean(alpha_asym(1:numch,:,[conds{s,:,side}]),3));
         alpha_asym_avg_side(s,right_hemi,:,side) = (alpha_side(s,right_hemi,:,side)-alpha_side(s,left_hemi,:,side))./...
             ((alpha_side(s,right_hemi,:,side)+alpha_side(s,left_hemi,:,side))/2);
-        
+            
         for iti = 1:3
             RT_temp = RTs{s,iti,side};
-            alpha_asym_temp = squeeze(mean(mean(alpha_asym(ch_alpha_asym,find(alpha_t<51),[conds{s,iti,side}]),1),2));
-            [alpha_asym_temp,indx] = sort(alpha_asym_temp);
+            alpha_asym_temp = squeeze(mean(mean(alpha_asym(ch_alpha_asym,find(alpha_t>=alpha_t1 & alpha_t<=alpha_t2),[conds{s,iti,side}]),1),2));
+            alpha_temp = squeeze(mean(mean(alpha_TSE(ch_alpha_asym,find(alpha_t>=alpha_t1 & alpha_t<=alpha_t2),[conds{s,iti,side}]),1),2));
+            
+%             [alpha_asym_temp,indx] = sort(alpha_asym_temp);
+            [alpha_temp,indx] = sort(alpha_temp);
+            
             RT_temp = RT_temp(indx);
             
             group_size = floor(length(RT_temp)/no_of_bins);
@@ -376,136 +384,45 @@ for s=1:length(allsubj)
                 counters(bin)=counters(bin)+group_size;
             end
         end
-  %% Code adapted from Ger's Current Biology cpp code to pull out CPP onset latency:
-        % Define CPP onset search window, from 0 to 1000ms
-        CPP_search_t  = [0,1000];
-        % Same window in samples
-        CPP_search_ts  = [find(t==CPP_search_t(1)),find(t==CPP_search_t(2))];
-        % Size of sliding window. This is in fact 1/4 of the search window in ms.
-        % So 25 is 100ms. (25 samples x 2ms either side of a particular sample).
-        max_search_window = 25;
-        
-
-%         consecutive_windows=10;%Number of consecutive windows that p must be less than .05 for in order to call it a CPP onset       
-        if any(strcmp(subject_folder(s),{'ND_16_05_14'})) || any(strcmp(subject_folder(s),{'036M_JK'}))
-             consecutive_windows=50;%had to make it longer for these participants otherwise it records a false CPP onset
-        else
-            consecutive_windows=15;%15 works well for everybody else
-        end
-        %%        
-        CPP_temp = squeeze(mean(erp(ch_CPP,:,[conds{s,:,side}]),1)); % time x trial
-        CPPs(:,side) = squeeze(mean(CPP_temp(:,:),2)); % average across trial for plot later on, not used to find onsets.
-        % constrain the search window according to parameters above.
-        CPP_temp = squeeze(CPP_temp(find(t>=CPP_search_t(1) & t<=CPP_search_t(2)),:));
-        prestim_temp = find(t<CPP_search_t(1)); % so we can add it on after getting max peak.
-        
-        % we want sliding windows for each trial, create smoothed waveform.
-        clear win_mean win_mean_inds tstats ps
-        for trial = 1:size(CPP_temp,2)
-            counter = 1;
-            for j = max_search_window:2:size(CPP_temp,1)-max_search_window
-                win_mean(counter,trial) = mean(CPP_temp([j-max_search_window+1:j+max_search_window-1],trial));
-                win_mean_inds(counter) = j;
-                counter = counter+1;
-            end
-        end
-        
-        % do t-test to zero across the smoothed trials.
-        for tt = 1:size(win_mean,1)
-            
-            if strcmp( subject_folder(s),'AD48C') %This participant has strainge CPP baseline, so do CPP onset t-test against -1.5 instead of against 0
-                [~,P,~,STATS] = ttest(win_mean(tt,:),-1.5);
-            else
-                [~,P,~,STATS] = ttest(win_mean(tt,:));
-            end
-            tstats(tt) = STATS.tstat;
-            ps(tt) = P;
-        end
-        
-        % when does the ttest cross 0.05? If at all?
-%         onsetp05 = find(ps<0.05 & tstats>0,1,'first');
-
-        %DN: added this in to explicitly make sure the "consecutive_windows" number of following p-values from onset are also lower than 0.05.
-        clear allp05
-        allp05= find(ps<0.05 & tstats>0);
-        onsetp05=[];
-        for i = 1:length(allp05)
-            if  (i+consecutive_windows-1)<=length(allp05)
-                if allp05(i+consecutive_windows-1)-allp05(i)==consecutive_windows-1 %if there is at least 10 consecutive windows where p<.05
-                    onsetp05=allp05(i);
-                    break
+        for chan = 1:numch
+            for tt = 1:length(alpha_t)
+                counters_all = ones(1,no_of_bins);
+                for iti = 1:3
+                    RT_temp = RTs{s,iti,side};
+                    alpha_asym_temp = squeeze(mean(mean(alpha_asym(chan,tt,[conds{s,iti,side}]),1),2));
+                    alpha_temp = squeeze(mean(mean(alpha_TSE(chan,tt,[conds{s,iti,side}]),1),2));
+                    
+%                     [alpha_asym_temp,indx] = sort(alpha_asym_temp);
+                    [alpha_temp,indx] = sort(alpha_temp);
+                    
+                    RT_temp = RT_temp(indx);
+                    
+                    group_size = floor(length(RT_temp)/no_of_bins);
+                    
+                    for bin = 1:no_of_bins
+                        RT_bins_all{chan,tt,bin,side}(counters_all(bin):counters_all(bin)+group_size-1) = ...
+                            RT_temp(end-bin_counter(bin)*group_size+1:end-(bin_counter(bin)-1)*group_size);
+                        counters_all(bin)=counters_all(bin)+group_size;
+                    end
                 end
-            else
-                onsetp05=allp05(i);
-                break
             end
         end
-
-        
-        % get timepoint of min index.
-        if ~isempty(onsetp05)
-            onset_ind = win_mean_inds(onsetp05);
-            CPP_onset_ind = onset_ind + length(prestim_temp); % see above, this needs to be added to get the overall time with respect to t.
-            CPP_side_onsets(s,side) = t(CPP_onset_ind);
-        else % onsetp05 is empty, no significant CPP.
-            disp([allsubj{s},': bugger']) %AD48C has no CPP onset
-            CPP_side_onsets(s,side) = 0;
-        end
-        
-% %     plot the smoothed waveforms, the corresponding t-tests and p-values.
-% %     Make sure the 10 (DN:30) following p-values from onset are also lower than
-% %     0.05.
-        
-%         if side==1
-%             figure
-%             subplot(3,2,1)
-%             plot(win_mean_inds,mean(win_mean,2))
-%             title(subject_folder{s})
-%             subplot(3,2,3)
-%             plot(win_mean_inds,tstats)
-%             subplot(3,2,5)
-%             plot(win_mean_inds,ps), hold on
-%             line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
-%             if ~isempty(onsetp05)
-%                 line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
-%             else
-%                 line([0,0],ylim,'Color','r','LineWidth',1);
-%             end
-%         else
-%             subplot(3,2,2)
-%             plot(win_mean_inds,mean(win_mean,2))
-%             title(subject_folder{s})
-%             subplot(3,2,4)
-%             plot(win_mean_inds,tstats)
-%             subplot(3,2,6)
-%             plot(win_mean_inds,ps), hold on
-%             line(xlim,[0.05,0.05],'Color','k','LineWidth',1);
-%             if ~isempty(onsetp05)
-%                 line([onset_ind,onset_ind],ylim,'Color','g','LineWidth',1);
-%             else
-%                 line([0,0],ylim,'Color','r','LineWidth',1);
-%             end
-%         end
     end
-%           pause(1)
-%%   plot CPP with onset marked 
-%     colors = {'b' 'r' 'g' 'm' 'c'};
-%     figure
-%     for side = 1:2
-%         plot(t,squeeze(CPPs(:,side)),'Color',colors{side},'LineWidth',2), hold on
-%         line([mean(CPP_side_onsets(s,side),1),mean(CPP_side_onsets(s,side),1)],ylim,'Color',colors{side},'LineWidth',1.5);
-%         line([0,0],ylim,'Color','k','LineWidth',1);
-%         line(xlim,[0,0],'Color','k','LineWidth',1);
-%     end
-%     title(subject_folder{s})
-%     pause(1)
-    
-%     erp_mean = (squeeze(mean(mean(mean(ERP_uptarg(s,:,:,:,:,:),4),5),6))+squeeze(mean(mean(mean(ERP_righttarg(s,:,:,:,:,:),4),5),6)))/2;
-%     figure
-%     plottopo(erp_mean(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-%         min(min(min(erp_mean(plot_chans,:))))  max(max(max(erp_mean(plot_chans,:))))], ...
-%         'title',[allsubj{s}],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','off','ydir',1)
-%     pause(1)
+    for bin = 1:no_of_bins
+        disp(['Subject ',allsubj{s},' Bin ',num2str(bin),' = ',num2str(size([alpha_asym_bins{bin,:}],2))])
+        alpha_asym_bins_mean(s,bin) = squeeze(mean([alpha_asym_bins{bin,:}]));
+        RT_bins_mean(s,bin) = squeeze(mean([RT_bins{bin,:}]));
+        RT_asym_bins_mean(s,bin) = (squeeze(mean([RT_bins{bin,1}]))-squeeze(mean([RT_bins{bin,2}])))/...
+            ((squeeze(mean([RT_bins{bin,1}]))+squeeze(mean([RT_bins{bin,2}])))/2);
+        
+        for chan = 1:numch
+            for tt = 1:length(alpha_t)
+                RT_bins_mean_all(s,chan,tt,bin) = squeeze(mean([RT_bins_all{chan,tt,bin,:}]));
+                RT_asym_bins_mean_all(s,chan,tt,bin) = (squeeze(mean([RT_bins_all{chan,tt,bin,1}]))-squeeze(mean([RT_bins_all{chan,tt,bin,2}])))/...
+                    ((squeeze(mean([RT_bins_all{chan,tt,bin,1}]))+squeeze(mean([RT_bins_all{chan,tt,bin,2}])))/2);
+            end
+        end                
+    end
 end
 
 %% Quick check of RT index
@@ -517,6 +434,211 @@ disp(['RT index x DAT1: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
 figure
 plot(zscore(RT_index))
 
+%% Inside subjects relationship with behaviour.
+% alpha: regular
+% RT: regular
+% close all
+% SEM = std(RT_asym_bins_mean(:,:),[],1)/sqrt(length(allsubj));
+% figure
+% h = errorbar(mean(RT_asym_bins_mean,1),SEM);
+% h.LineWidth = 2;
+% 
+% stat_temp = col_convert_long(RT_asym_bins_mean);
+
+% ANOVA
+bins_names={}; table_names={};
+for bin = 1:no_of_bins
+    bins_names{bin} = ['Y',num2str(bin)];
+    table_names{bin,1} = ['Bin ',num2str(bin)];
+end
+if no_of_bins==2
+    tab = table(RT_bins_mean(:,1),RT_bins_mean(:,2),'VariableNames',bins_names);
+elseif no_of_bins==3
+    tab = table(RT_bins_mean(:,1),RT_bins_mean(:,2),RT_bins_mean(:,3),'VariableNames',bins_names);
+elseif no_of_bins==4
+    tab = table(RT_bins_mean(:,1),RT_bins_mean(:,2),RT_bins_mean(:,3),RT_bins_mean(:,4),'VariableNames',bins_names);
+elseif no_of_bins==5
+    tab = table(RT_bins_mean(:,1),RT_bins_mean(:,2),RT_bins_mean(:,3),RT_bins_mean(:,4),RT_bins_mean(:,5),'VariableNames',bins_names);
+end
+within = table(table_names,'VariableNames',{'Alpha'});
+rm = fitrm(tab,[bins_names{1},'-',bins_names{end},'~1'],'WithinDesign',within); % ,'Y1-Y3~1'
+ranovatbl = ranova(rm);
+disp(['Stim-locked alpha bins: F = ',num2str(ranovatbl{1,4}),', p = ',num2str(ranovatbl{1,5})])
+
+% (s,chan,tt,bin)
+stat_values=[];
+for chan = plot_chans
+    for tt = 1:length(alpha_t)
+        if no_of_bins==2
+            tab = table(squeeze(RT_bins_mean_all(:,chan,tt,1)),squeeze(RT_bins_mean_all(:,chan,tt,2)),...
+                'VariableNames',bins_names);
+        elseif no_of_bins==3
+            tab = table(squeeze(RT_bins_mean_all(:,chan,tt,1)),squeeze(RT_bins_mean_all(:,chan,tt,2)),...
+                squeeze(RT_bins_mean_all(:,chan,tt,3)),'VariableNames',bins_names);
+        elseif no_of_bins==4
+            tab = table(squeeze(RT_bins_mean_all(:,chan,tt,1)),squeeze(RT_bins_mean_all(:,chan,tt,2)),...
+                squeeze(RT_bins_mean_all(:,chan,tt,3)),squeeze(RT_bins_mean_all(:,chan,tt,4)),'VariableNames',bins_names);
+        elseif no_of_bins==5
+            tab = table(squeeze(RT_bins_mean_all(:,chan,tt,1)),squeeze(RT_bins_mean_all(:,chan,tt,2)),...
+                squeeze(RT_bins_mean_all(:,chan,tt,3)),squeeze(RT_bins_mean_all(:,chan,tt,4)),...
+                squeeze(RT_bins_mean_all(:,chan,tt,5)),'VariableNames',bins_names);
+        end
+        within = table(table_names,'VariableNames',{'Alpha'});
+        rm = fitrm(tab,[bins_names{1},'-',bins_names{end},'~1'],'WithinDesign',within); % ,'Y1-Y3~1'
+        ranovatbl = ranova(rm);
+        stat_values(chan,tt,1) = ranovatbl{1,4};
+        stat_values(chan,tt,2) = ranovatbl{1,5};
+    end
+end
+
+% SEM = std(squeeze(mean(mean(RT_bins_mean_all(:,[57],find(alpha_t>=499 & alpha_t<=549),:),3),2)),[],1)/sqrt(length(allsubj));
+% figure
+% h = errorbar(squeeze(mean(mean(mean(RT_bins_mean_all(:,[57],find(alpha_t>=499 & alpha_t<=549),:),3),2),1)),SEM);
+% h.LineWidth = 2;
+
+figure
+plottopo(stat_values(:,:,1),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
+    min(min(min(stat_values(plot_chans,:,1))))  max(max(max(stat_values(plot_chans,:,1))))], ...
+    'title',['Alpha vs RT asym F-values'],'legend',side_tags,'showleg','off','ydir',1)
+figure
+plottopo(stat_values(:,:,2),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
+    0  0.05], ...
+    'title',['Alpha vs RT asym p-values'],'legend',side_tags,'showleg','off','ydir',1)
+
+% stat_values(left_hemi,:,:) = repmat(mean(stat_values,1),[length(left_hemi),1,1]);
+% stat_values(centre_chans,:,:) = repmat(mean(stat_values,1),[length(centre_chans),1,1]);
+
+figure
+cc=0;
+for tt = 1:length(alpha_t)
+    if cc<9, cc=cc+1; else figure, cc=1; end
+    subplot(3,3,cc)
+    plot_mean = squeeze(mean(stat_values(:,tt,1),2));
+    topoplot(plot_mean,chanlocs,'maplimits', ...
+        [min(min(stat_values(:,:,1)))...
+        max(max(stat_values(:,:,1)))], ...
+        'electrodes','off','plotchans',plot_chans);
+    title(['Alpha F-values: ',num2str(alpha_t(tt)),' ms']);
+    colorbar
+end
+
+figure
+cc=0;
+for tt = 1:length(alpha_t)
+    if cc<9, cc=cc+1; else figure, cc=1; end
+    subplot(3,3,cc)
+    plot_mean = squeeze(mean(stat_values(:,tt,2),2));
+    topoplot(plot_mean,chanlocs,'maplimits', ...
+        [0 0.05], ...
+        'electrodes','off','plotchans',plot_chans);
+    title(['Alpha p-values: ',num2str(alpha_t(tt)),' ms']);
+    colorbar
+end
+
+return
+%% Inside subjects relationship with behaviour.
+% alpha: right minus left, more negative means greater left hemi alpha
+% RT: left minus right, more negative means faster leftward RT
+% regular correlation would be positive correlation.
+% close all
+SEM = std(RT_asym_bins_mean(:,:),[],1)/sqrt(length(allsubj));
+figure
+h = errorbar(mean(RT_asym_bins_mean,1),SEM);
+h.LineWidth = 2;
+
+stat_temp = col_convert_long(RT_asym_bins_mean);
+
+% ANOVA
+bins_names={}; table_names={};
+for bin = 1:no_of_bins
+    bins_names{bin} = ['Y',num2str(bin)];
+    table_names{bin,1} = ['Bin ',num2str(bin)];
+end
+if no_of_bins==2
+    tab = table(RT_asym_bins_mean(:,1),RT_asym_bins_mean(:,2),'VariableNames',bins_names);
+elseif no_of_bins==3
+    tab = table(RT_asym_bins_mean(:,1),RT_asym_bins_mean(:,2),RT_asym_bins_mean(:,3),'VariableNames',bins_names);
+elseif no_of_bins==4
+    tab = table(RT_asym_bins_mean(:,1),RT_asym_bins_mean(:,2),RT_asym_bins_mean(:,3),RT_asym_bins_mean(:,4),'VariableNames',bins_names);
+elseif no_of_bins==5
+    tab = table(RT_asym_bins_mean(:,1),RT_asym_bins_mean(:,2),RT_asym_bins_mean(:,3),RT_asym_bins_mean(:,4),RT_asym_bins_mean(:,5),'VariableNames',bins_names);
+end
+within = table(table_names,'VariableNames',{'Alpha'});
+rm = fitrm(tab,[bins_names{1},'-',bins_names{end},'~1'],'WithinDesign',within); % ,'Y1-Y3~1'
+ranovatbl = ranova(rm);
+disp(['Stim-locked alpha asym bins: F = ',num2str(ranovatbl{1,4}),', p = ',num2str(ranovatbl{1,5})])
+
+% (s,chan,tt,bin)
+stat_values=[];
+for chan = right_hemi
+    for tt = 1:length(alpha_t)
+        if no_of_bins==2
+            tab = table(squeeze(RT_asym_bins_mean_all(:,chan,tt,1)),squeeze(RT_asym_bins_mean_all(:,chan,tt,2)),...
+                'VariableNames',bins_names);
+        elseif no_of_bins==3
+            tab = table(squeeze(RT_asym_bins_mean_all(:,chan,tt,1)),squeeze(RT_asym_bins_mean_all(:,chan,tt,2)),...
+                squeeze(RT_asym_bins_mean_all(:,chan,tt,3)),'VariableNames',bins_names);
+        elseif no_of_bins==4
+            tab = table(squeeze(RT_asym_bins_mean_all(:,chan,tt,1)),squeeze(RT_asym_bins_mean_all(:,chan,tt,2)),...
+                squeeze(RT_asym_bins_mean_all(:,chan,tt,3)),squeeze(RT_asym_bins_mean_all(:,chan,tt,4)),'VariableNames',bins_names);
+        elseif no_of_bins==5
+            tab = table(squeeze(RT_asym_bins_mean_all(:,chan,tt,1)),squeeze(RT_asym_bins_mean_all(:,chan,tt,2)),...
+                squeeze(RT_asym_bins_mean_all(:,chan,tt,3)),squeeze(RT_asym_bins_mean_all(:,chan,tt,4)),...
+                squeeze(RT_asym_bins_mean_all(:,chan,tt,5)),'VariableNames',bins_names);
+        end
+        within = table(table_names,'VariableNames',{'Alpha'});
+        rm = fitrm(tab,[bins_names{1},'-',bins_names{end},'~1'],'WithinDesign',within); % ,'Y1-Y3~1'
+        ranovatbl = ranova(rm);
+        stat_values(chan,tt,1) = ranovatbl{1,4};
+        stat_values(chan,tt,2) = ranovatbl{1,5};
+    end
+end
+
+SEM = std(squeeze(mean(mean(RT_asym_bins_mean_all(:,[57],find(alpha_t>=499 & alpha_t<=549),:),3),2)),[],1)/sqrt(length(allsubj));
+figure
+h = errorbar(squeeze(mean(mean(mean(RT_asym_bins_mean_all(:,[57],find(alpha_t>=499 & alpha_t<=549),:),3),2),1)),SEM);
+h.LineWidth = 2;
+
+figure
+plottopo(stat_values(:,:,1),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
+    min(min(min(stat_values(plot_chans,:,1))))  max(max(max(stat_values(plot_chans,:,1))))], ...
+    'title',['Alpha asym vs RT asym F-values'],'legend',side_tags,'showleg','off','ydir',1)
+figure
+plottopo(stat_values(:,:,2),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
+    0  0.05], ...
+    'title',['Alpha asym vs RT asym p-values'],'legend',side_tags,'showleg','off','ydir',1)
+
+stat_values(left_hemi,:,:) = repmat(mean(stat_values,1),[length(left_hemi),1,1]);
+stat_values(centre_chans,:,:) = repmat(mean(stat_values,1),[length(centre_chans),1,1]);
+
+figure
+cc=0;
+for tt = 1:length(alpha_t)
+    if cc<9, cc=cc+1; else figure, cc=1; end
+    subplot(3,3,cc)
+    plot_mean = squeeze(mean(stat_values(:,tt,1),2));
+    topoplot(plot_mean,chanlocs,'maplimits', ...
+        [min(min(stat_values(:,:,1)))...
+        max(max(stat_values(:,:,1)))], ...
+        'electrodes','off','plotchans',plot_chans);
+    title(['Alpha asym F-values: ',num2str(alpha_t(tt)),' ms']);
+    colorbar
+end
+
+figure
+cc=0;
+for tt = 1:length(alpha_t)
+    if cc<9, cc=cc+1; else figure, cc=1; end
+    subplot(3,3,cc)
+    plot_mean = squeeze(mean(stat_values(:,tt,2),2));
+    topoplot(plot_mean,chanlocs,'maplimits', ...
+        [0 0.05], ...
+        'electrodes','off','plotchans',plot_chans);
+    title(['Alpha asym p-values: ',num2str(alpha_t(tt)),' ms']);
+    colorbar
+end
+
+return
 %% Alpha check
 
 % %{
@@ -825,6 +947,38 @@ for side = 1:2
 end
 
 return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 %% Grand average ERP
 % chan x time x side
 ERP_group_side = squeeze(mean(ERP_side(:,:,:,:),1));
