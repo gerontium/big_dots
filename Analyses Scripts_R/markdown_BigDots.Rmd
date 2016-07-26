@@ -38,7 +38,7 @@ if (location=="Monash") {
 
 #Remove # in front of the line below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
 
-# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","ggplot2","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx", "haven","schoRsch"))
+# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx", "haven","schoRsch", "lubridate"))
 
 ###################################################################################################################################
 ## load relevant libraries 
@@ -57,6 +57,7 @@ library(grid)
 library(readxl)
 library(dplyr)
 library(tidyr)
+library(lubridate)
 
 ###### Import single trial data:
 if (location=="Monash") {
@@ -81,16 +82,23 @@ data<-data[,!(names(data) %in% drops)]
 
 
 ###Read in SLF data from the SPSS file Tim Sent
-SLF<-haven::read_sav("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/SLF_metrics_290616.sav")
-DARIS_ID<-readxl::read_excel("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/Participant Folders_new/DARIS_ID.xlsx")
+SLF<-haven::read_sav("SLF_metrics_290616.sav")
+DARIS_ID<-read_excel("DARIS_ID.xlsx")
 SLF<-merge(SLF, DARIS_ID, by.x = "DARIS", by.y = "DARIS")
 ID_Order <- read_excel("ID_Order_for_Matlab.xlsx")
 
 SLF<-merge(SLF, ID_Order, by.x = "ID", by.y = "ID", all=T) 
 
 SLF<-dplyr::arrange(SLF, Order)
-
 # xlsx::write.xlsx(SLF, "SLF.xlsx", row.names=F)
+
+###Read in Participant Demographics (note for Sex 1=male)
+Demographics<-read_excel("Participant_Demographics.xlsx") %>% #then calculate Age at testing date:
+    mutate(Age_as_period=as.period(interval(Date_Of_Birth, Date_Of_Testing), units="years"))
+#Calculate Age in numeric format
+Demographics$Age<-as.numeric(difftime(as.Date(Demographics$Date_Of_Testing), as.Date(Demographics$Date_Of_Birth), units = "days")/365)
+summary(Demographics$Age)
+
 
 #########################################################################################################################
 
@@ -121,7 +129,7 @@ data<- data %>% #Rename data columns:
 #Only keep SLF measures for the participants who we actually tested on big dots 
 #(there are a few extra participants who we got SLF from who were not tested on big dots)
 SLF <-SLF[SLF$ID %in% data$ID, ]
-    
+Demographics <-Demographics[Demographics$ID %in% data$ID, ]   
 
 ############################################ Import DAT1 Data ##############################################
 DAT1 <- read_excel("DAT1genotypes_forR.xlsx") 
