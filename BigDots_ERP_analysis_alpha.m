@@ -3,8 +3,8 @@ close all
 clc
 chanlocs = readlocs('cap64.loc');
 
-path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
-% path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+% path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
+path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
 % save_path = 'D:\Participant Folders_new\';
 
 %% Create paths for subjects
@@ -24,7 +24,7 @@ subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16
     '147M_EB','400M_ED','398M_LO','384M_PD','205M_LE', ...
     '328M_EW','418M_AM','189M_WM','203M_VF','234M_SW', ... % 70
     '220M_NB','377M_BL','427M_SS','414M_LA','458M_AH', ...
-    '439M_TM','484M_AI','453M_LB','422M_MK','323M_CZ'}; % 80
+    '439M_TM','484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'}; % 81
 allsubj = {'LK','AR','MH','AA','NT','OF','RO','PR','AS','OM', ...
     'RM','SB','GW','OS','AC','ND','SF','TL','JC','EL', ...
     'SH','HP1M','BR2M','JK3M','SJ4M','CB5M','MO6M','CS7M','EZ8M','KS9M', ...
@@ -32,7 +32,7 @@ allsubj = {'LK','AR','MH','AA','NT','OF','RO','PR','AS','OM', ...
     'JM20M','CL21M','CY22M','DM24M','JB25M','JC26M','YV27M','AT28M','MK29M','LG30M', ...
     'JM31M','PP32M','KR33M','FT34M','CS35M','MG36M','DC37M','PH38M','AF39M','RO40M', ...
     'EB41M','ED42M','LO43M','PD44M','LE45M','EW46M','AM47M','WM48M','VF49M','SW50M',...
-    'NB52M','BL53M','SS54M','LA55M','AH56M','TM57M','AI58M','LB59M','MK60M','CZ61M'};
+    'NB52M','BL53M','SS54M','LA55M','AH56M','TM57M','AI58M','LB59M','MK60M','CZ61M','FM51M'};
 
 %% Define TCD and Monash subjects
 
@@ -51,7 +51,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
     '392M_PH','186M_AF','404M_RO','147M_EB','400M_ED','398M_LO', ...
     '384M_PD','205M_LE','328M_EW','418M_AM','189M_WM','203M_VF','234M_SW',...
     '220M_NB','377M_BL','427M_SS','414M_LA','458M_AH','439M_TM',...
-    '484M_AI','453M_LB','422M_MK','323M_CZ'};
+    '484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'};
 
 %% Load DAT1
 
@@ -535,7 +535,7 @@ for tt = 1:length(alpha_t)
     colorbar
 end
 
-return
+  return
 %% Inside subjects relationship with behaviour.
 % alpha: right minus left, more negative means greater left hemi alpha
 % RT: left minus right, more negative means faster leftward RT
@@ -546,7 +546,7 @@ figure
 h = errorbar(mean(RT_asym_bins_mean,1),SEM);
 h.LineWidth = 2;
 
-stat_temp = col_convert_long(RT_asym_bins_mean);
+% stat_temp = col_convert_long(RT_asym_bins_mean);
 
 % ANOVA
 bins_names={}; table_names={};
@@ -638,7 +638,7 @@ for tt = 1:length(alpha_t)
     colorbar
 end
 
-return
+ return
 %% Alpha check
 
 % %{
@@ -946,7 +946,7 @@ for side = 1:2
     colorbar('FontSize',12)
 end
 
-return
+ return
 
 
 
@@ -954,404 +954,33 @@ return
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% Grand average ERP
-% chan x time x side
-ERP_group_side = squeeze(mean(ERP_side(:,:,:,:),1));
-
-figure
-plottopo(ERP_group_side(:,:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-    min(min(min(ERP_group_side(plot_chans,:,:))))  max(max(max(ERP_group_side(plot_chans,:,:))))], ...
-    'title',['ERP left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
-
-clear time_windows
-time_windows(1,:) = [100:50:500];
-time_windows(2,:) = time_windows(1,:)+50;
-for side = 1:2
-    figure
-    for t_temp = 1:size(time_windows,2)
-        plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>time_windows(1,t_temp) & t<time_windows(2,t_temp)),side),2),3));
-        subplot(3,3,t_temp)
-        topoplot(plot_mean,chanlocs,'maplimits', ...
-            [min(min(min(ERP_group_side(:,find(t>time_windows(1,1) & t<time_windows(2,end)),:))))...
-            max(max(max(ERP_group_side(:,find(t>time_windows(1,1) & t<time_windows(2,end)),:))))], ...
-            'electrodes','off','plotchans',plot_chans);
-        title([side_tags{side},' targets: ',num2str(time_windows(1,t_temp)),' ms to ',num2str(time_windows(2,t_temp)),' ms']);
-        colorbar
-    end
-end
-
-% t1 = 500; t2 = 600;
-% plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>=t1 & t<t2),:),2),3));
-% figure
-% topoplot(plot_mean,chanlocs,'maplimits', ...
-%     [min(plot_mean) max(plot_mean)], ...
-%     'electrodes','numbers','plotchans',plot_chans);
-
-t1 = 260; t2 = 280;
-for side = 1:2
-    plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>=t1 & t<t2),side),2),3));
-    figure
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(plot_mean) max(plot_mean)], ...
-        'electrodes','numbers','plotchans',plot_chans);
-end
-
-%% Grand average ERPr
-% chan x time x side
-ERPr_group_side = squeeze(mean(ERPr_side(:,:,:,:),1));
-
-figure
-plottopo(ERPr_group_side(:,:,:),'chanlocs',chanlocs,'limits',[tr(1) tr(end) ...
-    min(min(min(ERPr_group_side(plot_chans,:,:))))  max(max(max(ERPr_group_side(plot_chans,:,:))))], ...
-    'title',['ERPr left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
-
-clear time_windows
-time_windows(1,:) = [-350:50:50];
-time_windows(2,:) = time_windows(1,:)+50;
-for side = 1:2
-    figure
-    for t_temp = 1:size(time_windows,2)
-        plot_mean = squeeze(mean(mean(ERPr_group_side(:,find(tr>time_windows(1,t_temp) & tr<time_windows(2,t_temp)),side),2),3));
-        subplot(3,3,t_temp)
-        topoplot(plot_mean,chanlocs,'maplimits', ...
-            [min(min(min(ERPr_group_side(:,find(tr>time_windows(1,1) & tr<time_windows(2,end)),:))))...
-            max(max(max(ERPr_group_side(:,find(tr>time_windows(1,1) & tr<time_windows(2,end)),:))))], ...
-            'electrodes','off','plotchans',plot_chans);
-        title([side_tags{side},' targets (resp-locked): ',num2str(time_windows(1,t_temp)),' ms to ',num2str(time_windows(2,t_temp)),' ms']);
-        colorbar
-    end
-end
-
-% t1 = -100; t2 = 0;
-% plot_mean = squeeze(mean(mean(ERPr_group_side(:,find(tr>=t1 & tr<t2),:),2),3));
-% figure
-% topoplot(plot_mean,chanlocs,'maplimits', ...
-%     [min(plot_mean) max(plot_mean)], ...
-%     'electrodes','numbers','plotchans',plot_chans);
-%% Plot CPP x target side
-CPP = squeeze(mean(CPP_side,1)); % time x side
-clear h
-figure
-for side = 1:2
-    h(side) = plot(t,squeeze(CPP(:,side)),'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP: Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,side_tags, ...
-    'FontSize',16,'Location','NorthWest');
-
-% figure
-% for s = 1:length(allsubj)
-%     CPP = squeeze(mean(CPP_side(s,:,:),3));
-%     if max(CPP)>60
-%         disp(subject_folder{s})
-%     end
-%     plot(t,CPP,'LineWidth',1,'LineStyle','-');hold on
-% end
-% set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-% ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-% xlabel('Time (ms)','FontName','Arial','FontSize',16)
-% title('CPP: Left vs Right Hemifield Targets')
-% line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-% line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-
-%% Plot CPPr x target side
-CPPr = squeeze(mean(CPPr_side,1)); % time x side
-clear h
-figure
-for side = 1:2
-    h(side) = plot(tr,squeeze(CPPr(:,side)),'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP (resp-locked): Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,side_tags, ...
-    'FontSize',16,'Location','NorthWest');
-
-%% Plot N2c x target side
-N2c = squeeze(mean(N2c_side,1)); % time x side
-clear h
-figure
-for side = 1:2
-    h(side) = plot(t,squeeze(N2c(:,side)),'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2c: Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,side_tags, ...
-    'FontSize',16,'Location','NorthWest');
-
-% figure
-% for s = 1:length(allsubj)
-%     N2c = squeeze(mean(N2c_side(s,:,:),3));
-%     if min(N2c(find(t<500)))<-5
-%         disp(subject_folder{s})
-%     else
-% %         plot(t,N2c,'LineWidth',1,'LineStyle','-');hold on
-%     end
-%     plot(t,N2c,'LineWidth',1,'LineStyle','-');hold on
-% end
-% set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-% ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-% xlabel('Time (ms)','FontName','Arial','FontSize',16)
-% title('CPP: Left vs Right Hemifield Targets')
-% line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-% line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-
-%% Plot N2i x target side
-N2i = squeeze(mean(N2i_side,1)); % time x side
-clear h
-figure
-for side = 1:2
-    h(side) = plot(t,squeeze(N2i(:,side)),'LineWidth',3,'LineStyle','-');hold on
-end
-
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2i: Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,side_tags, ...
-    'FontSize',16,'Location','NorthWest');
-
-% return
-%% CPP x DAT1
-colors = {'b','r'};
-linestyles = {'-','--'};
-cc=1;
-clear h
-figure
-for dat = 1:2
-    CPP = squeeze(mean(CPP_side(find(DAT1_nosplit==dat),:,:),1)); % time x side    
-    for side = 1:2
-        h(cc) = plot(t,squeeze(CPP(:,side)),'Color',colors{side},'LineWidth',2,'LineStyle',linestyles{dat});hold on
-        cc=cc+1;
-    end
-end
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP: Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
-    'FontSize',16,'Location','NorthWest');
-
-t1 = 270; t2 = 470;
-stat_temp = squeeze(mean(CPP_side(:,find(t>=t1 & t<=t2),:),2)); % subj x side
-stat_temp = [stat_temp,DAT1_nosplit'];
-
-%% CPPr x DAT1
-colors = {'b','r'};
-linestyles = {'-','--'};
-cc=1;
-clear h
-figure
-for dat = 1:2
-    CPPr = squeeze(mean(CPPr_side(find(DAT1_nosplit==dat),:,:),1)); % time x side    
-    for side = 1:2
-        h(cc) = plot(tr,squeeze(CPPr(:,side)),'Color',colors{side},'LineWidth',2,'LineStyle',linestyles{dat});hold on
-        cc=cc+1;
-    end
-end
-set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('CPP (resp-locked): Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
-    'FontSize',16,'Location','NorthWest');
-
-%% N2c x DAT1
-colors = {'b','r'};
-linestyles = {'-','--'};
-cc=1;
-clear h
-figure
-for dat = 1:2
-    N2c = squeeze(mean(N2c_side(find(DAT1_nosplit==dat),:,:),1)); % time x side    
-    for side = 1:2
-        h(cc) = plot(t,squeeze(N2c(:,side)),'Color',colors{side},'LineWidth',2,'LineStyle',linestyles{dat});hold on
-        cc=cc+1;
-    end
-end
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2c: Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
-    'FontSize',16,'Location','NorthWest');
-
-t1 = 250; t2 = 290;
-stat_temp = squeeze(mean(N2c_side(:,find(t>=t1 & t<=t2),:),2)); % subj x side
-stat_temp = [stat_temp,DAT1_nosplit'];
-
-%% N2i x DAT1
-colors = {'b','r'};
-linestyles = {'-','--'};
-cc=1;
-clear h
-figure
-for dat = 1:2
-    N2i = squeeze(mean(N2i_side(find(DAT1_nosplit==dat),:,:),1)); % time x side    
-    for side = 1:2
-        h(cc) = plot(t,squeeze(N2i(:,side)),'Color',colors{side},'LineWidth',2,'LineStyle',linestyles{dat});hold on
-        cc=cc+1;
-    end
-end
-set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-xlabel('Time (ms)','FontName','Arial','FontSize',16)
-title('N2i: Left vs Right Hemifield Targets')
-line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
-    'FontSize',16,'Location','NorthWest');
-
-return
-%% Extract Response Locked CPP slope"
-%CPP build-up defined as the slope of a straight line fitted to the
-%response-locked waveform at during "slope_timeframe_index" defined for
-%each participant here:
-clear slope_timeframe_index 
-for s=1:length(allsubj)
- slope_timeframe_index(s,2)=find(mean(CPPr_side(s,:,:),3)==max(mean(CPPr_side(s,find(tr<0),:),3)));%max amplitude index
-end
-slope_timeframe_index(:,1)=slope_timeframe_index(:,2)-50;%subtract 50samples (i.e. 100ms) from max amplitude index to form slope_timeframe window
-%Now find and save CPPr slope
-for s=1:length(allsubj)
-    for side = 1:2  
-        coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
-        CPPr_slope(s,side)=coef(1);  
-    end
-end
-
-%%%%Plot each individual participant's CPPr_slope 
-% for s=1:length(allsubj)
-%     clear h
-%     figure
-%     for side = 1:2
-%         h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
-%         coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
-%         CPP_slope(s,side)=coef(1);
-%         r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
-%         plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
-%     end
-%     
-%     set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-%     ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-%     xlabel('Time (ms)','FontName','Arial','FontSize',16)
-%     title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
-%     line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-%     line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-%     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
-%    pause(1) 
-% end
-
-
-
-%% Extract N2c and N2i latency :
-for s = 1:size(allsubj,2)
-    for side=1:2
-        %         to use each participant's average N2c/i to get their peak latency index:
-        N2c=N2c_side(s, :, side); 
-        N2i=N2i_side(s, :, side); 
-        N2c_peak_amp_index_t(s,side)=t(N2c==min(N2c(find(t==150):find(t==400))));%Find max peak latency for N2c in ms
-        N2i_peak_amp_index_t(s,side)=t(N2i==min(N2i(find(t==200):find(t==450))));%Find max peak latency for N2i in ms
-    end
-end
-%N2 Latency:
-N2cN2i_latency_ByTargetSide = [N2c_peak_amp_index_t,N2i_peak_amp_index_t]; %(LeftTargetN2c_latency, RightTargetN2c_latency, LeftTargetN2i_latency, RightTargetN2i_latency)
-
-% %Plot N2c and N2i per subject showing peak amplitude 
-% for s = 1:size(allsubj,2)
-% clear h
-% figure
-% for side = 1:2
-%     h(side) = plot(t,squeeze(N2i_side(s,:,side)),'LineWidth',3,'LineStyle',':', 'Color',colors{side});hold on
-%     h(side) = plot(t,squeeze(N2c_side(s,:,side)),'LineWidth',3,'LineStyle','-', 'Color',colors{side});hold on
-%     line([avN2i_peak_amp_index_t(s,side),avN2i_peak_amp_index_t(s,side)],ylim,'Color',colors{side}, 'Linewidth',2,'LineStyle',':');
-%     line([avN2c_peak_amp_index_t(s,side),avN2c_peak_amp_index_t(s,side)],ylim,'Color',colors{side}, 'Linewidth',2,'LineStyle','-');
-% end
-% 
-% set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-% ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-% xlabel('Time (ms)','FontName','Arial','FontSize',16)
-% title(['Subj: ',num2str(s),' N2c & N2i(:) by Hemifield'])
-% line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-% line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-% legend(h,side_tags, 'FontSize',16,'Location','NorthWest');
-% pause(1) 
-% end
 
 %% Extract N2c and N2i Amplitude :
-window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
-N2c = squeeze(mean(mean(N2c_side,1),3)); % time 
-N2i = squeeze(mean(mean(N2i_side,1),3)); % time 
-N2c_peak_amp_index=find(N2c==min(N2c(find(t==150):find(t==450))));%Find Left target max peak latency for N2c
-N2i_peak_amp_index=find(N2i==min(N2i(find(t==150):find(t==450))));%Find Left target max peak latency for N2i
-
-for s = 1:size(allsubj,2)
-    for side=1:2
-        max_peak_N2c(s,side)=squeeze(mean(N2c_side(s,N2c_peak_amp_index-window:N2c_peak_amp_index+window, side),2));
-        max_peak_N2i(s,side)=squeeze(mean(N2i_side(s,N2i_peak_amp_index-window:N2i_peak_amp_index+window, side),2)); 
-    end
-end
-N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
+% window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
+% N2c = squeeze(mean(mean(N2c_side,1),3)); % time 
+% N2i = squeeze(mean(mean(N2i_side,1),3)); % time 
+% N2c_peak_amp_index=find(N2c==min(N2c(find(t==150):find(t==450))));%Find Left target max peak latency for N2c
+% N2i_peak_amp_index=find(N2i==min(N2i(find(t==150):find(t==450))));%Find Left target max peak latency for N2i
+% 
+% for s = 1:size(allsubj,2)
+%     for side=1:2
+%         max_peak_N2c(s,side)=squeeze(mean(N2c_side(s,N2c_peak_amp_index-window:N2c_peak_amp_index+window, side),2));
+%         max_peak_N2i(s,side)=squeeze(mean(N2i_side(s,N2i_peak_amp_index-window:N2i_peak_amp_index+window, side),2)); 
+%     end
+% end
+% N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
 
 
 %% Make participant level matrix for export into SPSS or R
-participant_level(:,1:2)=max_peak_N2c; %N2c amplitude (LeftTarget, RightTarget)
-participant_level(:,3:4)=max_peak_N2i; %N2i amplitude (LeftTarget, RightTarget)
-participant_level(:,5:6)=N2c_peak_amp_index_t; %N2c latency (LeftTarget, RightTarget)
-participant_level(:,7:8)=N2i_peak_amp_index_t; %N2i latency (LeftTarget, RightTarget)
-participant_level(:,9:10)=CPP_side_onsets; %CPP onset (LeftTarget, RightTarget)
-participant_level(:,11:12)=CPPr_slope; %response locked CPP slope (LeftTarget, RightTarget)
-open participant_level
-
-csvwrite (['participant_level_matrix.csv'],participant_level)
-
-subject_folder=subject_folder';
-cell2csv ('IDs.csv',subject_folder)
+% participant_level(:,1:2)=max_peak_N2c; %N2c amplitude (LeftTarget, RightTarget)
+% participant_level(:,3:4)=max_peak_N2i; %N2i amplitude (LeftTarget, RightTarget)
+% participant_level(:,5:6)=N2c_peak_amp_index_t; %N2c latency (LeftTarget, RightTarget)
+% participant_level(:,7:8)=N2i_peak_amp_index_t; %N2i latency (LeftTarget, RightTarget)
+% participant_level(:,9:10)=CPP_side_onsets; %CPP onset (LeftTarget, RightTarget)
+% participant_level(:,11:12)=CPPr_slope; %response locked CPP slope (LeftTarget, RightTarget)
+% open participant_level
+% 
+% csvwrite (['participant_level_matrix.csv'],participant_level)
+% 
+% subject_folder=subject_folder';
+% cell2csv ('IDs.csv',subject_folder)

@@ -3,8 +3,8 @@ close all
 clc
 chanlocs = readlocs('cap64.loc');
 
-path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
-% path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+% path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
+path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
 % save_path = 'D:\Participant Folders_new\';
 
 %% Create paths for subjects
@@ -24,7 +24,7 @@ subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16
     '147M_EB','400M_ED','398M_LO','384M_PD','205M_LE', ...
     '328M_EW','418M_AM','189M_WM','203M_VF','234M_SW', ... % 70
     '220M_NB','377M_BL','427M_SS','414M_LA','458M_AH', ...
-    '439M_TM','484M_AI','453M_LB','422M_MK','323M_CZ'}; % 80
+    '439M_TM','484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'}; % 81
 allsubj = {'LK','AR','MH','AA','NT','OF','RO','PR','AS','OM', ...
     'RM','SB','GW','OS','AC','ND','SF','TL','JC','EL', ...
     'SH','HP1M','BR2M','JK3M','SJ4M','CB5M','MO6M','CS7M','EZ8M','KS9M', ...
@@ -32,7 +32,7 @@ allsubj = {'LK','AR','MH','AA','NT','OF','RO','PR','AS','OM', ...
     'JM20M','CL21M','CY22M','DM24M','JB25M','JC26M','YV27M','AT28M','MK29M','LG30M', ...
     'JM31M','PP32M','KR33M','FT34M','CS35M','MG36M','DC37M','PH38M','AF39M','RO40M', ...
     'EB41M','ED42M','LO43M','PD44M','LE45M','EW46M','AM47M','WM48M','VF49M','SW50M',...
-    'NB52M','BL53M','SS54M','LA55M','AH56M','TM57M','AI58M','LB59M','MK60M','CZ61M'};
+    'NB52M','BL53M','SS54M','LA55M','AH56M','TM57M','AI58M','LB59M','MK60M','CZ61M','FM51M'};
 
 %% Define TCD and Monash subjects
 
@@ -51,7 +51,8 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
     '392M_PH','186M_AF','404M_RO','147M_EB','400M_ED','398M_LO', ...
     '384M_PD','205M_LE','328M_EW','418M_AM','189M_WM','203M_VF','234M_SW',...
     '220M_NB','377M_BL','427M_SS','414M_LA','458M_AH','439M_TM',...
-    '484M_AI','453M_LB','422M_MK','323M_CZ'};
+    '484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'};
+
 
 %% Load DAT1
 
@@ -91,7 +92,6 @@ side_tags = {'Left','Right'};
 
 large_CPP = {'301M_MO'};
 large_N2c = {'PR_20_04_14','036M_JK','226M_SM','331M_CL','061M_LG','377M_BL'};
-low_alpha_trials = {'AR_08_04_14' '191M_DM' '186M_AF'};
 
 for s2 = 1:length(subject_folder)
     for s = 1:length(TCD_bigdots)
@@ -114,14 +114,9 @@ for s2 = 1:length(subject_folder)
             large_N2c_index(s) = s2;
         end
     end
-    for s = 1:length(low_alpha_trials)
-        if strcmp(low_alpha_trials{s},subject_folder{s2})
-            low_alpha_trials_index(s) = s2;
-        end
-    end
 end
 %%
-duds = []; %4 and 74 could also be kicked out as they are RT outliers. 1 because of coherence
+duds = [1]; %4 and 74 could also be kicked out as they are RT outliers
 single_participants = [];
 %%
 if ~isempty(duds) && isempty(single_participants)
@@ -129,7 +124,7 @@ if ~isempty(duds) && isempty(single_participants)
     allsubj([duds]) = [];
     DAT1_split([duds]) = [];
     DAT1_nosplit([duds]) = [];
-    subject_location([duds]) = [];
+    subject_location([duds]) = [];    
 end
 
 if ~isempty(single_participants)
@@ -155,7 +150,6 @@ elec_pairs = [1,34;2,35;3,36;4,39;5,40;6,41;7,42; ...
     25,62;26,63;27,64];
 
 tester = zeros(64,1);
-% tester(left_hemi) = 1;
 figure
 topoplot(tester,chanlocs,'maplimits', ...
     [min(tester)  max(tester)],'electrodes','numbers','plotchans',plot_chans);
@@ -185,15 +179,11 @@ targcodes(3,:) = [105,106];
 %% 
 fs=500;
 numch=64;
-% rtlim=[0.700 1.800];
-rtlim=[0.200 1.500];
+rtlim=[0.300 1.500];
+% rtlim=[0.300 1.200];
 
 % ch_CPP = [31,32];
 ch_CPP = [31];
-% ch_alpha_asym = [62];
-ch_alpha_asym = [62,63,64];
-% ch_alpha_asym = [59,60,62,63,64];
-% ch_alpha_asym = [54:60,62:64];
 
 % ch_lr = [60,62;23,25];
 % ch_rl = [23,25;60,62];
@@ -212,76 +202,27 @@ ch_rl{2} = [60];
 % t = ts*1000/fs;
 ts = -0.700*fs:1.800*fs;
 t = ts*1000/fs;
-ts_crop = -0.500*fs:1.500*fs;
-t_crop = ts_crop*1000/fs;
 
 % resp-locked erps
 trs = [-.700*fs:fs*.100];
 tr = trs*1000/fs;
 
 BL_erp = [-100,0];
-BL_alpha = [-100];
 
 % zscore threshold
 z_thresh = 3;
 
-no_of_bins = 3;
-bin_counter = fliplr(1:no_of_bins);
-% plotting parameters
-for bin = 1:no_of_bins
-    rt_bins_tags{bin} = num2str(bin);
-end
-% rt_bins_tags{1} = [rt_bins_tags{1},' (Fast RT)'];
-% rt_bins_tags{end} = [rt_bins_tags{end},' (Slow RT)'];
-
-%% Alpha filter
-alpha_bandlimits = [8,13]; % defining the filter for alpha bandpass.
-[H,G]=butter(4,[2*(alpha_bandlimits(1)/fs) 2*(alpha_bandlimits(2)/fs)]); % alpha bandpass for 500Hz
-
-window = 50; % in samples. Time is double this.
-skip_step = window/2;
-
-% Alpha time
-alpha_t=[]; cca=1;
-for tt = 1:skip_step:length(t_crop)-window
-    alpha_t(:,cca) = mean(t_crop(tt:tt+window-1));
-    cca=cca+1;
-end
 %% Start loop
 for s=1:length(allsubj)
     pause(1)
-    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_35Hz','allRT','allrespLR','allTrig','allblock_count',...
-        'BL_resp_artrej','ET_BL_resp_artrej','pretarg_artrej','ET_pretarg_artrej');
-    if strcmp(subject_folder{s},'331M_CL') % really odd tiny artifact meant this trial was messing with CSD!
-        allRT(53) = 0; allrespLR(53) = 0; allTrig(53) = 0;
-    end
-    erp = double(erp_LPF_35Hz);
+    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','allRT','allrespLR','allTrig','allblock_count',...
+        'BL_resp_artrej','ET_BL_resp_artrej');
+%     erp = erp_LPF_8Hz;
+    erp = erp_LPF_35Hz;
                 
     % Baseline erp
     baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
     erp = erp-repmat(baseline_erp,[1,size(erp,2),1]); % baseline full erp
-        
-    % Alpha Spectrotemporal Evolution a la Thut 
-    alpha_TSE = []; alpha_asym = [];
-    for trial = 1:size(erp,3)
-        % filtering to alpha
-        ep_filt = filtfilt(H,G,squeeze(erp(:,:,trial))')';
-        % chop off ends and rectify
-        ep_filt = abs(ep_filt(:,find(t>=t_crop(1) & t<=t_crop(end))));
-        % smooth
-        cca=1;
-        for tt = 1:skip_step:size(ep_filt,2)-window
-            alpha_TSE(:,cca,trial) = mean(ep_filt(:,tt:tt+window-1),2);
-            cca=cca+1;
-        end
-        % asymmetry: right minus left. more positive = more right hemi alph
-        alpha_asym(right_hemi,:,trial) = (alpha_TSE(right_hemi,:,trial)-alpha_TSE(left_hemi,:,trial))./...
-            ((alpha_TSE(right_hemi,:,trial)+alpha_TSE(left_hemi,:,trial))/2);
-    end
-
-    % Baseline alpha
-    baseline_alpha = mean(alpha_TSE(:,find(alpha_t<=BL_alpha),:),2);
-    alpha_TSE_base = alpha_TSE-repmat(baseline_alpha,[1,size(alpha_TSE,2),1]); % baseline full erp
     
     disp(['Subject ' num2str(s) ': ' allsubj{s} ' number of trials = ' num2str(length(find(allTrig)))])
     
@@ -304,10 +245,8 @@ for s=1:length(allsubj)
 %             conds{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==1 & ...
 %                 allRT>rtlim(1)*fs & allRT<rtlim(2)*fs & ET_BL_resp_artrej==1);
             conds{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==1 & ...
-                allRT>rtlim(1)*fs & allRT<rtlim(2)*fs & BL_resp_artrej & ET_BL_resp_artrej & pretarg_artrej & ET_pretarg_artrej & validrlock);
-%             conds{s,iti,side} = find(allTrig==targcodes(iti,side) & allrespLR==1 & ...
-%                 allRT>rtlim(1)*fs & allRT<rtlim(2)*fs & pretarg_artrej & ET_pretarg_artrej);
-            
+                allRT>rtlim(1)*fs & allRT<rtlim(2)*fs & BL_resp_artrej==1 & ET_BL_resp_artrej & validrlock);
+
             RTs{s,iti,side} = allRT([conds{s,iti,side}])*1000/fs;
             RTs_log{s,iti,side} = log(allRT([conds{s,iti,side}])*1000/fs);
             RT_zs{s,iti,side} = zscore([RTs_log{s,iti,side}]);
@@ -334,7 +273,6 @@ for s=1:length(allsubj)
         hit_rate(s,side) = 100*hit_all(s,side)/(miss_all(s,side)+hit_all(s,side));
     end
     RT_index(s) = (RT_all(s,1)-RT_all(s,2))/((RT_all(s,1)+RT_all(s,2))/2);
-%     RT_index(s) = (RT_all_zs(s,1)-RT_all_zs(s,2))/((RT_all_zs(s,1)+RT_all_zs(s,2))/2);
     for iti = 1:3, RT_iti_index(s,iti) = (RT_factors(s,iti,1)-RT_factors(s,iti,2))/((RT_factors(s,iti,1)+RT_factors(s,iti,2))/2); end
     RT_median_index(s) = (RT_median_all(s,1)-RT_median_all(s,2))/((RT_median_all(s,1)+RT_median_all(s,2))/2);
     RT_log_index(s) = (RT_log_all(s,1)-RT_log_all(s,2))/((RT_log_all(s,1)+RT_log_all(s,2))/2);
@@ -343,39 +281,13 @@ for s=1:length(allsubj)
     disp(['Subject ',allsubj{s},' Total Valid Trials: ',num2str(length([conds{s,:,:}])), ...
         ' = ',num2str(round(100*(length([conds{s,:,:}]))/(16*18))),'%'])
     
-    clear alpha_asym_bins RT_bins
     for side = 1:2
-        counters = ones(1,no_of_bins);
-        
         ERP_side(s,:,:,side) = squeeze(mean(erp(1:numch,:,[conds{s,:,side}]),3));
         ERPr_side(s,:,:,side) = squeeze(mean(erpr(1:numch,:,[conds{s,:,side}]),3));
         CPP_side(s,:,side) = squeeze(mean(mean(erp(ch_CPP,:,[conds{s,:,side}]),1),3));
         CPPr_side(s,:,side) = squeeze(mean(mean(erpr(ch_CPP,:,[conds{s,:,side}]),1),3));
         N2c_side(s,:,side) = squeeze(mean(mean(erp(ch_lr{side},:,[conds{s,:,side}]),1),3));
         N2i_side(s,:,side) = squeeze(mean(mean(erp(ch_rl{side},:,[conds{s,:,side}]),1),3));
-        
-        alpha_side(s,:,:,side) = squeeze(mean(alpha_TSE(1:numch,:,[conds{s,:,side}]),3));
-        alpha_base_side(s,:,:,side) = squeeze(mean(alpha_TSE_base(1:numch,:,[conds{s,:,side}]),3));
-        alpha_asym_side(s,:,:,side) = squeeze(mean(alpha_asym(1:numch,:,[conds{s,:,side}]),3));
-        alpha_asym_avg_side(s,right_hemi,:,side) = (alpha_side(s,right_hemi,:,side)-alpha_side(s,left_hemi,:,side))./...
-            ((alpha_side(s,right_hemi,:,side)+alpha_side(s,left_hemi,:,side))/2);
-        
-        for iti = 1:3
-            RT_temp = RTs{s,iti,side};
-            alpha_asym_temp = squeeze(mean(mean(alpha_asym(ch_alpha_asym,find(alpha_t<51),[conds{s,iti,side}]),1),2));
-            [alpha_asym_temp,indx] = sort(alpha_asym_temp);
-            RT_temp = RT_temp(indx);
-            
-            group_size = floor(length(RT_temp)/no_of_bins);
-
-            for bin = 1:no_of_bins
-                alpha_asym_bins{bin,side}(counters(bin):counters(bin)+group_size-1) = ...
-                    alpha_asym_temp(end-bin_counter(bin)*group_size+1:end-(bin_counter(bin)-1)*group_size);
-                RT_bins{bin,side}(counters(bin):counters(bin)+group_size-1) = ...
-                    RT_temp(end-bin_counter(bin)*group_size+1:end-(bin_counter(bin)-1)*group_size);
-                counters(bin)=counters(bin)+group_size;
-            end
-        end
   %% Code adapted from Ger's Current Biology cpp code to pull out CPP onset latency:
         % Define CPP onset search window, from 0 to 1000ms
         CPP_search_t  = [0,1000];
@@ -516,315 +428,6 @@ disp(['RT index x DAT1: t = ' num2str(stats.tstat) ', p = ' num2str(p)])
 
 figure
 plot(zscore(RT_index))
-
-%% Alpha check
-
-% %{
-alpha_group_side = squeeze(mean(alpha_side(:,:,:,:),1)); % chan x time x side
-figure
-plottopo(alpha_group_side(:,:,:),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
-    min(min(min(alpha_group_side(plot_chans,:,:))))  max(max(max(alpha_group_side(plot_chans,:,:))))], ...
-    'title',['Alpha left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
-
-t1 = -500; t2 = -50;
-figure
-plot_mean = squeeze(mean(mean(alpha_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),:),2),3));
-topoplot(plot_mean,chanlocs,'maplimits', ...
-    [min(plot_mean) max(plot_mean)], ...
-    'electrodes','off','plotchans',plot_chans);
-% topoplot(plot_mean,chanlocs,'maplimits', ...
-%     [-max(abs(plot_mean)) max(abs(plot_mean))], ...
-%     'electrodes','off','plotchans',plot_chans);
-% topoplot(plot_mean,chanlocs,'maplimits',[-4 4], ...
-%     'electrodes','off','plotchans',plot_chans);
-colorbar('FontSize',12)
-title(['Pretarget Alpha -500ms to 0ms'],'FontSize',12);
-
-alpha_base_group_side = squeeze(mean(alpha_base_side(:,:,:,:),1)); % chan x time x side
-figure
-plottopo(alpha_base_group_side(:,:,:),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
-    min(min(min(alpha_base_group_side(plot_chans,:,:))))  max(max(max(alpha_base_group_side(plot_chans,:,:))))], ...
-    'title',['Alpha (BL corrected) left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
-
-clear time_windows
-time_windows(1,:) = [0:100:800];
-time_windows(2,:) = time_windows(1,:)+100;
-for side = 1:2    
-    figure
-    for tt = 1:size(time_windows,2)
-        plot_mean = squeeze(mean(alpha_base_group_side(:,find(alpha_t>=time_windows(1,tt) & alpha_t<=time_windows(2,tt)),side),2));
-        subplot(3,3,tt)
-        topoplot(plot_mean,chanlocs,'maplimits', ...
-            [min(min(min(alpha_base_group_side(:,find(alpha_t>time_windows(1,1) & alpha_t<time_windows(2,end)),:))))...
-            max(max(max(alpha_base_group_side(:,find(alpha_t>time_windows(1,1) & alpha_t<time_windows(2,end)),:))))], ...
-            'electrodes','off','plotchans',plot_chans);
-        title([side_tags{side},' targ alpha: ',num2str(time_windows(1,tt)),' ms to ',num2str(time_windows(2,tt)),' ms']);
-        colorbar
-    end
-end
-
-t1 = 50; t2 = 500;
-figure
-for side = 1:2
-    plot_mean = squeeze(mean(alpha_base_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),side),2));
-    subplot(1,2,side)
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(squeeze(mean(mean(alpha_base_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),:),3),2))) ...
-        max(squeeze(mean(mean(alpha_base_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),:),3),2)))], ...
-        'electrodes','off','plotchans',plot_chans);    
-    colorbar('FontSize',12)
-    title(['PostTarget Alpha -500ms to 0ms: ' side_tags{side} ' Targets'],'FontSize',12);
-end
-
-% alpha_asym_group_side = squeeze(mean(alpha_asym_side(:,:,:,:),1)); % chan x time x side 
-alpha_asym_group_side = squeeze(mean(alpha_asym_avg_side(:,:,:,:),1));
-figure
-plottopo(alpha_asym_group_side(:,:,:),'chanlocs',chanlocs,'limits',[alpha_t(1) alpha_t(end) ...
-    min(min(min(alpha_asym_group_side(plot_chans,:,:))))  max(max(max(alpha_asym_group_side(plot_chans,:,:))))], ...
-    'title',['Alpha asymmetry left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
-
-clear time_windows
-time_windows(1,:) = [0:100:800];
-time_windows(2,:) = time_windows(1,:)+100;
-for side = 1:2    
-    figure
-    for tt = 1:size(time_windows,2)
-        plot_mean = squeeze(mean(alpha_asym_group_side(:,find(alpha_t>=time_windows(1,tt) & alpha_t<=time_windows(2,tt)),side),2));
-        subplot(3,3,tt)
-        topoplot(plot_mean,chanlocs,'maplimits', ...
-            [min(min(min(alpha_asym_group_side(:,find(alpha_t>time_windows(1,1) & alpha_t<time_windows(2,end))))))...
-            max(max(max(alpha_asym_group_side(:,find(alpha_t>time_windows(1,1) & alpha_t<time_windows(2,end))))))], ...
-            'electrodes','off','plotchans',plot_chans);
-        title([side_tags{side},' targ alpha asym: ',num2str(time_windows(1,tt)),' ms to ',num2str(time_windows(2,tt)),' ms']);
-        colorbar
-    end
-end
-
-t1 = -500; t2 = -50;
-figure
-plot_mean = squeeze(mean(mean(alpha_asym_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),:),2),3));
-topoplot(plot_mean,chanlocs,'maplimits', ...
-    [min(squeeze(mean(mean(alpha_asym_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),:),3),2))) ...
-    max(squeeze(mean(mean(alpha_asym_group_side(:,find(alpha_t>=t1 & alpha_t<=t2),:),3),2)))], ...
-    'electrodes','off','plotchans',plot_chans);
-colorbar('FontSize',12)
-title(['PostTarget Alpha asymmetry -500ms to 0ms'],'FontSize',12);
-
-%}
-%% Correlations between alpha and behaviour
-% alpha: right minus left, more negative means greater left hemi alpha
-% RT: left minus right, more negative means faster leftward RT
-% regular correlation would be positive correlation.
-
-% ch_alpha_asym = [53:60,62:64];
-% ch_alpha_asym = [54,55,59];
-ch_alpha_asym = [54:59];
-% ch_alpha_asym = [44];
-
-% close all
-t1 = -301; t2 = -51; z_thresh = 2.5;
-% t1 = 899; t2 = 1299; z_thresh = 2.5; 
-alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_side(:,ch_alpha_asym,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-% alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_avg_side(:,ch_alpha_asym,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-alpha_zscores = zscore(alpha_asym_pretarg);
-RT_zscores = zscore(RT_index);
-indx = find(abs(alpha_zscores)<z_thresh & abs(RT_zscores)<z_thresh);
-
-[R,P] = corrcoef(alpha_asym_pretarg(indx),RT_index(indx)); % 50 and 54 have large zscores
-disp(['Alpha asymmetry vs RT index: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
-figure
-scatter(alpha_asym_pretarg(indx),RT_index(indx)), hold on
-lsline
-
-alpha_corr_topo=[];
-for chan = right_hemi 
-    alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_side(:,chan,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-%     alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_avg_side(:,chan,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-    alpha_zscores = zscore(alpha_asym_pretarg);
-    RT_zscores = zscore(RT_index);
-    indx = find(abs(alpha_zscores)<z_thresh & abs(RT_zscores)<z_thresh);
-    [R,P] = corrcoef(alpha_asym_pretarg(indx),RT_index(indx));
-    alpha_corr_topo(chan,1) = R(1,2);
-    alpha_corr_topo(chan,2) = P(1,2);
-    for tt = 1:length(alpha_t)
-        alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_side(:,chan,tt,:),2),3),4))';
-%         alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_avg_side(:,chan,tt,:),2),3),4))';
-        alpha_zscores = zscore(alpha_asym_pretarg);
-        RT_zscores = zscore(RT_index);
-        indx = find(abs(alpha_zscores)<z_thresh & abs(RT_zscores)<z_thresh);
-        [R,P] = corrcoef(alpha_asym_pretarg(indx),RT_index(indx));
-        alpha_corr_topo_tt(chan,tt,1) = R(1,2);
-        alpha_corr_topo_tt(chan,tt,2) = P(1,2);
-        
-        RT_index2 = RT_index(indx); alpha_asym_pretarg2 = alpha_asym_pretarg(indx); DAT1_nosplit2 = DAT1_nosplit(indx);
-        [~,p,~,stats] = ttest2(alpha_asym_pretarg2(find(DAT1_nosplit2==1)),alpha_asym_pretarg2(find(DAT1_nosplit2==2)));
-        alpha_DAT1_topo_tt(chan,tt,1) = stats.tstat;
-        alpha_DAT1_topo_tt(chan,tt,2) = p;
-    end
-end
-alpha_corr_topo(left_hemi,:) = repmat(mean(alpha_corr_topo,1),[length(left_hemi),1]);
-alpha_corr_topo(centre_chans,:) = repmat(mean(alpha_corr_topo,1),[length(centre_chans),1]);
-alpha_corr_topo_tt(left_hemi,:,:) = repmat(mean(alpha_corr_topo_tt,1),[length(left_hemi),1,1]);
-alpha_corr_topo_tt(centre_chans,:,:) = repmat(mean(alpha_corr_topo_tt,1),[length(centre_chans),1,1]);
-alpha_DAT1_topo_tt(left_hemi,:,:) = repmat(mean(alpha_DAT1_topo_tt,1),[length(left_hemi),1,1]);
-alpha_DAT1_topo_tt(centre_chans,:,:) = repmat(mean(alpha_DAT1_topo_tt,1),[length(centre_chans),1,1]);
-
-figure
-subplot(1,2,1)
-plot_mean = alpha_corr_topo(:,1);
-topoplot(plot_mean,chanlocs,'maplimits', ...
-    [min(plot_mean) max(plot_mean)], ...
-    'electrodes','numbers','plotchans',plot_chans,'intsquare','off');
-colorbar('FontSize',12)
-subplot(1,2,2)
-plot_mean = alpha_corr_topo(:,2);
-topoplot(plot_mean,chanlocs,'maplimits', ...
-    [0 0.05], ...
-    'electrodes','off','plotchans',plot_chans);
-colorbar('FontSize',12)
-
-figure
-cc=0;
-for tt = 1:length(alpha_t)
-    if cc<9, cc=cc+1; else figure, cc=1; end
-    subplot(3,3,cc)
-    plot_mean = squeeze(mean(alpha_corr_topo_tt(:,tt,1),2));
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(min(alpha_corr_topo_tt(:,:,1)))...
-        max(max(alpha_corr_topo_tt(:,:,1)))], ...
-        'electrodes','off','plotchans',plot_chans);
-    title(['Alpha asym corr: ',num2str(alpha_t(tt)),' ms']);
-    colorbar
-end
-
-figure
-cc=0;
-for tt = 1:length(alpha_t)
-    if cc<9, cc=cc+1; else figure, cc=1; end
-    subplot(3,3,cc)
-    plot_mean = squeeze(mean(alpha_DAT1_topo_tt(:,tt,1),2));
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(min(alpha_DAT1_topo_tt(:,:,1)))...
-        max(max(alpha_DAT1_topo_tt(:,:,1)))], ...
-        'electrodes','off','plotchans',plot_chans);
-    title(['Alpha asym DAT1: ',num2str(alpha_t(tt)),' ms']);
-    colorbar
-end
-
-%% Alpha asymmetry vs RT by side
-% alpha: right minus left, more negative means greater left hemi alpha
-% RT: more negative means faster RT
-% RT_all(s,side)
-
-% ch_alpha_asym = [49,50,55,56];
-% ch_alpha_asym = [53:60,62:64];
-ch_alpha_asym = [54,55,59];
-% ch_alpha_asym = [54:59];
-% ch_alpha_asym = [44];
-
-% close all
-t1 = -301; t2 = -51; z_thresh = 2.5;
-% t1 = 899; t2 = 1299; z_thresh = 2.5; 
-alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_side(:,ch_alpha_asym,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-% alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_avg_side(:,ch_alpha_asym,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-alpha_zscores = zscore(alpha_asym_pretarg);
-RT_zscores = zscore(RT_all,[],1);
-indx = find(abs(alpha_zscores)<z_thresh);% & abs(RT_zscores)<z_thresh);
-
-for side = 1:2
-    [R,P] = corrcoef(alpha_asym_pretarg(indx),RT_all(indx,side));
-    disp(['Alpha asymmetry vs ' side_tags{side} ' RT: R = ' num2str(R(1,2)) ', p = ' num2str(P(1,2))])
-    figure
-    scatter(alpha_asym_pretarg(indx),RT_all(indx,side)), hold on
-    lsline
-end
-
-for side = 1:2
-    alpha_corr_topo=[];
-    for chan = right_hemi
-        alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_side(:,chan,find(alpha_t>=t1 & alpha_t<=t2),side),2),3),4))';
-        %     alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_avg_side(:,chan,find(alpha_t>=t1 & alpha_t<=t2),:),2),3),4))';
-        alpha_zscores = zscore(alpha_asym_pretarg);
-%         RT_zscores = zscore(RT_index);
-        indx = find(abs(alpha_zscores)<z_thresh);% & abs(RT_zscores)<z_thresh);
-        [R,P] = corrcoef(alpha_asym_pretarg(indx),RT_all(indx,side));
-        alpha_corr_topo(chan,1) = R(1,2);
-        alpha_corr_topo(chan,2) = P(1,2);
-        for tt = 1:length(alpha_t)
-            alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_side(:,chan,tt,side),2),3),4))';
-            %         alpha_asym_pretarg = squeeze(mean(mean(mean(alpha_asym_avg_side(:,chan,tt,:),2),3),4))';
-            alpha_zscores = zscore(alpha_asym_pretarg);
-%             RT_zscores = zscore(RT_index);
-            indx = find(abs(alpha_zscores)<z_thresh);% & abs(RT_zscores)<z_thresh);
-            [R,P] = corrcoef(alpha_asym_pretarg(indx),RT_all(indx,side));
-            alpha_corr_topo_tt(chan,tt,1) = R(1,2);
-            alpha_corr_topo_tt(chan,tt,2) = P(1,2);
-            
-%             RT_index2 = RT_index(indx); alpha_asym_pretarg2 = alpha_asym_pretarg(indx); DAT1_nosplit2 = DAT1_nosplit(indx);
-%             [~,p,~,stats] = ttest2(alpha_asym_pretarg2(find(DAT1_nosplit2==1)),alpha_asym_pretarg2(find(DAT1_nosplit2==2)));
-%             alpha_DAT1_topo_tt(chan,tt,1) = stats.tstat;
-%             alpha_DAT1_topo_tt(chan,tt,2) = p;
-        end
-    end
-    alpha_corr_topo(left_hemi,:) = repmat(mean(alpha_corr_topo,1),[length(left_hemi),1]);
-    alpha_corr_topo(centre_chans,:) = repmat(mean(alpha_corr_topo,1),[length(centre_chans),1]);
-    alpha_corr_topo_tt(left_hemi,:,:) = repmat(mean(alpha_corr_topo_tt,1),[length(left_hemi),1,1]);
-    alpha_corr_topo_tt(centre_chans,:,:) = repmat(mean(alpha_corr_topo_tt,1),[length(centre_chans),1,1]);
-%     alpha_DAT1_topo_tt(left_hemi,:,:) = repmat(mean(alpha_DAT1_topo_tt,1),[length(left_hemi),1,1]);
-%     alpha_DAT1_topo_tt(centre_chans,:,:) = repmat(mean(alpha_DAT1_topo_tt,1),[length(centre_chans),1,1]);
-%     
-    figure
-    subplot(1,2,1)
-    plot_mean = alpha_corr_topo(:,1);
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(plot_mean) max(plot_mean)], ...
-        'electrodes','numbers','plotchans',plot_chans,'intsquare','off');
-    colorbar('FontSize',12)
-    subplot(1,2,2)
-    plot_mean = alpha_corr_topo(:,2);
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [0 0.05], ...
-        'electrodes','off','plotchans',plot_chans);
-    colorbar('FontSize',12)
-end
-
-for side = 1:2
-    alpha_corr_topo=[];
-    for chan = plot_chans
-        alpha_pretarg = squeeze(mean(mean(mean(alpha_side(:,chan,find(alpha_t>=t1 & alpha_t<=t2),side),2),3),4))';
-        alpha_zscores = zscore(alpha_pretarg);
-%         RT_zscores = zscore(RT_index);
-        indx = find(abs(alpha_zscores)<z_thresh);% & abs(RT_zscores)<z_thresh);
-        [R,P] = corrcoef(alpha_pretarg(indx),RT_all(indx,side));
-        alpha_corr_topo(chan,1) = R(1,2);
-        alpha_corr_topo(chan,2) = P(1,2);
-        for tt = 1:length(alpha_t)
-            alpha_pretarg = squeeze(mean(mean(mean(alpha_side(:,chan,tt,side),2),3),4))';
-            alpha_zscores = zscore(alpha_pretarg);
-%             RT_zscores = zscore(RT_index);
-            indx = find(abs(alpha_zscores)<z_thresh);% & abs(RT_zscores)<z_thresh);
-            [R,P] = corrcoef(alpha_pretarg(indx),RT_all(indx,side));
-            alpha_corr_topo_tt(chan,tt,1) = R(1,2);
-            alpha_corr_topo_tt(chan,tt,2) = P(1,2);
-        end
-    end
-
-    figure
-    subplot(1,2,1)
-    plot_mean = alpha_corr_topo(:,1);
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [min(plot_mean) max(plot_mean)], ...
-        'electrodes','numbers','plotchans',plot_chans,'intsquare','off');
-    colorbar('FontSize',12)
-    subplot(1,2,2)
-    plot_mean = alpha_corr_topo(:,2);
-    topoplot(plot_mean,chanlocs,'maplimits', ...
-        [0 0.05], ...
-        'electrodes','off','plotchans',plot_chans);
-    colorbar('FontSize',12)
-end
-
-return
 %% Grand average ERP
 % chan x time x side
 ERP_group_side = squeeze(mean(ERP_side(:,:,:,:),1));
@@ -866,7 +469,6 @@ for side = 1:2
         [min(plot_mean) max(plot_mean)], ...
         'electrodes','numbers','plotchans',plot_chans);
 end
-
 %% Grand average ERPr
 % chan x time x side
 ERPr_group_side = squeeze(mean(ERPr_side(:,:,:,:),1));
@@ -1096,7 +698,7 @@ line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
 legend(h,{'Left/DAT1 no repeat','Right/DAT1 no repeat','Left/DAT1 repeat','Right/DAT1 repeat'},...
     'FontSize',16,'Location','NorthWest');
 
-return
+
 %% Extract Response Locked CPP slope"
 %CPP build-up defined as the slope of a straight line fitted to the
 %response-locked waveform at during "slope_timeframe_index" defined for

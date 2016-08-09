@@ -52,9 +52,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
     '484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'};
 %%
 
-duds = []; % LK_07_04_14
-single_participants = [];
-
+ 
 CSD=0; %Use Current Source Density transformed erp? 1=yes, 0=no
 
 
@@ -199,6 +197,12 @@ for s=1:length(allsubj)
         master_matrix_R(total_numtr,14)=ET_t1000ms_artrej(trial); %1=no fixation break or blink; 0=there was an fixation break or blink      
         %% 15. Reaction time (RT):
         master_matrix_R(total_numtr,15)=allRT(trial)*1000/fs;
+        %% 16. location (1=TCD; 2=Monash)
+        if ismember(subject_folder{s},TCD_bigdots)
+             master_matrix_R(total_numtr,16) = 1;
+        elseif ismember(subject_folder{s},Monash_bigdots)
+            master_matrix_R(total_numtr,16) = 2;
+        end
         
         %% HAVE NOT YET UPDATED BELOW FOR BIG DOTS     
 %         %% 16. Pre-target Alpha Power overall (combining the two ROIs):
