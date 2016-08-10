@@ -66,12 +66,22 @@ CSD=0; %Use Current Source Density transformed erp? 1=yes, 0=no
 % ch_front = 5; %5=Fz
 % ch_CPP = [53];%25=Pz; 53=CPz
 
-fs=500; % sample rate %500Hz
-ts = -0.5*fs:1.800*fs;
-t = ts*1000/fs;
+fs=500;
 
-trs = [-.500*fs:fs*.100];% in sample points, the response locked ERP epoch
+% stim-locked erps
+% ts = -0.500*fs:1.800*fs;
+% t = ts*1000/fs;
+ts = -0.700*fs:1.800*fs;
+t = ts*1000/fs;
+ts_crop = -0.500*fs:1.500*fs;
+t_crop = ts_crop*1000/fs;
+
+% resp-locked erps
+trs = [-.700*fs:fs*.100];
 tr = trs*1000/fs;
+
+BL_erp = [-100,0];
+BL_alpha = [-100];
 
 % patch,ITI
 targcodes = zeros(2,3);
@@ -88,8 +98,24 @@ master_matrix_R = []; % This saves the matrix for SPSS/R analysis.
 total_numtr = 0;
 ID_vector=cell(32000,1); %this will save the subjects ID for each single trial can be pasted into SPSS for ID column. Code at the end of the script clear the emplt cells
 
-mat_file='big_dots_erp.mat';
 
+%% Alpha filter
+alpha_bandlimits = [8,13]; % defining the filter for alpha bandpass.
+[H,G]=butter(4,[2*(alpha_bandlimits(1)/fs) 2*(alpha_bandlimits(2)/fs)]); % alpha bandpass for 500Hz
+
+window = 50; % in samples. Time is double this.
+skip_step = window/2;
+
+% Alpha time
+alpha_t=[]; cca=1;
+for tt = 1:skip_step:length(t_crop)-window
+    alpha_t(:,cca) = mean(t_crop(tt:tt+window-1));
+    cca=cca+1;
+end
+
+%%
+mat_file='big_dots_erp.mat';
+%%
 for s=1:length(allsubj)
     disp(['Subject: ',num2str(s)])
     disp(['Subject: ',allsubj{s}])
@@ -99,15 +125,42 @@ for s=1:length(allsubj)
 %         load([path_temp subject_folder{s} '\' 'avN2c_ParticipantLevel_peak_amp_index.mat'])
 %         load([path_temp subject_folder{s} '\' 'avN2i_ParticipantLevel_peak_amp_index.mat'])
 %         load([path_temp subject_folder{s} '\' 'ROIs.mat']) 
-%     LH_ROI=LH_ROI_s;
-%     RH_ROI=RH_ROI_s;
+     LH_ROI_s=[17,18,21,22]; % 17,18,21,22,26,27   CP5, CP3, P5, P3, PO7, O1
+     RH_ROI_s=[54,55,58,59]; % 54,55,58,59,63,64  CP4, CP6, P4, P6, PO4, O6 
+
+    if strcmp(subject_folder{s},'331M_CL') % really odd tiny artifact meant this trial was messing with CSD!
+        allRT(53) = 0; allrespLR(53) = 0;
+    end
         
 %%
      if CSD
-         erp=erp_LPF_35Hz_CSD;
+         erp=double(erp_LPF_35Hz_CSD);
      else
-         erp=erp_LPF_35Hz;
+         erp=double(erp_LPF_35Hz);
      end
+     
+     %% Baseline erp
+    baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
+    erp = erp-repmat(baseline_erp,[1,size(erp,2),1]); % baseline full erp
+        
+    %% Alpha Spectrotemporal Evolution a la Thut 
+    alpha_TSE = []; alpha_asym = [];
+    for trial = 1:size(erp,3)
+        % filtering to alpha
+        ep_filt = filtfilt(H,G,squeeze(erp(:,:,trial))')';
+        % chop off ends and rectify
+        ep_filt = abs(ep_filt(:,find(t>=t_crop(1) & t<=t_crop(end))));
+        % smooth
+        cca=1;
+        for tt = 1:skip_step:size(ep_filt,2)-window
+            alpha_TSE(:,cca,trial) = mean(ep_filt(:,tt:tt+window-1),2);
+            cca=cca+1;
+        end
+    end
+
+    %% Baseline alpha
+    baseline_alpha = mean(alpha_TSE(:,find(alpha_t<=BL_alpha),:),2);
+    alpha_TSE_base = alpha_TSE-repmat(baseline_alpha,[1,size(alpha_TSE,2),1]); % baseline full erp
     
     %if the final trial was a miss there will be no RT recorded, just need
     %to add a zero for RT in that case
@@ -127,6 +180,8 @@ for s=1:length(allsubj)
             validrlock(n)=1;
         end
     end   
+ 
+    
 %%    
     %DN: master_matrix_R columns:
     %Participant(1), Total Trial no(2), Inter-participant Trial no(3),ITI(4), TargetSide(5)
@@ -135,11 +190,11 @@ for s=1:length(allsubj)
     % Artefact between baseline and 1000ms (10), Fixation-Break pre-target (11), Artifact baseline to
     % 100mspost-response (12), Fixation-Break any time before response (13), 
     % Fixation-Break between baseline and 1000ms (14), Reaction time (15),
-    
     %Pre-target AlphaPower overall (16), Pre-target AlphaPower Left Hemi (17)
     %Pre-target AlphaPower Right Hemi (18), Pre-target AlphaAsym (19),
+    %Post-target Alpha Power Left Hemi (20), Post-target Alpha Power Right Hemi (21),
+    
     %Pre-target Pupil Diameter (20), Number of repeated/invalid trials (21), N2c Amp(22), N2i Amp (23),
-	%Post-target Alpha Power Left Hemi (24), Post-target Alpha Power Right Hemi (25),
 	%CPP half peak latency (26), N2c peak latency (27), Respose locked CPP slope (28),
     
     for trial=1:length(allTrials) % get rid of last trigger?
@@ -202,17 +257,20 @@ for s=1:length(allsubj)
              master_matrix_R(total_numtr,16) = 1;
         elseif ismember(subject_folder{s},Monash_bigdots)
             master_matrix_R(total_numtr,16) = 2;
-        end
-        
-        %% HAVE NOT YET UPDATED BELOW FOR BIG DOTS     
-%         %% 16. Pre-target Alpha Power overall (combining the two ROIs):
-%         master_matrix_R(total_numtr,16)=squeeze(mean(mean(Alpha([LH_ROI_s RH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
-%         %% 17. Pre-target Alpha Power Left Hemi:
-%         master_matrix_R(total_numtr,17)=squeeze(mean(mean(Alpha([LH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
-%         %% 18. Pre-target Alpha Power Right Hemi:
-%         master_matrix_R(total_numtr,18)=squeeze(mean(mean(Alpha([RH_ROI_s],find(Alpha_smooth_time==-500):find(Alpha_smooth_time==0),trial),1),2));
-%         %% 19.  Pre-target AlphaAsym:
-%         master_matrix_R(total_numtr,19)=(master_matrix_R(total_numtr,18)-master_matrix_R(total_numtr,17))/(master_matrix_R(total_numtr,18)+master_matrix_R(total_numtr,17)); %(RightHemiROI - LeftHemiROI)/(RightHemiROI + LeftHemiROI)
+        end 
+        %% 16. Pre-target Alpha Power overall (combining the two ROIs):
+        master_matrix_R(total_numtr,16)=squeeze(mean(mean(alpha_TSE([LH_ROI_s RH_ROI_s],find(alpha_t>-500 & alpha_t<0),trial),1),2));
+        %% 17. Pre-target Alpha Power Left Hemi:
+        master_matrix_R(total_numtr,17)=squeeze(mean(mean(alpha_TSE(LH_ROI_s,find(alpha_t>-500 & alpha_t<0),trial),1),2));
+        %% 18. Pre-target Alpha Power Right Hemi:
+        master_matrix_R(total_numtr,18)=squeeze(mean(mean(alpha_TSE(RH_ROI_s,find(alpha_t>-500 & alpha_t<0),trial),1),2));
+        %% 19.  Pre-target AlphaAsym:
+        master_matrix_R(total_numtr,19)=(master_matrix_R(total_numtr,18)-master_matrix_R(total_numtr,17))/(master_matrix_R(total_numtr,18)+master_matrix_R(total_numtr,17)); %(RightHemiROI - LeftHemiROI)/(RightHemiROI + LeftHemiROI)
+        %% 20. Post-target Alpha Power Left Hemi:
+        master_matrix_R(total_numtr,20)=squeeze(mean(mean(alpha_TSE(LH_ROI_s,find(alpha_t<150 & alpha_t<700),trial),1),2));
+        %% 21. Post-target Alpha Power Right Hemi:
+        master_matrix_R(total_numtr,21)=squeeze(mean(mean(alpha_TSE(RH_ROI_s,find(alpha_t<150 & alpha_t<700),trial),1),2));     
+%% HAVE NOT YET UPDATED BELOW FOR BIG DOTS
 %         %% 20. Pre-target Pupil Diameter:
 %         master_matrix_R(total_numtr,20)=mean(Pupil(find(t==-500):find(t==0),trial));
 %         %% 21. Number of repeated trials due to fixation breaks:
@@ -222,10 +280,7 @@ for s=1:length(allsubj)
 %         master_matrix_R(total_numtr,22)=mean(mean(erp(ch_N2c(TargetSide,:),(avN2c_ParticipantLevel_peak_amp_index_s(TargetSide))-window:avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)+window,trial),1));
 %         %% 23. N2i Amp (using PARTICIPANT LEVEL AVERAGE to define N2i measurement window):
 %         master_matrix_R(total_numtr,23)=mean(mean(erp(ch_LR(TargetSide,:),avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)-window:avN2c_ParticipantLevel_peak_amp_index_s(TargetSide)+window,trial),1));
-%         %% 24. Post-target Alpha Power Left Hemi:
-%         master_matrix_R(total_numtr,24)=squeeze(mean(mean(Alpha([LH_ROI],find(Alpha_smooth_time==300):find(Alpha_smooth_time==1000),trial),1),2));
-%         %% 25. Post-target Alpha Power Right Hemi:
-%         master_matrix_R(total_numtr,25)=squeeze(mean(mean(Alpha([RH_ROI],find(Alpha_smooth_time==300):find(Alpha_smooth_time==1000),trial),1),2));
+
 %         %% 26. CPP half peak latency:
 %         half_max_peak=max(erp(ch_CPP,find(t==0):find(t==1500),trial))/2;
 % 

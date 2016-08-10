@@ -118,7 +118,13 @@ data<- data %>% #Rename data columns:
             FixBreak_neg100_100PR=V12,
             FixBreak_neg500_100PR=V13,
             FixBreak_neg100_1000=V14,
-            RT=V15) %>% #next make the required columns into factors:
+            RT=V15,
+           PreAlphaPower=V16,
+           PreAlphaPowerLH=V17,
+           PreAlphaPowerRH=V18,
+           PreAlphaAsym=V19,
+           PostAlphaPowerLH=V20,
+           PostAlphaPowerRH=V21) %>% #next make the required columns into factors:
     mutate_each_(funs(factor), c("ITI", "Hemifield", "Accuracy")) %>% #next re-class required vectors into Logicals:
     mutate_at(vars(starts_with("Art_")), funs(as.logical)) %>% 
     mutate_at(vars(starts_with("FixBreak_")), funs(as.logical)) %>% #next use the ! negation operator to reverse of a TRUE/FALSE vectors: 
@@ -129,7 +135,26 @@ data<- data %>% #Rename data columns:
 #Only keep SLF measures for the participants who we actually tested on big dots 
 #(there are a few extra participants who we got SLF from who were not tested on big dots)
 SLF <-SLF[SLF$ID %in% data$ID, ]
-Demographics <-Demographics[Demographics$ID %in% data$ID, ]   
+Demographics <-Demographics[Demographics$ID %in% data$ID, ] 
+
+#Calculate alpha desynchronisation by subtracting Pre-target Alpha from post target alpha
+data$AlphaDesyncRH<-(data$PreAlphaPowerRH)-(data$PostAlphaPowerRH)
+data$AlphaDesyncLH<-data$PreAlphaPowerLH-data$PostAlphaPowerLH
+# Make PostAlpha contralateral (PostAlpha_c) and -Ipsilateral (PostAlpha_i) variables:
+A<-data$Hemifield=="Left"
+#Absolute post target alpha
+data$PostAlpha_c[A]<-data$PostAlphaPowerRH[A]
+data$PostAlpha_c[!A]<-data$PostAlphaPowerLH[!A]
+data$PostAlpha_i[!A]<-data$PostAlphaPowerRH[!A]
+data$PostAlpha_i[A]<-data$PostAlphaPowerLH[A]
+#Post target Alpha desynchronisation 
+data$AlphaDesync_c[A]<-data$AlphaDesyncRH[A]
+data$AlphaDesync_c[!A]<-data$AlphaDesyncLH[!A]
+data$AlphaDesync_i[!A]<-data$AlphaDesyncRH[!A]
+data$AlphaDesync_i[A]<-data$AlphaDesyncLH[A]
+
+rm(A)
+
 
 ############################################ Import DAT1 Data ##############################################
 DAT1 <- read_excel("DAT1genotypes_forR.xlsx") 
@@ -245,9 +270,9 @@ summary(num_trials2$Trials)
 
 ####Import participant_level_matrix with ERP measures
 if (location=="Monash") {
-data_participant_level <- read.csv("C:/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
+participant_level <- read.csv("C:/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
 } else if (location=="DansLaptop") {
-data_participant_level <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
+participant_level <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/participant_level_matrix.csv", header=FALSE)
 } else setwd(("~"))
 #Import IDs:
 if (location=="Monash") {
@@ -256,10 +281,10 @@ ID <- read.table("C:/GitHub/big_dots/IDs.csv", quote="\"")
 ID <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/IDs.csv", header=F)
 } else setwd(("~"))
 ID<-plyr::rename(ID,c("V1"="ID"))
-data_participant_level$ID<-ID$ID
+participant_level$ID<-ID$ID
 rm(ID)
 
-data_participant_level<- data_participant_level %>% #Rename data columns:
+participant_level<- participant_level %>% #Rename data columns:
                             rename(., 
                                     N2c_LeftTarget=V1,
                                     N2c_RightTarget=V2,
@@ -281,6 +306,39 @@ data_participant_level<- data_participant_level %>% #Rename data columns:
                                   CPPonset_Asym = (CPPonset_LeftTarget-CPPonset_RightTarget)/(CPPonset_LeftTarget+CPPonset_RightTarget),
                                   CPPslope_Asym = (CPPslope_LeftTarget-CPPslope_RightTarget)/(CPPslope_LeftTarget+CPPslope_RightTarget)
                                   )
+####################################################################################
+#Collapse each participant's PreAlpha trials to participant level
+PreAlphaAsym_collapsed<- data %>% 
+            filter(!Art_neg500_0, !FixBreak_neg500_0) %>%
+            group_by(ID) %>%
+            summarise(PreAlphaAsym=mean(PreAlphaAsym))
+#Merge it in with the ERP measures
+participant_level<-merge(participant_level, PreAlphaAsym_collapsed, by.x = "ID", by.y = "ID") 
+
+
+#Collapse each participant's Post-target AlphaDesync single trials to participant level
+AlphaDesync_c_collapsed<- data %>% 
+            filter(!Art_neg500_100PR, !FixBreak_neg500_100PR) %>%
+            group_by(ID, Hemifield) %>%
+            summarise(AlphaDesync_c=mean(AlphaDesync_c)) %>% #next bring Target-Hemifield up into wide format:
+            spread(Hemifield, AlphaDesync_c) %>% #next rename
+            rename(AlphaDesync_c_LeftTarget=Left, AlphaDesync_c_RightTarget=Right) %>% # next Calculate RT asymmetry:
+            mutate(AlphaDesync_c_Asym=(AlphaDesync_c_LeftTarget-AlphaDesync_c_RightTarget)/(AlphaDesync_c_LeftTarget+AlphaDesync_c_RightTarget)) 
+#Merge it in with the ERP measures
+participant_level<-merge(participant_level, AlphaDesync_c_collapsed, by.x = "ID", by.y = "ID") 
+
+AlphaDesync_i_collapsed<- data %>% 
+            filter(!Art_neg500_100PR, !FixBreak_neg500_100PR) %>%
+            group_by(ID, Hemifield) %>%
+            summarise(AlphaDesync_i=mean(AlphaDesync_i)) %>% #next bring Target-Hemifield up into wide format:
+            spread(Hemifield, AlphaDesync_i) %>% #next rename
+            rename(AlphaDesync_i_LeftTarget=Left, AlphaDesync_i_RightTarget=Right) %>% # next Calculate RT asymmetry:
+            mutate(AlphaDesync_i_Asym=(AlphaDesync_i_LeftTarget-AlphaDesync_i_RightTarget)/(AlphaDesync_i_LeftTarget+AlphaDesync_i_RightTarget)) 
+#Merge it in with the ERP measures
+participant_level<-merge(participant_level, AlphaDesync_i_collapsed, by.x = "ID", by.y = "ID") 
+
+
+
 
 ```
 
@@ -288,7 +346,7 @@ data_participant_level<- data_participant_level %>% #Rename data columns:
 
 #t-tests for the relationship between DAT1 3UTR genotype and all of the Asymmetry measures (i.e. RT, N2, CPP and SLF asymmetry) 
 ```{r, echo=FALSE, warning=FALSE}
-######Calculate RT asymmetry Index and add it to "data_participant_level"######
+######Calculate RT asymmetry Index and add it to "participant_level"######
 #Collapse each participant's trials accross ITI
 RT_collapsed<- data %>% 
             group_by(ID, Hemifield, DAT1_3UTR) %>%
@@ -298,11 +356,11 @@ RT_collapsed<- data %>%
             mutate(RT_Asym=(RT_Left-RT_Right)/(RT_Left+RT_Right)) 
 
             # %>% #next add in the ERP measures:
-            # left_join(data_participant_level, by="ID") %>% #next add in the SLF data: 
+            # left_join(participant_level, by="ID") %>% #next add in the SLF data: 
             # left_join(SLF, by="ID") #DON'T WORRY ABOUT "coercing to character vector" it's just changing ID from a factor class to an character class
 
 #Add in the ERP measures
-RT_collapsed<-merge(RT_collapsed, data_participant_level, by.x = "ID", by.y = "ID") 
+RT_collapsed<-merge(RT_collapsed, participant_level, by.x = "ID", by.y = "ID") 
 
 #Add in the SLF data
 RT_collapsed<-merge(RT_collapsed, SLF, by.x = "ID", by.y = "ID") 
@@ -365,7 +423,7 @@ t_test_results<-t_test_results %>% tibble::rownames_to_column(.) %>%
 data_for_cor<-select(Asym_data_wide, -ID, -DAT1_3UTR)
 
 ##Re order the columns
-data_for_cor <- select(data_for_cor, RT_Asym, N2c_Asym, N2c_latency_Asym, N2i_Asym, N2i_latency_Asym, CPPonset_Asym, CPPslope_Asym, AD_LI_SLF1, AD_LI_SLF2 ,AD_LI_SLF3,FA_LI_SLF1,FA_LI_SLF2,FA_LI_SLF3,MD_LI_SLF1,MD_LI_SLF2,MD_LI_SLF3,RD_LI_SLF1,RD_LI_SLF2,RD_LI_SLF3,VOL_LI_SLF1,VOL_LI_SLF2,VOL_LI_SLF3)
+# data_for_cor <- select(data_for_cor, RT_Asym, N2c_Asym, N2c_latency_Asym, N2i_Asym, N2i_latency_Asym, CPPonset_Asym, CPPslope_Asym, AD_LI_SLF1, AD_LI_SLF2 ,AD_LI_SLF3,FA_LI_SLF1,FA_LI_SLF2,FA_LI_SLF3,MD_LI_SLF1,MD_LI_SLF2,MD_LI_SLF3,RD_LI_SLF1,RD_LI_SLF2,RD_LI_SLF3,VOL_LI_SLF1,VOL_LI_SLF2,VOL_LI_SLF3)
 
 ##look at r-values, p-palues, and CIs  
 print(corr.test(data_for_cor, method="pearson", adjust="none", alpha=.05,ci=TRUE),short=F)
@@ -664,7 +722,7 @@ ezANOVA(
 
 
 
-######Calculate RT asymmetry Index and add it to "data_participant_level"######
+######Calculate RT asymmetry Index and add it to "participant_level"######
 #Collapse each participant's trials accross ITI
 RT_collapsed<-plyr::ddply(data2, .(ID, Hemifield, DAT1_3UTR), summarise, RT=mean(RT))
 #Bring Target-Hemifield up into wide format

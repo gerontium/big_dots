@@ -121,7 +121,7 @@ for s2 = 1:length(subject_folder)
     end
 end
 %%
-duds = [low_alpha_trials_index]; %4 and 74 could also be kicked out as they are RT outliers. 1 because of coherence
+duds = [low_alpha_trials_index]; % low_alpha_trials_index= 2,44,59 %4 and 74 could also be kicked out as they are RT outliers. 1 because of coherence
 single_participants = [];
 %%
 if ~isempty(duds) && isempty(single_participants)
@@ -802,7 +802,7 @@ subplot(1,2,2)
 plot_mean = alpha_corr_topo(:,2);
 topoplot(plot_mean,chanlocs,'maplimits', ...
     [0 0.05], ...
-    'electrodes','off','plotchans',plot_chans);
+    'electrodes','numbers','plotchans',plot_chans);
 colorbar('FontSize',12)
 
 figure
@@ -832,6 +832,7 @@ for tt = 1:length(alpha_t)
     title(['Alpha asym DAT1: ',num2str(alpha_t(tt)),' ms']);
     colorbar
 end
+
 
 %% Alpha asymmetry vs RT by side
 % alpha: right minus left, more negative means greater left hemi alpha
@@ -950,37 +951,32 @@ end
 
 
 
-
-
-
-
-
-%% Extract N2c and N2i Amplitude :
-% window=25; %this is the time (in samples) each side of the peak latency (so it's 50ms each side of peak latency - so a 100ms window)
-% N2c = squeeze(mean(mean(N2c_side,1),3)); % time 
-% N2i = squeeze(mean(mean(N2i_side,1),3)); % time 
-% N2c_peak_amp_index=find(N2c==min(N2c(find(t==150):find(t==450))));%Find Left target max peak latency for N2c
-% N2i_peak_amp_index=find(N2i==min(N2i(find(t==150):find(t==450))));%Find Left target max peak latency for N2i
-% 
-% for s = 1:size(allsubj,2)
-%     for side=1:2
-%         max_peak_N2c(s,side)=squeeze(mean(N2c_side(s,N2c_peak_amp_index-window:N2c_peak_amp_index+window, side),2));
-%         max_peak_N2i(s,side)=squeeze(mean(N2i_side(s,N2i_peak_amp_index-window:N2i_peak_amp_index+window, side),2)); 
-%     end
-% end
-% N2cN2i_amp_ByTargetSide_ParticipantLevel = [max_peak_N2c,max_peak_N2i]; %(LeftTargetN2c, RightTargetN2c, LeftTargetN2i, RightTargetN2i)
-
-
+%% Extract pre-target alpha
+pre_alpha_chans=[17,18,21,22;54,55,58,59]; %17,18,21,22,26,27;54,55,58,59,63,64
+for s = 1:size(allsubj,2)
+    for hemi=1:2
+        pre_alpha_hemi(s,hemi)=squeeze(mean(mean(mean(alpha_side(s,pre_alpha_chans(hemi,:),1:find(alpha_t==-1),:),2),3),4));
+    end
+end
+%% Extract post-target alpha
+for s = 1:size(allsubj,2)
+    for side=1:2
+        for hemi=1:2
+            if hemi==1
+            post_alpha_lefthemi(s,side)=squeeze(mean(mean(alpha_side(s,pre_alpha_chans(hemi,:),find(alpha_t>150 & alpha_t<700),side),2),3));
+            else
+            post_alpha_righthemi(s,side)=squeeze(mean(mean(alpha_side(s,pre_alpha_chans(hemi,:),find(alpha_t>150 & alpha_t<700),side),2),3)); 
+            end
+        end
+    end
+end
 %% Make participant level matrix for export into SPSS or R
-% participant_level(:,1:2)=max_peak_N2c; %N2c amplitude (LeftTarget, RightTarget)
-% participant_level(:,3:4)=max_peak_N2i; %N2i amplitude (LeftTarget, RightTarget)
-% participant_level(:,5:6)=N2c_peak_amp_index_t; %N2c latency (LeftTarget, RightTarget)
-% participant_level(:,7:8)=N2i_peak_amp_index_t; %N2i latency (LeftTarget, RightTarget)
-% participant_level(:,9:10)=CPP_side_onsets; %CPP onset (LeftTarget, RightTarget)
-% participant_level(:,11:12)=CPPr_slope; %response locked CPP slope (LeftTarget, RightTarget)
-% open participant_level
-% 
-% csvwrite (['participant_level_matrix.csv'],participant_level)
-% 
-% subject_folder=subject_folder';
-% cell2csv ('IDs.csv',subject_folder)
+participant_level_alpha(:,1:2)=pre_alpha_hemi; %(LeftHemi, RightHemi) 
+participant_level_alpha(:,3:4)=post_alpha_lefthemi; %(LeftTarget, RightTarget)
+participant_level_alpha(:,5:6)=post_alpha_righthemi; %(LeftTarget, RightTarget)
+open participant_level_alpha
+
+csvwrite (['participant_level_alpha_matrix.csv'],participant_level_alpha)
+
+subject_folder=subject_folder';
+cell2csv ('IDs_alpha.csv',subject_folder)

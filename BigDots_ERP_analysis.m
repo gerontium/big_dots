@@ -217,6 +217,11 @@ for s=1:length(allsubj)
     pause(1)
     load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','allRT','allrespLR','allTrig','allblock_count',...
         'BL_resp_artrej','ET_BL_resp_artrej');
+    
+    if strcmp(subject_folder{s},'331M_CL') % really odd tiny artifact meant this trial was messing with CSD!
+        allRT(53) = 0; allrespLR(53) = 0; allTrig(53) = 0;
+    end
+    
 %     erp = erp_LPF_8Hz;
     erp = erp_LPF_35Hz;
                 
