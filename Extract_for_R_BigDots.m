@@ -181,7 +181,7 @@ for s=1:length(allsubj)
         end
     end   
  
-    
+
 %%    
     %DN: master_matrix_R columns:
     %Participant(1), Total Trial no(2), Inter-participant Trial no(3),ITI(4), TargetSide(5)
@@ -252,12 +252,6 @@ for s=1:length(allsubj)
         master_matrix_R(total_numtr,14)=ET_t1000ms_artrej(trial); %1=no fixation break or blink; 0=there was an fixation break or blink      
         %% 15. Reaction time (RT):
         master_matrix_R(total_numtr,15)=allRT(trial)*1000/fs;
-        %% 16. location (1=TCD; 2=Monash)
-        if ismember(subject_folder{s},TCD_bigdots)
-             master_matrix_R(total_numtr,16) = 1;
-        elseif ismember(subject_folder{s},Monash_bigdots)
-            master_matrix_R(total_numtr,16) = 2;
-        end 
         %% 16. Pre-target Alpha Power overall (combining the two ROIs):
         master_matrix_R(total_numtr,16)=squeeze(mean(mean(alpha_TSE([LH_ROI_s RH_ROI_s],find(alpha_t>-500 & alpha_t<0),trial),1),2));
         %% 17. Pre-target Alpha Power Left Hemi:
@@ -269,7 +263,13 @@ for s=1:length(allsubj)
         %% 20. Post-target Alpha Power Left Hemi:
         master_matrix_R(total_numtr,20)=squeeze(mean(mean(alpha_TSE(LH_ROI_s,find(alpha_t<150 & alpha_t<700),trial),1),2));
         %% 21. Post-target Alpha Power Right Hemi:
-        master_matrix_R(total_numtr,21)=squeeze(mean(mean(alpha_TSE(RH_ROI_s,find(alpha_t<150 & alpha_t<700),trial),1),2));     
+        master_matrix_R(total_numtr,21)=squeeze(mean(mean(alpha_TSE(RH_ROI_s,find(alpha_t<150 & alpha_t<700),trial),1),2));   
+        %% 22. location (1=TCD; 2=Monash)
+        if ismember(subject_folder{s},TCD_bigdots)
+             master_matrix_R(total_numtr,22) = 1; %TCD
+        elseif ismember(subject_folder{s},Monash_bigdots)
+            master_matrix_R(total_numtr,22) = 2; %Monash
+        end 
 %% HAVE NOT YET UPDATED BELOW FOR BIG DOTS
 %         %% 20. Pre-target Pupil Diameter:
 %         master_matrix_R(total_numtr,20)=mean(Pupil(find(t==-500):find(t==0),trial));

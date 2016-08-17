@@ -802,8 +802,8 @@ participant_level(:,5:6)=N2c_peak_amp_index_t; %N2c latency (LeftTarget, RightTa
 participant_level(:,7:8)=N2i_peak_amp_index_t; %N2i latency (LeftTarget, RightTarget)
 participant_level(:,9:10)=CPP_side_onsets; %CPP onset (LeftTarget, RightTarget)
 participant_level(:,11:12)=CPPr_slope; %response locked CPP slope (LeftTarget, RightTarget)
-participant_level(:,13)=subject_location;%1=TCD; 2=Monash
-% open participant_level
+=subject_location;
+open participant_level
 
 csvwrite (['participant_level_matrix.csv'],participant_level)
 

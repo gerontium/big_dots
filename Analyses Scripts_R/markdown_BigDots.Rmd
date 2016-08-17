@@ -38,7 +38,7 @@ if (location=="Monash") {
 
 #Remove # in front of the line below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
 
-# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx", "haven","schoRsch", "lubridate"))
+# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx", "haven","schoRsch", "lubridate", "nortest", "relaimpo", "leaps", "bootstrap"))
 
 ###################################################################################################################################
 ## load relevant libraries 
@@ -114,13 +114,15 @@ data<- data %>% #Rename data columns:
            PreAlphaPowerRH=V18,
            PreAlphaAsym=V19,
            PostAlphaPowerLH=V20,
-           PostAlphaPowerRH=V21) %>% #next make the required columns into factors:
+           PostAlphaPowerRH=V21,
+           Location=V22) %>% #next make the required columns into factors:
     mutate_each_(funs(factor), c("ITI", "Hemifield", "Accuracy")) %>% #next re-class required vectors into Logicals:
     mutate_at(vars(starts_with("Art_")), funs(as.logical)) %>% 
     mutate_at(vars(starts_with("FixBreak_")), funs(as.logical)) %>% #next use the ! negation operator to reverse of a TRUE/FALSE vectors: 
     mutate_if(purrr::is_logical, funs(!.)) %>% #next Rename factor Levels:
     mutate(Hemifield = ifelse(Hemifield==1, "Left", "Right"), 
-           Accuracy= ifelse(Accuracy==1, "Hit", ifelse(Accuracy==2, "WrongButton", "Miss")))
+           Accuracy= ifelse(Accuracy==1, "Hit", ifelse(Accuracy==2, "WrongButton", "Miss")),
+            Location = ifelse(Location==1, "TCD", "Monash"))
 
 
 Demographics <-Demographics[Demographics$ID %in% data$ID, ]   
@@ -145,6 +147,24 @@ summary(Accuracy_checker$Accuracy_overall)
 ##Add in overall accuracy 
 data <- merge(data, Accuracy_checker, by.x = "ID", by.y = "ID")
 
+######Test for effect of Hemifield on Accuracy:
+# Accuracy_checker <- data %>% group_by(ID, Hemifield) %>% 
+#                     summarise(Hits  = sum(Accuracy=="Hit"),
+#                                Misses = sum(Accuracy=="Miss" | Accuracy=="WrongButton")) %>%
+#                     mutate(Total=Hits+Misses,
+#                            Accuracy_overall= (Hits/Total)*100) 
+# log <- capture.output({
+#    Hemifield_Perm <- ezPerm(data = data.frame(Accuracy_checker)
+#                           , dv = .(Accuracy_overall)
+#                           , wid = .(ID)
+#                           , within = .(Hemifield)
+#                           , perms = 1000);
+#  })
+# print("Factorial Permutation test for the effect of Hemifield Accuracy:")
+# print(Hemifield_Perm);
+##########################################################################
+
+
 ###Remove trials where:
 #RT longer than 1000ms (i.e. after target finished)
 #RT faster than 100ms (i.e. too fast must be false alarm) or RT=0 (i.e. they did not respond)
@@ -159,7 +179,7 @@ data$log_RT<-log(data$RT) #log
 data$IDbyITIbyHemifield<-interaction(data$ID, data$ITI, data$Hemifield)
 #calculate mean and sd 
 m <- tapply(data$log_RT,data$IDbyITIbyHemifield,mean, na.rm = T)
-s <- sqrt(tapply(data$log_RT,data$IDbyITIbyHemifield,var, na.rm = T))
+s <- tapply(data$log_RT,data$IDbyITIbyHemifield,sd, na.rm = T)
 #calculate log_RT.Z and save it inside data.frame
 data$log_RT.Z <- (data$log_RT-m[data$IDbyITIbyHemifield])/s[data$IDbyITIbyHemifield]
 #Remove trials where absolute log_RT.Z>3 (i.e. remove outlier RTs)
@@ -224,16 +244,17 @@ participant_level<- participant_level %>% #Rename data columns:
                                     CPPonset_LeftTarget=V9,
                                     CPPonset_RightTarget=V10,
                                     CPPslope_LeftTarget=V11,
-                                    CPPslope_RightTarget=V12) %>% #location=V13  #next calculate the ERP asymmetry measures:
+                                    CPPslope_RightTarget=V12,
+                                    Location=V13 ) %>% ##next calculate the ERP asymmetry measures:
                             mutate(., 
                                   N2c_Asym = (N2c_LeftTarget-N2c_RightTarget)/(N2c_LeftTarget+N2c_RightTarget), 
                                   N2i_Asym = (N2i_LeftTarget-N2i_RightTarget)/(N2i_LeftTarget+N2i_RightTarget),
                                   N2c_latency_Asym = (N2c_latency_LeftTarget-N2c_latency_RightTarget)/(N2c_latency_LeftTarget+N2c_latency_RightTarget), 
                                   N2i_latency_Asym =(N2i_latency_LeftTarget-N2i_latency_RightTarget)/(N2i_latency_LeftTarget+N2i_latency_RightTarget),
                                   CPPonset_Asym = (CPPonset_LeftTarget-CPPonset_RightTarget)/(CPPonset_LeftTarget+CPPonset_RightTarget),
-                                  CPPslope_Asym = (CPPslope_LeftTarget-CPPslope_RightTarget)/(CPPslope_LeftTarget+CPPslope_RightTarget)
+                                  CPPslope_Asym = (CPPslope_LeftTarget-CPPslope_RightTarget)/(CPPslope_LeftTarget+CPPslope_RightTarget),
+                                  Location = ifelse(Location==1, "TCD", "Monash")
                                   )
-# location = ifelse(location==1, "TCD", "Monash")
 
 ####################################################################################
 #Collapse each participant's PreAlpha trials to participant level
@@ -246,7 +267,7 @@ participant_level<-merge(participant_level, PreAlphaAsym_collapsed, by.x = "ID",
 
 #Collapse each participant's PostAlpha trials to participant level
 PostAlphaAsym_collapsed<- data %>% 
-            filter(!Art_neg500_0, !FixBreak_neg500_0) %>%
+            filter(!Art_neg500_0, !FixBreak_neg500_0, PostAlpha_c!=0, PostAlpha_i!=0) %>%
             mutate(PostAlphaAsym=(PostAlpha_c-PostAlpha_i)/(PostAlpha_c+PostAlpha_i)) %>% #contra - ipsi asym
             group_by(ID) %>%
             summarise(PostAlphaAsym=mean(PostAlphaAsym))
@@ -256,7 +277,7 @@ participant_level<-merge(participant_level, PostAlphaAsym_collapsed, by.x = "ID"
 
 #Collapse each participant's Post-target AlphaDesync single trials to participant level
 AlphaDesync_c_collapsed<- data %>% 
-            filter(!Art_neg500_100PR, !FixBreak_neg500_100PR) %>%
+            filter(!Art_neg500_100PR, !FixBreak_neg500_100PR, AlphaDesync_c!=0) %>%
             group_by(ID, Hemifield) %>%
             summarise(AlphaDesync_c=mean(AlphaDesync_c)) %>% #next bring Target-Hemifield up into wide format:
             spread(Hemifield, AlphaDesync_c) %>% #next rename
@@ -266,7 +287,7 @@ AlphaDesync_c_collapsed<- data %>%
 participant_level<-merge(participant_level, AlphaDesync_c_collapsed, by.x = "ID", by.y = "ID") 
 
 AlphaDesync_i_collapsed<- data %>% 
-            filter(!Art_neg500_100PR, !FixBreak_neg500_100PR) %>%
+            filter(!Art_neg500_100PR, !FixBreak_neg500_100PR, AlphaDesync_i!=0) %>%
             group_by(ID, Hemifield) %>%
             summarise(AlphaDesync_i=mean(AlphaDesync_i)) %>% #next bring Target-Hemifield up into wide format:
             spread(Hemifield, AlphaDesync_i) %>% #next rename
@@ -289,7 +310,7 @@ participant_level<-merge(participant_level, RT_collapsed, by.x = "ID", by.y = "I
 
 #Transform it to long format
 participant_level_long<-participant_level %>%
-                    gather(measure_type, data, -ID) %>%
+                    gather(measure_type, data, -ID, -Location) %>%
                     na.omit()
 ####Find outliers in the Participant level data (abs z-score >3)####
 #################################################################
@@ -297,12 +318,20 @@ participant_level_long<-participant_level %>%
 #Z-score each participant's data inside measure_type ####
 #calculate mean and sd 
 m <- tapply(participant_level_long$data,participant_level_long$measure_type,mean, na.rm = T)
-s <- sqrt(tapply(participant_level_long$data,participant_level_long$measure_type,var, na.rm = T))
+s <- tapply(participant_level_long$data,participant_level_long$measure_type,sd, na.rm = T)
+ 
 #calculate data.Z and save it inside participant_level_long
 participant_level_long$data.Z <- (participant_level_long$data-m[participant_level_long$measure_type])/s[participant_level_long$measure_type]
-
 #Remove trials where absolute data.Z>3 (i.e. remove outlier RTs)
 # participant_level_long<-participant_level_long[!abs(participant_level_long$data.Z)>3,]
+
+# Shift extream outliers back to +/- 3 standard deviations from the mean
+participant_level_long$data[participant_level_long$data.Z>3]<-m[participant_level_long$measure_type][participant_level_long$data.Z>3] + 3*s[participant_level_long$measure_type][participant_level_long$data.Z>3]
+participant_level_long$data[participant_level_long$data.Z<(-3)]<-m[participant_level_long$measure_type][participant_level_long$data.Z<(-3)] - 3*s[participant_level_long$measure_type][participant_level_long$data.Z<(-3)]
+
+
+#calculate data.Z again and save it inside participant_level_long
+participant_level_long$data.Z <- (participant_level_long$data-m[participant_level_long$measure_type])/s[participant_level_long$measure_type]
 
 
 #Plot density plots again after outlier removal
@@ -320,6 +349,31 @@ participant_level<-merge(participant_level, Demographics, by.x = "ID", by.y = "I
 ####################################################################################
 ```
 
+#Run the Shapiro-Wilk test of normality on the RT, CPPonset, N2c, etc. measures as a function of hemifield
+```{r, echo=FALSE, warning=FALSE}
+options(scipen=99)
+Normality_tests <-participant_level %>% 
+                    select(contains("Left"), contains("Right"))  %>% 
+                    gather() %>% 
+                    group_by(key) %>%
+                    do(ShapiroWilk_p_value= shapiro.test(.$value)[2],
+                       Anderson_Darling_p_value = nortest::ad.test(.$value)[2], 
+                       CramerVonMises_p_value = nortest::cvm.test(.$value)[2],
+                       Shapiro_Francia_p_value = nortest::sf.test(.$value)[2],
+                       Kolmogorov_Smirnov_p_value= nortest::lillie.test(.$value)[2]) %>% 
+                    mutate(ShapiroWilk_p_value= unlist(ShapiroWilk_p_value),
+                       Anderson_Darling_p_value = unlist(Anderson_Darling_p_value), 
+                       CramerVonMises_p_value = unlist(CramerVonMises_p_value),
+                       Shapiro_Francia_p_value = unlist(Shapiro_Francia_p_value),
+                       Kolmogorov_Smirnov_p_value = unlist(Kolmogorov_Smirnov_p_value)) %>% 
+                    mutate(average_p_value=(ShapiroWilk_p_value + 
+                                                Anderson_Darling_p_value + 
+                                                CramerVonMises_p_value + 
+                                                Shapiro_Francia_p_value + 
+                                                Kolmogorov_Smirnov_p_value)/5) %>% arrange(average_p_value)
+print(data.frame(Normality_tests))
+print(data.frame(Normality_tests$key, Normality_tests$average_p_value))
+```
 
 #Test the effect of Target Hemifield on RT, CPPonset, N2c, etc. using Factorial Permutation test
 ```{r, echo=FALSE, warning=FALSE}
@@ -515,14 +569,11 @@ print("Repeated Measures ANOVA  for the effect of Hemifield on RT:")
 print(Hemifield_ANOVA);
 
 
-
 ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  + 
-          geom_violin() + geom_boxplot() +  theme_bw () + geom_point()
-
+          geom_violin() + geom_boxplot(alpha=0.1) +  theme_bw () + geom_point()
 
 ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield, group = ID))  + 
-          geom_violin() +  theme_bw () + geom_point() + geom_line(colour="black")
-
+            geom_point() + geom_line(colour="black")
 
 ###################################################################
 ANOVA_data<- participant_level %>% 
@@ -563,10 +614,10 @@ print("Repeated Measures ANOVA  for the effect of Hemifield on CPP Onset:")
 print(Hemifield_ANOVA);
 
 ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  + 
-          geom_violin() + geom_boxplot() +  theme_bw () + geom_point() + geom_line()
+          geom_violin() + geom_boxplot(alpha=0.1) +  theme_bw () + geom_point() + geom_line()
 
 ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield, group = ID))  + 
-          geom_violin() +  theme_bw () + geom_point() + geom_line(colour="black")
+            geom_point() + geom_line(colour="black")
 
 ###################################################################
 ANOVA_data<- participant_level %>% 
@@ -692,27 +743,40 @@ print(Hemifield_ANOVA);
 
 #test correlation between all of the Asymmetry measures (i.e. RT, N2, CPP, alpha, asymmetry) 
 ```{r, echo=FALSE, warning=FALSE}
+Normality_tests <-participant_level %>% 
+                    select(contains("Asym"))  %>% 
+                    gather() %>% 
+                    group_by(key) %>%
+                    do(ShapiroWilk_p_value= shapiro.test(.$value)[2],
+                       Anderson_Darling_p_value = nortest::ad.test(.$value)[2], 
+                       CramerVonMises_p_value = nortest::cvm.test(.$value)[2],
+                       Shapiro_Francia_p_value = nortest::sf.test(.$value)[2],
+                       Kolmogorov_Smirnov_p_value= nortest::lillie.test(.$value)[2]) %>% 
+                    mutate(ShapiroWilk_p_value= unlist(ShapiroWilk_p_value),
+                       Anderson_Darling_p_value = unlist(Anderson_Darling_p_value), 
+                       CramerVonMises_p_value = unlist(CramerVonMises_p_value),
+                       Shapiro_Francia_p_value = unlist(Shapiro_Francia_p_value),
+                       Kolmogorov_Smirnov_p_value = unlist(Kolmogorov_Smirnov_p_value)) %>% 
+                    mutate(average_p_value=(ShapiroWilk_p_value + 
+                                                Anderson_Darling_p_value + 
+                                                CramerVonMises_p_value + 
+                                                Shapiro_Francia_p_value + 
+                                                Kolmogorov_Smirnov_p_value)/5) %>% arrange(average_p_value)
+print(data.frame(Normality_tests))
+
+
 #Get the required data i.e. ID, and all the asymmeyry index measures
+data_for_cor<-participant_level %>% 
+                select(contains("Asym"))
 
-Asym_data_wide<-participant_level %>% select(., ID, contains("Asym"))
-
-##Now grab only the Asym/lateralistion index measures 
-data_for_cor<-select(Asym_data_wide, -ID)
-
-##Re order the columns
-# data_for_cor <- select(data_for_cor, RT_Asym, N2c_Asym, N2c_latency_Asym, N2i_Asym, N2i_latency_Asym, CPPonset_Asym, CPPslope_Asym, PreAlphaAsym)
-
-##look at r-values, p-palues, and CIs  
-print(corr.test(data_for_cor, method="pearson", adjust="none", alpha=.05,ci=TRUE),short=F)
-
-cor_pram_list<-corr.test(data_for_cor, method="pearson", adjust="none", alpha=.05,ci=TRUE)
-
-cor_pvalues<-as.data.frame(cor_pram_list$p)
+##look at r-values, p-palues, and CIs. can use pearson for parametric or spearman for nonparmetric
+cor_pram_list<-corr.test(data_for_cor, use = "pairwise", method="pearson", adjust="none")
+print(cor_pram_list, short=F)
 
 #######################################
 ##Plot p-value matrix using ggplot:
 png("P_values less than 05 uncorrected.png",  width = 10*600, height = 10*600, units = "px", res = 600)
-p_data<-reshape2::melt(as.matrix(cor_pvalues))
+p_data<-reshape2::melt(cor_pram_list$p)
 p_data<-plyr::rename(p_data, c("value"="p_value"))
 p_data<-dplyr::mutate(p_data, p_value = replace(p_value, p_value>.05, NA)) #only plot uncorected p-values less than .04
 ####Plot:
@@ -731,13 +795,9 @@ qplot(x=Var1, y=Var2, data=p_data, fill=p_value, geom="tile")+
 #######################################
 
 
-cor_pvalues<-as.data.frame(cor_pram_list$p)
-cor_pvalues<-cor_pvalues %>% tibble::rownames_to_column(.) %>%
-  gather(var, val, - rowname) %>%
-  spread(rowname, val)
 
 #Make correlation matrix for corPlot()
-cor_matrix<-cor(as.matrix(data_for_cor), use="na.or.complete")
+cor_matrix<-cor(as.matrix(data_for_cor), use="na.or.complete", method="pearson")
 
 #Save the corPlot() as a .png image
 png("Correlation betweem RT_Asymmetry & SLF_Asymmetry.png",  width = 10*600, height = 10*600, units = "px", res = 600)
@@ -826,6 +886,16 @@ ggplot(data_for_cor, aes(x=CPPonset_Asym, y=AlphaDesync_c_Asym)) +
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
+ggplot(data_for_cor, aes(x=N2c_Asym, y=AlphaDesync_c_Asym)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+ggplot(data_for_cor, aes(x=CPPonset_Asym, y=AlphaDesync_c_Asym)) +
+    geom_point(shape=1) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
 
 ggplot(data_for_cor, aes(x=CPPonset_Asym, y=CPPslope_Asym)) +
     geom_point(shape=1) +    # Use hollow circles
@@ -858,12 +928,48 @@ ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measu
 
 ```
 
-#Look at 
+#Look at multiple regression to predice RT_Asym 
 ```{r, echo=FALSE, warning=FALSE}
+### Fitting the Model
+
+# Multiple Linear Regression Example 
+fit <- lm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
+fit <- lm(RT_Asym~ PreAlphaAsym + N2c_Asym + N2i_Asym + N2c_latency_Asym + N2i_latency_Asym + AlphaDesync_c_Asym + AlphaDesync_i_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
+fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_latency_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
+
+coefficients(fit) # model coefficients
+confint(fit, level=0.95) # CIs for model parameters 
+# fitted(fit) # predicted values
+# residuals(fit) # residuals
+anova(fit) # anova table 
+# vcov(fit) # covariance matrix for model parameters 
+# influence(fit) # regression diagnostics
+# diagnostic plots 
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(fit)
+
+
+
+# Robust Multiple Linear Regression Example 
+library(MASS)
+fit <- rlm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
+fit <- rlm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_latency_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
+
+Anova(fit) # show results
 
 
 
 ```
+
+
+
+
+
+
+
+
+
+
 
 
 #Look at the effect of Hemifield on RT on a single trial level using linear mixed model
@@ -879,25 +985,6 @@ anova(RT_random_effects_only, RT_Hemifield, RT_Hemifield_by_TOT)
 
 RT_PreAlphaPower<-update(RT_Hemifield_by_TOT, .~. + PreAlphaPower)
 anova(RT_Hemifield_by_TOT, RT_PreAlphaPower)
-
-# source("summarySE.R") 
-# source("summarySEwithin.R") #function to calculate Std.Er of mean
-# source("normDataWithin.R")
-# plotdata <- summarySEwithin(data, measurevar="RT", withinvars=c("Hemifield"), idvar="ID")
-# ggplot(plotdata, aes(x=Hemifield, y=RT, fill=Hemifield)) +
-#     geom_bar(position=position_dodge(.9), colour="Black", stat="identity") + 
-#     geom_errorbar(position=position_dodge(.9), width=.3, aes(ymin=RT-ci, ymax=RT+ci)) + #can change "se" to "ci" if I want to use 95%ci instead
-#     geom_hline(yintercept=0) +  coord_cartesian(ylim = c(400, 600)) +
-#     xlab("Hemifield") + ylab("RT (ms)") +
-#     theme(axis.title.x = element_text(face="bold", size=12),
-#           axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-#     theme(axis.title.y = element_text(face="bold", size=12),
-#           axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-#     theme(legend.title = element_text(size=11, face="bold")) +
-#     theme(legend.text = element_text(size = 11, face = "bold")) +
-#     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-#           panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-
 
 
 # 
