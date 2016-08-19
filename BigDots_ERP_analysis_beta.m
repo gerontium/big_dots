@@ -202,14 +202,13 @@ ch_rl{1} = [23];
 ch_rl{2} = [60];
 
 % stim-locked erps
-ts = -0.3*fs:1.7*fs;
+ts = -0.700*fs:1.800*fs;
 t = ts*1000/fs;
-ts_crop = -0.100*fs:1.500*fs;
-t_crop = ts_crop*1000/fs;
 
 % resp-locked erps
-trs = [-.300*fs:fs*.100];
+trs = [-.700*fs:fs*.100];
 tr = trs*1000/fs;
+
 
 BL_erp = [-100,0];
 BL_beta = [-100];
@@ -263,7 +262,7 @@ for s=1:length(allsubj)
     baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
     erp = erp-repmat(baseline_erp,[1,size(erp,2),1]); % baseline full erp
         
-% STFT calculation
+%% STFT calculation
 disp('Calculating STFT...')
 erp = double(erp); % chan x time x trial
 STFT = [];
@@ -378,7 +377,7 @@ STFTr = zeros(size(STFT,1),length(STFT_timer),size(STFT,3));
         N2c_side(s,:,side) = squeeze(mean(mean(erp(ch_lr{side},:,[conds{s,:,side}]),1),3));
         N2i_side(s,:,side) = squeeze(mean(mean(erp(ch_rl{side},:,[conds{s,:,side}]),1),3));
         
-        beta_r_side(s,:,:,side) = squeeze(mean(STFTr(1:numch,:,[conds{s,:,side}]),3));
+        beta_r_side(s,:,:,side) = squeeze(mean(STFTr(1:numch,:,[conds{s,:,side}]),3)); %(s, chan, STFT_timers, targetside)
         
         beta_side(s,:,:,side) = squeeze(mean(STFT(1:numch,:,[conds{s,:,side}]),3));
         beta_base_side(s,:,:,side) = squeeze(mean(beta_TSE_base(1:numch,:,[conds{s,:,side}]),3));
@@ -865,8 +864,34 @@ end
 
  return
 
+%% Plot response locked Beta
+%beta_r_side(s, chan, time, targetside)
 
+figure
+for side = 1:2
+     h(side) = plot(STFT_timer,squeeze(mean(mean(beta_r_side(:,[13],:,side),1),2)),'LineWidth',3,'LineStyle','-');hold on       
+end
+    set(gca,'FontSize',16,'xlim',[-400,80],'ylim',[0.6,0.75]);%,'ylim',[-1.5,0.5]);
+    ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+    xlabel('Time (ms)','FontName','Arial','FontSize',16)
+    title('Beta (resp-locked) by Hemifield')
+    line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+    line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+    legend(h,side_tags,'FontSize',16,'Location','NorthWest');
 
+ %% Plot stim locked Beta
+figure
+for side = 1:2
+     h(side) = plot(STFT_time,squeeze(mean(mean(beta_side(:,[13],:,side),1),2)),'LineWidth',3,'LineStyle','-');hold on       
+end
+    set(gca,'FontSize',16,'xlim',[-100,1500],'ylim',[0.6,0.85]);%,'ylim',[-1.5,0.5]);
+    ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+    xlabel('Time (ms)','FontName','Arial','FontSize',16)
+    title('Beta (stim-locked) by Hemifield')
+    line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+    line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+    legend(h,side_tags,'FontSize',16,'Location','NorthWest');
+    
 %% Extract pre-target beta
 pre_beta_chans=[17,18,21,22;54,55,58,59]; %17,18,21,22,26,27;54,55,58,59,63,64
 for s = 1:size(allsubj,2)
