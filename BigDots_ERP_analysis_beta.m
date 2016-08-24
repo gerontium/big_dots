@@ -867,6 +867,12 @@ end
 %% Plot response locked Beta
 %beta_r_side(s, chan, time, targetside)
 
+beta_r_group_side = squeeze(mean(beta_r_side(:,:,:,:),1)); % chan x time x side
+figure
+plottopo(beta_r_group_side(:,:,:),'chanlocs',chanlocs,'limits',[STFT_timer(1) STFT_timer(end) ...
+    min(min(min(beta_r_group_side(plot_chans,:,:))))  max(max(max(beta_r_group_side(plot_chans,:,:))))], ...
+    'title',['beta left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
+
 figure
 for side = 1:2
      h(side) = plot(STFT_timer,squeeze(mean(mean(beta_r_side(:,[13],:,side),1),2)),'LineWidth',3,'LineStyle','-');hold on       
