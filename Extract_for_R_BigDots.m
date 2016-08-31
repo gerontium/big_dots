@@ -65,6 +65,7 @@ CSD=0; %Use Current Source Density transformed erp? 1=yes, 0=no
 % ch_r = [27];
 % ch_front = 5; %5=Fz
 % ch_CPP = [53];%25=Pz; 53=CPz
+ch_beta=[13];
 
 fs=500;
 
@@ -113,6 +114,31 @@ for tt = 1:skip_step:length(t_crop)-window
     cca=cca+1;
 end
 
+
+%% STFT parameters
+STFT_time=[];
+no_of_cycles = 8;
+% % get a broad range, e.g. beta, 20 to 35Hz
+fs_STFT = [20:35]; % stftlen_STFT = 140; % 8 cycles = 280 ms (at mid frequency, i.e. 28 Hz for beta), = 140 samples. 
+stftlen_STFT = round((1000/round(median(fs_STFT))*no_of_cycles)/2);
+
+% % get a specific frequency for SSVEP
+% fs_STFT = [25]; % or if you want a particular SSVEP frequency
+% stftlen_STFT = round((1000/fs_STFT*no_of_cycles)/2);
+% for SSVEP frequency make sure it's EXACTLY a particular number of cycles of the frequency. 
+% check freq_temp_STFT to make sure SSVEP frequency falls on the range
+
+skip_step = 20;
+cc=1;
+for tt = 1:skip_step:length(ts)-(stftlen_STFT)
+    tf = tt:tt+stftlen_STFT-1;
+    nfft = length(tf);
+    freq_temp_STFT = (0:ceil((nfft+1)/2)-1)*fs/nfft;
+    STFT_time(cc) = mean(t(tf));
+    cc=cc+1;
+end
+
+
 %%
 mat_file='big_dots_erp.mat';
 %%
@@ -142,6 +168,33 @@ for s=1:length(allsubj)
      %% Baseline erp
     baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
     erp = erp-repmat(baseline_erp,[1,size(erp,2),1]); % baseline full erp
+    
+
+    %% STFT calculation
+disp('Calculating STFT...')
+erp = double(erp); % chan x time x trial
+STFT = [];
+for trial = 1:size(erp,3)
+    cc=1;
+    for tt = 1:skip_step:size(erp,2)-(stftlen_STFT)
+        tf = tt:tt+stftlen_STFT-1; % define time window
+        ep = squeeze(erp(:,tf,trial)); % chop out chan x time window
+        nfft = size(ep,2);
+        ep = detrend(ep')'; % detrend
+        fftx = abs(fft(ep,[],2))./(stftlen_STFT/2);
+        fftx = fftx(:,1:ceil((nfft+1)/2));
+        ind = find(freq_temp_STFT>fs_STFT(1) & freq_temp_STFT<fs_STFT(end));
+%         [~,ind] = min(abs(freq_temp_STFT-fs_STFT)); % if you want SSVEP at one particular frequency
+        STFT(:,cc,trial) = mean(fftx(:,ind),2);
+        cc=cc+1;
+    end
+            % asymmetry: right minus left. more positive = more right hemi alph
+        beta_asym(right_hemi,:,trial) = (STFT(right_hemi,:,trial)-STFT(left_hemi,:,trial))./...
+            ((STFT(right_hemi,:,trial)+STFT(left_hemi,:,trial))/2);
+end
+    % Baseline beta
+    baseline_beta = mean(STFT(:,find(STFT_time<=BL_beta),:),2);
+    beta_TSE_base = STFT-repmat(baseline_beta,[1,size(STFT,2),1]); % baseline full erp
         
     %% Alpha Spectrotemporal Evolution a la Thut 
     alpha_TSE = []; alpha_asym = [];
