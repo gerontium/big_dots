@@ -83,6 +83,7 @@ tr = trs*1000/fs;
 
 BL_erp = [-100,0];
 BL_alpha = [-100];
+BL_beta = [-100];
 
 % patch,ITI
 targcodes = zeros(2,3);
@@ -188,9 +189,7 @@ for trial = 1:size(erp,3)
         STFT(:,cc,trial) = mean(fftx(:,ind),2);
         cc=cc+1;
     end
-            % asymmetry: right minus left. more positive = more right hemi alph
-        beta_asym(right_hemi,:,trial) = (STFT(right_hemi,:,trial)-STFT(left_hemi,:,trial))./...
-            ((STFT(right_hemi,:,trial)+STFT(left_hemi,:,trial))/2);
+
 end
     % Baseline beta
     baseline_beta = mean(STFT(:,find(STFT_time<=BL_beta),:),2);

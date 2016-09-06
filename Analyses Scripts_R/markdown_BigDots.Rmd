@@ -23,41 +23,18 @@ if (location=="Monash") {
 
 
 
-####################################
-#######  How to use ################
-####################################
+### Install/load required packages
+#List of R packages required for this analysis:
+required_packages <- c("psych", "ggplot2", "dplyr", "tidyr", "stringr", "lubridate", "readxl","knitr",
+                       "readr", "rmarkdown", "png", "lme4", "ez", "multcomp")
+#Install required_packages:
+new.packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+#Load required_packages:
+lapply(required_packages, require, character.only = TRUE)
 
-# 1) Install the packages and software specified below. (consider also updating all installed packages by chosing Update on the Packages tab)
-# 2) Set the working directory (setwd) above, and directory where you have "data_ParticipantLevel", "master_matrix_R" and "ID_vector" saved
-# 3) Hit Knit Word (or Knit HTML)! (Output can take while due to bootstrapping the robust effect size and calculating the Bayesian Highest Density Iinterval)
 
 
-####################################
-######  FIRST TIME ONLY ############
-####################################
-
-#Remove # in front of the line below and run the code. Replace the # after installing the packages, otherwise the R markdown script will give errors.
-
-# install.packages(c("MASS", "akima", "robustbase", "cobs", "robust", "mgcv", "scatterplot3d", "quantreg", "rrcov", "lars", "pwr", "trimcluster", "mc2d", "psych", "Rfit","MBESS", "BayesFactor", "PoweR", "ggplot2", "reshape2", "plyr", "devtools", "rmarkdown","gmodels", "HLMdiag", "car", "gridExtra", "bootES", "BEST","foreign","nlme","pastecs","multcomp","compute.es","ez","lattice","lme4","effects","diagram","png", "grid", "dplyr","readxl", "openxlsx", "haven","schoRsch", "lubridate", "nortest", "relaimpo", "leaps", "bootstrap"))
-
-###################################################################################################################################
-## load relevant libraries 
-library(foreign)
-library(car)
-library(nlme)
-library(ggplot2)
-library(pastecs)
-library(psych)
-library(multcomp)
-library(compute.es)
-library(ez)
-library(lme4)
-library(png)
-library(grid)
-library(readxl)
-library(dplyr)
-library(tidyr)
-library(lubridate)
 
 ###### Import single trial data:
 if (location=="Monash") {
@@ -128,7 +105,6 @@ data<- data %>% #Rename data columns:
 Demographics <-Demographics[Demographics$ID %in% data$ID, ]   
 
 ###############Data Cleaning For Single Trial Data######################
-
 
 #Check number of Trials for each participant by running the function 'length', 
 #on "data$RT" for each DAT1_3UTR, broken down by ID + Light
@@ -348,6 +324,71 @@ participant_level<-participant_level_long %>% select(., -data.Z)  %>%
 participant_level<-merge(participant_level, Demographics, by.x = "ID", by.y = "ID") 
 ####################################################################################
 ```
+
+
+```{r, Beta}
+
+###### Import trial sample level data (500Hz):
+if (location=="Monash") {
+data_Resp_locked_Beta <- read.csv("C:/GitHub/big_dots/master_matrix_R_Resp_locked_beta.csv", header=FALSE)
+ID <- read.table("C:/GitHub/big_dots/ID_vector_Resp_locked_beta.csv", quote="\"")
+} else if (location=="DansLaptop") {
+data_Stim_locked_Beta <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Resp_locked_beta.csv", header=FALSE)
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Resp_locked_beta.csv", quote="\"")
+} else setwd(("~"))
+
+data_Resp_locked_Beta$ID<-data_Resp_locked_Beta[,1]
+#Replace the participant numbers with IDs:
+data_Resp_locked_Beta[,1]<-ID[,1]
+#Remove the seperate ID vector now it has been included into data dataframe
+rm(ID)
+drops <- c("ID")
+data_Resp_locked_Beta<-data_Resp_locked_Beta[,!(names(data_Resp_locked_Beta) %in% drops)]
+
+#Merge with the RT, Accuracy, Hemifield data 
+data_Resp_locked_Beta<- data_Resp_locked_Beta %>% #Rename data columns:
+    rename(., 
+           ID=V1,
+           TotalTrialNumber=V2,
+           Trial=V3,
+           Time=V4,
+           Resp_locked_Beta=V5) %>%
+    merge(., data, by = c("ID", "Trial", "TotalTrialNumber")) 
+
+#Filter out artifacts
+data_Resp_locked_Beta<- data_Resp_locked_Beta %>% filter(!Art_neg100_100PR)
+
+#Plot response locked 
+detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
+source("summarySE.R") 
+source("summarySEwithin.R") #function to calculate Std.Er of mean
+source("normDataWithin.R")
+plotdata_Resp_locked_Beta <- summarySEwithin(data_Resp_locked_Beta, measurevar="Resp_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
+plotdata_Resp_locked_Beta$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta$Time))
+summary(plotdata_Resp_locked_Beta$Time)
+lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+
+#Resp_locked_Beta Group on same plot
+ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
+    geom_line(size=1.4) + geom_ribbon(aes(ymin=Resp_locked_Beta-ci, ymax=Resp_locked_Beta+ci), alpha = 0.3, colour=NA) + 
+        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
+    coord_cartesian(ylim = c(0.6, 0.75),  xlim = c(-400, 100)) +
+    xlab("Time") + ylab("Beta Power (uV)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
+    theme(axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
+    theme(legend.title = element_text(size=11, face="bold")) +
+    theme(legend.text = element_text(size = 11, face = "bold")) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+
+
+
+
+```
+
 
 #Run the Shapiro-Wilk test of normality on the RT, CPPonset, N2c, etc. measures as a function of hemifield
 ```{r, echo=FALSE, warning=FALSE}
@@ -955,7 +996,7 @@ library(MASS)
 fit <- rlm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
 fit <- rlm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_latency_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
 
-Anova(fit) # show results
+Anova(fit, type="III") # show results
 
 
 
