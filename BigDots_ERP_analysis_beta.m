@@ -190,6 +190,7 @@ rtlim=[0.200 1.500];
 
 % ch_CPP = [31,32];
 ch_CPP = [31];
+ch_beta=[13];
 
 ch_beta_asym = [49,50];
 
@@ -875,7 +876,7 @@ plottopo(beta_r_group_side(:,:,:),'chanlocs',chanlocs,'limits',[STFT_timer(1) ST
 
 figure
 for side = 1:2
-     h(side) = plot(STFT_timer,squeeze(mean(mean(beta_r_side(:,[13],:,side),1),2)),'LineWidth',3,'LineStyle','-');hold on       
+     h(side) = plot(STFT_timer,squeeze(mean(mean(beta_r_side(:,ch_beta,:,side),1),2)),'LineWidth',3,'LineStyle','-');hold on       
 end
     set(gca,'FontSize',16,'xlim',[-400,80],'ylim',[0.6,0.75]);%,'ylim',[-1.5,0.5]);
     ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
@@ -885,6 +886,25 @@ end
     line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
 
+ %%%%Plot each individual participant's Betar_slope    
+ for s=1:length(allsubj)
+     clear h
+     figure
+     for side = 1:2
+         h(side) = plot(STFT_timer,squeeze(mean(mean(beta_r_side(s,ch_beta,:,side),1),2)),'LineWidth',3,'LineStyle','-');hold on
+     end
+     set(gca,'FontSize',16,'xlim',[-400,100],'ylim',[0.2,1.5]);
+     ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+     xlabel('Time (ms)','FontName','Arial','FontSize',16)
+     title('Beta (resp-locked) by Hemifield')
+     line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+     line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
+     pause(1)
+ end
+ 
+    
+    
  %% Plot stim locked Beta
 figure
 for side = 1:2

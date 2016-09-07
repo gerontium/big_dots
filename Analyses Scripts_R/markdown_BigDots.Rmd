@@ -26,7 +26,7 @@ if (location=="Monash") {
 ### Install/load required packages
 #List of R packages required for this analysis:
 required_packages <- c("psych", "ggplot2", "dplyr", "tidyr", "stringr", "lubridate", "readxl","knitr",
-                       "readr", "rmarkdown", "png", "lme4", "ez", "multcomp")
+                       "readr", "rmarkdown", "png", "lme4", "ez", "multcomp","zoo")
 #Install required_packages:
 new.packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -326,9 +326,105 @@ participant_level<-merge(participant_level, Demographics, by.x = "ID", by.y = "I
 ```
 
 
-```{r, Beta}
+# Stim Locked Beta
+```{r, Stim Locked Beta}
+###########################################################################################################
+###### Import trial sample level data Stim locked Beta
+if (location=="Monash") {
+data_Stim_locked_Beta <- read.csv("C:/GitHub/big_dots/master_matrix_R_Stim_locked_beta.csv", header=FALSE)
+ID <- read.table("C:/GitHub/big_dots/ID_vector_Stim_locked_beta.csv", quote="\"")
+} else if (location=="DansLaptop") {
+data_Stim_locked_Beta <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Stim_locked_beta.csv", header=FALSE)
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Stim_locked_beta.csv", quote="\"")
+} else setwd(("~"))
 
-###### Import trial sample level data (500Hz):
+data_Stim_locked_Beta$ID<-data_Stim_locked_Beta[,1]
+#Replace the participant numbers with IDs:
+data_Stim_locked_Beta[,1]<-ID[,1]
+#Remove the seperate ID vector now it has been included into data dataframe
+rm(ID)
+drops <- c("ID")
+data_Stim_locked_Beta<-data_Stim_locked_Beta[,!(names(data_Stim_locked_Beta) %in% drops)]
+
+#Merge with the RT, Accuracy, Hemifield data 
+data_Stim_locked_Beta<- data_Stim_locked_Beta %>% #Rename data columns:
+    rename(., 
+           ID=V1,
+           TotalTrialNumber=V2,
+           Trial=V3,
+           Time=V4,
+           Stim_locked_Beta=V5) %>%
+    merge(., data, by = c("ID", "Trial", "TotalTrialNumber")) 
+#Filter out artifacts
+data_Stim_locked_Beta<- data_Stim_locked_Beta %>% filter(!Art_neg100_100PR)
+###########################################################################################################
+
+#Plot Stimonse locked 
+detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
+source("summarySE.R") 
+source("summarySEwithin.R") #function to calculate Std.Er of mean
+source("normDataWithin.R")
+plotdata_Stim_locked_Beta <- summarySEwithin(data_Stim_locked_Beta, measurevar="Stim_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
+plotdata_Stim_locked_Beta$Time<-as.numeric(as.character(plotdata_Stim_locked_Beta$Time))
+summary(plotdata_Stim_locked_Beta$Time)
+lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+
+#Stim_locked_Beta Group on same plot
+ggplot(plotdata_Stim_locked_Beta, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
+    geom_line(size=1.4) + geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
+        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
+    coord_cartesian(ylim = c(0.6, 0.75),  xlim = c(-100, 800)) +
+    xlab("Time") + ylab("Beta Power (uV)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
+    theme(axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
+    theme(legend.title = element_text(size=11, face="bold")) +
+    theme(legend.text = element_text(size = 11, face = "bold")) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black"))
+##Calculate t_values for each of the rolling variables ability to predict log(RT) at each time point
+plot_data<-data_Stim_locked_Beta %>% 
+            group_by(Hemifield, Time) %>%  
+            do(Beta_Amplitude = summary(lmer(log(RT) ~ Stim_locked_Beta + (1|ID) + (1|ITI), data = ., REML=F))$coefficients[2,3]) %>%
+            gather(., key, t_value, -Hemifield, -Time) %>%
+            mutate(t_value= as.double(t_value)) %>% 
+            arrange(key)
+
+plot_data <- plot_data %>% arrange(key)
+
+
+ggplot(plot_data, aes(Time, t_value, colour=Hemifield)) + geom_line(size=1.4) + 
+    geom_hline(yintercept=2, alpha = 0.5,  size=1.4) + geom_hline(yintercept=-2, alpha = 0.5,  size=1.4) + geom_vline(xintercept=0, alpha = 0.5,  size=1.4) +
+     coord_cartesian(ylim = c(-5, 8), xlim = c(-100, 800)) +
+    theme(axis.title.x = element_text(face="bold", size=14),
+          axis.text.x  = element_text(face="bold", angle=0,  size=14)) +
+    theme(axis.title.y = element_text(face="bold", size=14),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=14)) +
+    theme(plot.title = element_text(face="bold", size=16)) +
+    theme(strip.text.x = element_text(size = 13)) 
+
+
+##Pull out mean beta amplitude measures from 300 - 500ms in stim locked beta
+beta_participant_level<- data_Stim_locked_Beta %>% 
+                            filter(Time>300, Time<500) %>% 
+                            group_by(ID, Hemifield) %>% 
+                            summarise(Stim_locked_Beta=mean(Stim_locked_Beta)) %>%
+                            spread(Hemifield, Stim_locked_Beta) %>% 
+                            select(Beta_LeftTarget = Left,
+                                   Beta_RightTarget = Right) %>%
+                            mutate(Beta_Asym = (Beta_LeftTarget-Beta_RightTarget)/(Beta_LeftTarget+Beta_RightTarget)) %>%
+                            ungroup()
+
+#Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
+participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
+
+```
+
+# Resp Locked Beta Slope
+```{r, Resp Locked Beta}
+###########################################################################################################
+###### Import trial sample level data Resp locked Beta
 if (location=="Monash") {
 data_Resp_locked_Beta <- read.csv("C:/GitHub/big_dots/master_matrix_R_Resp_locked_beta.csv", header=FALSE)
 ID <- read.table("C:/GitHub/big_dots/ID_vector_Resp_locked_beta.csv", quote="\"")
@@ -357,6 +453,7 @@ data_Resp_locked_Beta<- data_Resp_locked_Beta %>% #Rename data columns:
 
 #Filter out artifacts
 data_Resp_locked_Beta<- data_Resp_locked_Beta %>% filter(!Art_neg100_100PR)
+###########################################################################################################
 
 #Plot response locked 
 detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
@@ -384,11 +481,24 @@ ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifiel
           panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 
+##Pull out mean beta amplitude measures from -300 to -50ms in Resp locked beta
+beta_participant_level<- data_Resp_locked_Beta %>% 
+                            filter(Time>-300, Time<(-50)) %>% 
+                            group_by(ID, Hemifield) %>% 
+                            summarise( xyBar =mean(Time*Resp_locked_Beta),
+                                       xBar = mean(Time),
+                                       yBar = mean(Resp_locked_Beta),
+                                       x2Bar =mean(Time^2),
+                                       Resp_locked_Beta_Slope = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
+                            select(ID, Hemifield, Resp_locked_Beta_Slope) %>%
+                            spread(Hemifield, Resp_locked_Beta_Slope) %>% 
+                            select(Beta_slope_LeftTarget = Left,
+                                   Beta_slope_RightTarget = Right) %>%
+                            mutate(Beta_slope_Asym = (Beta_slope_LeftTarget-Beta_slope_RightTarget)/(Beta_slope_LeftTarget+Beta_slope_RightTarget)) 
 
-
-
+#Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
+participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
 ```
-
 
 #Run the Shapiro-Wilk test of normality on the RT, CPPonset, N2c, etc. measures as a function of hemifield
 ```{r, echo=FALSE, warning=FALSE}
@@ -412,8 +522,9 @@ Normality_tests <-participant_level %>%
                                                 CramerVonMises_p_value + 
                                                 Shapiro_Francia_p_value + 
                                                 Kolmogorov_Smirnov_p_value)/5) %>% arrange(average_p_value)
-print(data.frame(Normality_tests))
-print(data.frame(Normality_tests$key, Normality_tests$average_p_value))
+kable(Normality_tests,
+    format.args = list(big.mark = ","), digits=4,
+      caption="Normality tests")
 ```
 
 #Test the effect of Target Hemifield on RT, CPPonset, N2c, etc. using Factorial Permutation test
@@ -582,7 +693,38 @@ print("Factorial Permutation test for the effect of Hemifield on AlphaDesync_i:"
 print(Hemifield_Perm);
 
 
+###################################################################
+Perm_data<- participant_level %>% 
+    select(ID, Beta_LeftTarget, Beta_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID) 
 
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Stim Locked Beta:")
+print(Hemifield_Perm);
+
+###################################################################
+
+Perm_data<- participant_level %>% 
+    select(ID, Beta_slope_LeftTarget, Beta_slope_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID) 
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Resp Locked Beta Slope:")
+print(Hemifield_Perm);
 
 ```
 
@@ -781,7 +923,6 @@ print(Hemifield_ANOVA);
 
 
 
-
 #test correlation between all of the Asymmetry measures (i.e. RT, N2, CPP, alpha, asymmetry) 
 ```{r, echo=FALSE, warning=FALSE}
 Normality_tests <-participant_level %>% 
@@ -803,12 +944,17 @@ Normality_tests <-participant_level %>%
                                                 CramerVonMises_p_value + 
                                                 Shapiro_Francia_p_value + 
                                                 Kolmogorov_Smirnov_p_value)/5) %>% arrange(average_p_value)
-print(data.frame(Normality_tests))
-
+kable(Normality_tests,
+    format.args = list(big.mark = ","), digits=4,
+      caption="Normality tests")
 
 #Get the required data i.e. ID, and all the asymmeyry index measures
 data_for_cor<-participant_level %>% 
                 select(contains("Asym"))
+
+#Re order the columns so that "RT_Asym comes first"
+refcols <- c("RT_Asym")
+data_for_cor <- data_for_cor[, c(refcols, setdiff(names(data_for_cor), refcols))]
 
 ##look at r-values, p-palues, and CIs. can use pearson for parametric or spearman for nonparmetric
 cor_pram_list<-corr.test(data_for_cor, use = "pairwise", method="pearson", adjust="none")
@@ -847,114 +993,63 @@ dev.off()
 corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry & SLF_Asymmetry",  show.legend=F, upper=T,  cex = 1)
 
 
-p1<-ggplot(data_for_cor, aes(x=RT_Asym, y=N2c_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
 
-p2<-ggplot(data_for_cor, aes(x=RT_Asym, y=N2c_latency_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-				
-				
-
-p3<-ggplot(data_for_cor, aes(x=RT_Asym, y=N2c_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-				
-				
-p4<-ggplot(data_for_cor, aes(x=RT_Asym, y=N2i_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-				
-				
-
-p5<-ggplot(data_for_cor, aes(x=RT_Asym, y=N2c_latency_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-				
-				
-p6<-ggplot(data_for_cor, aes(x=RT_Asym, y=CPPonset_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-				
-				
-p7<-ggplot(data_for_cor, aes(x=RT_Asym, y=CPPslope_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-
-p8<-ggplot(data_for_cor, aes(x=N2c_Asym, y=CPPslope_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-				
-				
-p9<-ggplot(data_for_cor, aes(x=N2c_latency_Asym, y=CPPonset_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
 
 
 
 ggplot(data_for_cor, aes(x=RT_Asym, y=CPPonset_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
 ggplot(data_for_cor, aes(x=RT_Asym, y=PreAlphaAsym)) +
-    geom_point(shape=1) +    # Use hollow circles
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=CPPonset_Asym, y=PreAlphaAsym)) +
-    geom_point(shape=1) +    # Use hollow circles
+ggplot(data_for_cor, aes(x=RT_Asym, y=CPPslope_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=CPPslope_Asym, y=AlphaDesync_i_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+ggplot(data_for_cor, aes(x=RT_Asym, y=Beta_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=CPPonset_Asym, y=AlphaDesync_c_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+ggplot(data_for_cor, aes(x=Beta_Asym, y=Beta_Slope_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=N2c_Asym, y=AlphaDesync_c_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+ggplot(data_for_cor, aes(x=Beta_Slope_Asym, y=N2c_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=CPPonset_Asym, y=AlphaDesync_c_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+ggplot(data_for_cor, aes(x=Beta_Slope_Asym, y=N2c_latency_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
 
 ggplot(data_for_cor, aes(x=CPPonset_Asym, y=CPPslope_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
 
 ggplot(data_for_cor, aes(x=RT_Asym, y=CPPslope_Asym)) +
-    geom_point(shape=1) +    # Use hollow circles
+    geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
-				
 
-png("Some Scatter Plots.png",  width = 10*300, height = 10*300, units = "px", res = 600)				
-source("multiplot.R")				
-multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols=3)
-dev.off()
-multiplot(p1,p2,p3,p4,p5,p6,p7,p8,p9, cols=3)
+
+ggplot(data_for_cor, aes(x=RT_Asym, y=Beta_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
 
 
 # plot(data_for_cor[,c(1:10)])
@@ -973,10 +1068,11 @@ ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measu
 ```{r, echo=FALSE, warning=FALSE}
 ### Fitting the Model
 
+
+
 # Multiple Linear Regression Example 
-fit <- lm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
-fit <- lm(RT_Asym~ PreAlphaAsym + N2c_Asym + N2i_Asym + N2c_latency_Asym + N2i_latency_Asym + AlphaDesync_c_Asym + AlphaDesync_i_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
-fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_latency_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
+fit <- lm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym , data=participant_level)
+fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym , data=participant_level)
 
 coefficients(fit) # model coefficients
 confint(fit, level=0.95) # CIs for model parameters 
@@ -993,10 +1089,8 @@ plot(fit)
 
 # Robust Multiple Linear Regression Example 
 library(MASS)
-fit <- rlm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
-fit <- rlm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_latency_Asym + CPPslope_Asym + CPPonset_Asym, data=participant_level)
-
-Anova(fit, type="III") # show results
+fit <- rlm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data=participant_level)
+Anova(fit) # show results
 
 
 
