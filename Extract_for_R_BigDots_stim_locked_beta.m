@@ -214,9 +214,9 @@ STFTr = zeros(size(STFT,1),length(STFT_timer),size(STFT,3));
         master_matrix_R(current:current+(length(STFT_time)-1),3) = trial;
         %% 4. Time:
          master_matrix_R(current:current+(length(STFT_time)-1),4)=STFT_time; 
-        %% 5. Response Locked Beta
-        master_matrix_R(current:current+(length(STFT_time)-1),5)=STFT(ch_beta,:, trial);
-
+        %% 5. Stim Locked Beta (Baselined)
+        master_matrix_R(current:current+(length(STFT_time)-1),5)=beta_TSE_base(ch_beta,:, trial);
+        
         current=current+length(STFT_time);
     end
 end

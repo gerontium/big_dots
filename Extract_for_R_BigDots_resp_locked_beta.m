@@ -195,6 +195,7 @@ STFTr = zeros(size(STFT,1),length(STFT_timer),size(STFT,3));
         [blah,RTsamp] = min(abs(STFT_time*fs/1000-allRT(n))); % get the sample point of the RT.
         if RTsamp+STFT_timers(1) >0 & RTsamp+STFT_timers(end)<=length(STFT_time) & allRT(n)>0 % is the RT larger than 1st stim RT point, smaller than last RT point.
             STFTr(:,:,n) = STFT(:,RTsamp+STFT_timers,n);
+            STFTr_base(:,:,n) = beta_TSE_base(:,RTsamp+STFT_timers,n);
             validrlock(n)=1;
         end
     end  
@@ -214,9 +215,9 @@ STFTr = zeros(size(STFT,1),length(STFT_timer),size(STFT,3));
         master_matrix_R(current:current+(length(STFT_timer)-1),3) = trial;
         %% 4. Time:
          master_matrix_R(current:current+(length(STFT_timer)-1),4)=STFT_timer; 
-        %% 5. Response Locked Beta
-        master_matrix_R(current:current+(length(STFT_timer)-1),5)=STFTr(ch_beta,:, trial);
-
+        %% 5. Response Locked Beta (Baselined)
+        master_matrix_R(current:current+(length(STFT_timer)-1),5)=STFTr_base(ch_beta,:, trial);
+        
         current=current+length(STFT_timer);
     end
 end

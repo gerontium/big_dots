@@ -323,6 +323,11 @@ participant_level<-participant_level_long %>% select(., -data.Z)  %>%
 #Merge in the Demographics
 participant_level<-merge(participant_level, Demographics, by.x = "ID", by.y = "ID") 
 ####################################################################################
+
+#Change class of Location and Sex to Factor variavles 
+participant_level$Location<-as.factor(participant_level$Location)
+participant_level$Sex<-as.factor(participant_level$Sex)
+
 ```
 
 
@@ -373,7 +378,7 @@ lapply(required_packages, require, character.only = TRUE) # re-load all librarys
 ggplot(plotdata_Stim_locked_Beta, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
     geom_line(size=1.4) + geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
         geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(0.6, 0.75),  xlim = c(-100, 800)) +
+    coord_cartesian(ylim = c(-0.1, 0.01),  xlim = c(-100, 800)) +
     xlab("Time") + ylab("Beta Power (uV)") +
     theme(axis.title.x = element_text(face="bold", size=12),
           axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
@@ -383,6 +388,7 @@ ggplot(plotdata_Stim_locked_Beta, aes(x=Time, y=Stim_locked_Beta, color=Hemifiel
     theme(legend.text = element_text(size = 11, face = "bold")) +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
           panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
 ##Calculate t_values for each of the rolling variables ability to predict log(RT) at each time point
 plot_data<-data_Stim_locked_Beta %>% 
             group_by(Hemifield, Time) %>%  
@@ -469,7 +475,7 @@ lapply(required_packages, require, character.only = TRUE) # re-load all librarys
 ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
     geom_line(size=1.4) + geom_ribbon(aes(ymin=Resp_locked_Beta-ci, ymax=Resp_locked_Beta+ci), alpha = 0.3, colour=NA) + 
         geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(0.6, 0.75),  xlim = c(-400, 100)) +
+    coord_cartesian(ylim = c(-0.1, 0.01),  xlim = c(-400, 100)) +
     xlab("Time") + ylab("Beta Power (uV)") +
     theme(axis.title.x = element_text(face="bold", size=12),
           axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
@@ -479,7 +485,6 @@ ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifiel
     theme(legend.text = element_text(size = 11, face = "bold")) +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
           panel.background = element_blank(), axis.line = element_line(colour = "black"))
-
 
 ##Pull out mean beta amplitude measures from -300 to -50ms in Resp locked beta
 beta_participant_level<- data_Resp_locked_Beta %>% 
@@ -498,6 +503,8 @@ beta_participant_level<- data_Resp_locked_Beta %>%
 
 #Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
 participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
+
+
 ```
 
 #Run the Shapiro-Wilk test of normality on the RT, CPPonset, N2c, etc. measures as a function of hemifield
@@ -724,6 +731,41 @@ log <- capture.output({
                           , perms = 1000);
  })
 print("Factorial Permutation test for the effect of Hemifield on Resp Locked Beta Slope:")
+print(Hemifield_Perm);
+
+
+
+###################################################################
+Perm_data<- participant_level %>% 
+    select(ID, Beta_Baselined_LeftTarget, Beta_Baselined_RightTarget_Baselined) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID) 
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Baselined Stim Locked Beta:")
+print(Hemifield_Perm);
+
+###################################################################
+
+Perm_data<- participant_level %>% 
+    select(ID, Beta_Baselined_slope_LeftTarget, Beta_Baselined_slope_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID) 
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Baselined Resp Locked Beta Slope:")
 print(Hemifield_Perm);
 
 ```
@@ -996,16 +1038,26 @@ corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry & SLF_Asym
 
 
 
+ggplot(data_for_cor, aes(x=RT_Asym, y=PreAlphaAsym)) +
+    geom_point(size=3) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+ggplot(data_for_cor, aes(x=RT_Asym, y=N2c_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
+
+ggplot(data_for_cor, aes(x=RT_Asym, y=N2c_latency_Asym)) +
+    geom_point(size=3) +    # Use hollow circles
+    geom_smooth(method=lm,   # Add linear regression line
+                se=FALSE)    # Don't add shaded confidence region
 
 ggplot(data_for_cor, aes(x=RT_Asym, y=CPPonset_Asym)) +
     geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=RT_Asym, y=PreAlphaAsym)) +
-    geom_point(size=3) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
 
 ggplot(data_for_cor, aes(x=RT_Asym, y=CPPslope_Asym)) +
     geom_point(size=3) +    # Use hollow circles
@@ -1017,17 +1069,17 @@ ggplot(data_for_cor, aes(x=RT_Asym, y=Beta_Asym)) +
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=Beta_Asym, y=Beta_Slope_Asym)) +
+ggplot(data_for_cor, aes(x=Beta_Asym, y=Beta_slope_Asym)) +
     geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=Beta_Slope_Asym, y=N2c_Asym)) +
+ggplot(data_for_cor, aes(x=Beta_slope_Asym, y=N2c_Asym)) +
     geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
 
-ggplot(data_for_cor, aes(x=Beta_Slope_Asym, y=N2c_latency_Asym)) +
+ggplot(data_for_cor, aes(x=Beta_slope_Asym, y=N2c_latency_Asym)) +
     geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
@@ -1067,90 +1119,126 @@ ggplot(hist_data, aes(asymmetry_index))  + geom_histogram() + facet_wrap(~ measu
 #Look at multiple regression to predice RT_Asym 
 ```{r, echo=FALSE, warning=FALSE}
 ### Fitting the Model
+intercept_only<-lm(RT_Asym~ 1, data=participant_level)
+Controls <- update(intercept_only, .~. + Location + Sex + Age)
+PreAlphaAsym<-update(Controls, .~. + PreAlphaAsym)
+N2c_Asym<-update(PreAlphaAsym, .~. + N2c_Asym)
+N2c_latency_Asym<-update(N2c_Asym, .~. + N2c_latency_Asym)
+CPPonset_Asym<-update(N2c_latency_Asym, .~. + CPPonset_Asym)
+CPPslope_Asym<-update(CPPonset_Asym, .~. + CPPslope_Asym)
+Beta_Asym<-update(CPPslope_Asym, .~. + Beta_Asym)
+
+anova(intercept_only, Controls, PreAlphaAsym, N2c_Asym, N2c_latency_Asym, CPPonset_Asym, CPPslope_Asym, Beta_Asym)
 
 
 
-# Multiple Linear Regression Example 
-fit <- lm(RT_Asym~ PreAlphaAsym + N2c_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym , data=participant_level)
-fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym , data=participant_level)
+#For the final model, only keep predictors that significantly improve model fit
+final_model<-lm(RT_Asym ~  PreAlphaAsym + N2c_latency_Asym + CPPonset_Asym, data=participant_level)
 
-coefficients(fit) # model coefficients
-confint(fit, level=0.95) # CIs for model parameters 
-# fitted(fit) # predicted values
-# residuals(fit) # residuals
-anova(fit) # anova table 
-# vcov(fit) # covariance matrix for model parameters 
-# influence(fit) # regression diagnostics
+summary(final_model)
+anova(final_model) # anova table 
+
+#---We can obtain standardized parameter estimates with the lm.beta() "QuantPsyc" pachage function---
+#Standardized Beta values can be compared to each other and therefore allow us to gague the relative 
+#importance of each predictor.  
+
+# install.packages(c("QuantPsyc","car","leaps"))
+library(QuantPsyc)
+library(car)
+lm.beta(final_model)
+
+
+confint(final_model, level=0.95) # CIs for model parameters 
+# fitted(final_model) # predicted values
+# residuals(final_model) # residuals
+# vcov(final_model) # covariance matrix for model parameters 
+# influence(final_model) # regression diagnostics
+
 # diagnostic plots 
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
-plot(fit)
+plot(final_model)
+
+
+#----Obtain casewise diagnostics and add them to the original data file.---
+
+participant_level$residuals<-residuals(final_model)
+participant_level$standardized.residuals <- rstandard(final_model)
+participant_level$cooks.distance<-cooks.distance(final_model)
+participant_level$dfbeta <- dfbeta(final_model)
+participant_level$dffit <- dffits(final_model)
+participant_level$leverage <- hatvalues(final_model)
+participant_level$covariance.ratios <- covratio(final_model)
+participant_level$fitted <-fitted(final_model)
+
+
+#----List of standardized residuals greater than 2--------------
+participant_level$large.residual<-participant_level$standardized.residuals>2| participant_level$standardized.residuals < -2
+# only about 5% of the sample should have standardized residuals greater than 2
+cat("Percentage of sample with standardized residuals greater than abs 2:")
+cat((sum(participant_level$large.residual)/length(participant_level$RT_Asym))*100,"%")
+
+
+#-----Cook's distance, leverage and covariance ratio for cases with large residuals.---------
+participant_level[participant_level$large.residual , c("ID", "standardized.residuals", "cooks.distance", "leverage", "covariance.ratios")]
+#no cooks difference values greater than 1, so none of these are having too much influence on the model 
 
 
 
-# Robust Multiple Linear Regression Example 
+#----The Durbin-Watson test is obtained with either dwt() or durbinWatsonTest()---
+#This is a test for independence 
+durbinWatsonTest(final_model) # D-W Statistic is close to 2 and nowhere near significant so we are all good
+
+#----Obtaining the VIF to assess collinearity/multicillinearity---
+vif(final_model)
+#tolerance:
+1/vif(final_model)
+# If the largest VIF is greater than 10 then there is a multicillinearity problem
+# If the average VIF is substantially greater than 1 there could be a multicillinearity problem
+# Tolerances below 0.1 indicate a serious multicillinearity problem
+# Tolerances below 0.2 indicate a potential multicillinearity problem
+
+#Plot standardized residual histogram
+residuals_final_model=residuals(final_model)
+
+plot(residuals_final_model)
+qqnorm(residuals_final_model)
+qqline(residuals_final_model)
+hist(residuals_final_model)
+
+
+
+
+
+# Stepwise Regression
 library(MASS)
-fit <- rlm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data=participant_level)
-Anova(fit) # show results
+fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data=participant_level)
+step <- stepAIC(fit, direction="both")
+step$anova # display results
 
 
 
-```
-
-
-
-
-
-
-
-
-
-
-
-
-#Look at the effect of Hemifield on RT on a single trial level using linear mixed model
-
-```{r, echo=FALSE, warning=FALSE}
-data$Hemifield<-as.factor(data$Hemifield)
-
-RT_random_effects_only<-lmer(log(RT) ~ 1 + (Hemifield | ID) +(1|ITI) + (1|Trial), data = data, REML=FALSE, na.action = na.omit)
-RT_Hemifield<-update(RT_random_effects_only, .~. + Hemifield)
-RT_TOT<-update(RT_Hemifield, .~. + Trial)
-RT_Hemifield_by_TOT<-update(RT_TOT, .~. + Hemifield:Trial)
-anova(RT_random_effects_only, RT_Hemifield, RT_Hemifield_by_TOT)
-
-RT_PreAlphaPower<-update(RT_Hemifield_by_TOT, .~. + PreAlphaPower)
-anova(RT_Hemifield_by_TOT, RT_PreAlphaPower)
-
-
-# 
-# #Look at a boxplot of log(RT)
-# ggplot(data, aes(Hemifield, log(RT), colour = Hemifield))  + 
-#     geom_boxplot() + coord_flip() + theme_bw ()
-
-
-#Plot the effect of Hemifield*Time-on-task
-ggplot(data, aes(x=data$Trial, y=data$RT,fill=Hemifield,colour=Hemifield)) +
-     # stat_smooth(method="glm",level = 0.95,size=1) + # Add a glm smoothed fit curve with 95% confidence region around the three light conditions
-    geom_smooth() +
-    scale_fill_manual(name="Target\nHemifield",  breaks=c("Left", "Right"), labels=c(" Left", " Right"), guide = guide_legend(reverse=TRUE), values=c("#999999", "black")) +
-    scale_colour_manual(name="Target\nHemifield",  breaks=c("Left", "Right"), labels=c(" Left", " Right"), guide = guide_legend(reverse=TRUE), values=c("black", "black")) +
-    ylab("RT (ms)") +  xlab("Time On Task (trials)") + coord_cartesian(ylim = c(500, 700))+
-    theme(axis.title.x = element_text(face="bold", size=14),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=14),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=14, face="bold")) +
-    theme(legend.text = element_text(size = 12, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-    panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-
-##Check the plot of the model parameters matches with this^ plot of the raw data 
-# require(effects)
-# plot(allEffects(RT_Hemifield_by_TOT), multiline=T)
+# All Subsets Regression
+library(leaps)
+leaps<-regsubsets(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data=participant_level,nbest=9)
+# plot a table of models showing variables in each model.
+# models are ordered by the selection statistic.
+layout(1)
+plot(leaps,scale="r2")
+plot(leaps, scale="adjr2")
+plot(leaps, scale="bic")
 
 
 ```
 
-**So this ^ shows that participants tended to react faster to left hemifield targets, but this leftward advangate decreased over time**
+
+
+
+
+
+
+
+
+
+
 
 
