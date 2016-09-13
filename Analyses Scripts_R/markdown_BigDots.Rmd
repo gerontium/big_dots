@@ -1,7 +1,6 @@
 ---
 title: "BigDots"
 author: "Daniel Newman"
-date: "12 June 2016"
 output:
   html_document:
     fig_width: 8
@@ -9,7 +8,7 @@ output:
   word_document: default
 ---
 
-```{r Load and Pre-Process the single trial Data, echo=FALSE, include=FALSE}
+```{r Load and Pre-Process the single trial Data, echo=FALSE, include=FALSE, warning=FALSE}
 
 ####Which computer/directory is this being run on?
 location<-"Monash"
@@ -316,8 +315,11 @@ ggplot(participant_level_long, aes(data))  + geom_density() + facet_wrap(~ measu
 #change measure_type to factor class
 participant_level_long$measure_type<-as.factor(participant_level_long$measure_type)
 
-#Put it back into long format so I can use lapply to do t-test on columns 
-participant_level<-participant_level_long %>% select(., -data.Z)  %>% 
+#Put it back into wide format so I can use lapply to do t-test on columns 
+drops <- c("data.Z")
+participant_level_long<-participant_level_long[ , !(names(participant_level_long) %in% drops)]
+
+participant_level<-participant_level_long %>%  
                     spread(measure_type, data) 
 
 #Merge in the Demographics
@@ -332,7 +334,7 @@ participant_level$Sex<-as.factor(participant_level$Sex)
 
 
 # Stim Locked Beta
-```{r, Stim Locked Beta}
+```{r, Stim Locked Beta, echo=FALSE, warning=FALSE}
 ###########################################################################################################
 ###### Import trial sample level data Stim locked Beta
 if (location=="Monash") {
@@ -428,7 +430,7 @@ participant_level<-left_join(participant_level, beta_participant_level, by = "ID
 ```
 
 # Resp Locked Beta Slope
-```{r, Resp Locked Beta}
+```{r, Resp Locked Beta, echo=FALSE, warning=FALSE}
 ###########################################################################################################
 ###### Import trial sample level data Resp locked Beta
 if (location=="Monash") {
@@ -469,7 +471,7 @@ source("normDataWithin.R")
 plotdata_Resp_locked_Beta <- summarySEwithin(data_Resp_locked_Beta, measurevar="Resp_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
 plotdata_Resp_locked_Beta$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta$Time))
 summary(plotdata_Resp_locked_Beta$Time)
-lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+lapply(required_packages, require, character.only = TRUE) # re-load all librarys now that I'm finished with plyr
 
 #Resp_locked_Beta Group on same plot
 ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
@@ -508,7 +510,7 @@ participant_level<-left_join(participant_level, beta_participant_level, by = "ID
 ```
 
 #Run the Shapiro-Wilk test of normality on the RT, CPPonset, N2c, etc. measures as a function of hemifield
-```{r, echo=FALSE, warning=FALSE}
+```{r, test of normality, echo=FALSE, warning=FALSE}
 options(scipen=99)
 Normality_tests <-participant_level %>% 
                     select(contains("Left"), contains("Right"))  %>% 
@@ -534,250 +536,16 @@ kable(Normality_tests,
       caption="Normality tests")
 ```
 
-#Test the effect of Target Hemifield on RT, CPPonset, N2c, etc. using Factorial Permutation test
-```{r, echo=FALSE, warning=FALSE}
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, RT_Left, RT_Right) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on RT:")
-print(Hemifield_Perm);
-
-
-ggplot(Perm_data, aes(Hemifield, dv, colour = Hemifield))  + 
-          geom_violin(alpha=0.5) + geom_boxplot() +  theme_bw () + geom_point()
-
-
-ggplot(Perm_data, aes(Hemifield, dv, colour = Hemifield, group = ID))  + 
-          geom_violin() +  theme_bw () + geom_point() + geom_line(colour="black")
-
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, CPPslope_LeftTarget, CPPslope_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on CPP Slope:")
-print(Hemifield_Perm);
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, CPPonset_LeftTarget, CPPonset_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on CPP Onset:")
-print(Hemifield_Perm);
-
-ggplot(Perm_data, aes(Hemifield, dv, colour = Hemifield))  + 
-          geom_violin() + geom_boxplot() +  theme_bw () + geom_point() + geom_line()
-
-ggplot(Perm_data, aes(Hemifield, dv, colour = Hemifield, group = ID))  + 
-          geom_violin() +  theme_bw () + geom_point() + geom_line(colour="black")
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, N2i_latency_LeftTarget, N2i_latency_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on N2i_latency:")
-print(Hemifield_Perm);
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, N2i_LeftTarget, N2i_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on N2i Amplitude:")
-print(Hemifield_Perm);
-
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, N2c_latency_LeftTarget, N2c_latency_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on N2c_latency:")
-print(Hemifield_Perm);
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, N2c_LeftTarget, N2c_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on N2c Amplitude:")
-print(Hemifield_Perm);
-
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, AlphaDesync_c_LeftTarget, AlphaDesync_c_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on AlphaDesync_c:")
-print(Hemifield_Perm);
-
-
-###################################################################
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, AlphaDesync_c_LeftTarget, AlphaDesync_c_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on AlphaDesync_i:")
-print(Hemifield_Perm);
-
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, Beta_LeftTarget, Beta_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on Stim Locked Beta:")
-print(Hemifield_Perm);
-
-###################################################################
-
-Perm_data<- participant_level %>% 
-    select(ID, Beta_slope_LeftTarget, Beta_slope_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on Resp Locked Beta Slope:")
-print(Hemifield_Perm);
-
-
-
-###################################################################
-Perm_data<- participant_level %>% 
-    select(ID, Beta_Baselined_LeftTarget, Beta_Baselined_RightTarget_Baselined) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on Baselined Stim Locked Beta:")
-print(Hemifield_Perm);
-
-###################################################################
-
-Perm_data<- participant_level %>% 
-    select(ID, Beta_Baselined_slope_LeftTarget, Beta_Baselined_slope_RightTarget) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID) 
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on Baselined Resp Locked Beta Slope:")
-print(Hemifield_Perm);
-
-```
-
 
 #Test the effect of Target Hemifield on RT, CPPonset, N2c, etc. using repeated measures ANOVA
-```{r, echo=FALSE, warning=FALSE}
+
+##In cases where the assumption of normality was violated, a factorial permutation test for the effect of Target Hemifield was performed with 1000 permutations and the permuted p-value also reported
+```{r, effect of Target Hemifield, echo=FALSE, warning=FALSE}
 ###################################################################
-ANOVA_data<- participant_level %>% 
+ANOVA_data<- participant_level %>%
     select(ID, RT_Left, RT_Right) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
     # %>% mutate(dv=log(dv))
 
 
@@ -793,37 +561,36 @@ ANOVA_data<- participant_level %>%
 print("Repeated Measures ANOVA  for the effect of Hemifield on RT:")
 print(Hemifield_ANOVA);
 
+#Permuted test
 
-ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  + 
-          geom_violin() + geom_boxplot(alpha=0.1) +  theme_bw () + geom_point()
-
-ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield, group = ID))  + 
-            geom_point() + geom_line(colour="black")
-
-###################################################################
-ANOVA_data<- participant_level %>% 
-    select(ID, CPPslope_LeftTarget, CPPslope_RightTarget) %>%
+Perm_data<- participant_level %>%
+    select(ID, RT_Left, RT_Right) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)%>%
+    mutate(Hemifield=factor(Hemifield)) %>%
+    mutate(ID=factor(ID)) 
 
 
-   Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
                           , dv = .(dv)
                           , wid = .(ID)
                           , within = .(Hemifield)
-                        , within_covariates = NULL
-                        , between = NULL
-                        , between_covariates = NULL
-                        , observed = NULL
-                        , type = 3);
-print("Repeated Measures ANOVA  for the effect of Hemifield on CPP Slope:")
-print(Hemifield_ANOVA);
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on RT:")
+print(Hemifield_Perm);
+
+
+ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  +
+          geom_violin() + geom_boxplot(alpha=0.1) +  theme_bw () + geom_point()
+
 
 ###################################################################
-ANOVA_data<- participant_level %>% 
+ANOVA_data<- participant_level %>%
     select(ID, CPPonset_LeftTarget, CPPonset_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -838,17 +605,36 @@ ANOVA_data<- participant_level %>%
 print("Repeated Measures ANOVA  for the effect of Hemifield on CPP Onset:")
 print(Hemifield_ANOVA);
 
-ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  + 
+ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  +
           geom_violin() + geom_boxplot(alpha=0.1) +  theme_bw () + geom_point() + geom_line()
 
-ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield, group = ID))  + 
-            geom_point() + geom_line(colour="black")
+
 
 ###################################################################
-ANOVA_data<- participant_level %>% 
+ANOVA_data<- participant_level %>%
+    select(ID, CPPslope_LeftTarget, CPPslope_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+
+   Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                        , within_covariates = NULL
+                        , between = NULL
+                        , between_covariates = NULL
+                        , observed = NULL
+                        , type = 3);
+print("Repeated Measures ANOVA  for the effect of Hemifield on CPP Slope:")
+print(Hemifield_ANOVA);
+
+
+###################################################################
+ANOVA_data<- participant_level %>%
     select(ID, N2i_latency_LeftTarget, N2i_latency_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -863,11 +649,27 @@ ANOVA_data<- participant_level %>%
 print("Repeated Measures ANOVA  for the effect of Hemifield on N2i_latency:")
 print(Hemifield_ANOVA);
 
+#Permutation test:
+Perm_data<- participant_level %>%
+    select(ID, N2i_latency_LeftTarget, N2i_latency_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on N2i_latency:")
+print(Hemifield_Perm);
+
 ###################################################################
-ANOVA_data<- participant_level %>% 
+ANOVA_data<- participant_level %>%
     select(ID, N2i_LeftTarget, N2i_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -884,10 +686,10 @@ print(Hemifield_ANOVA);
 
 
 ###################################################################
-ANOVA_data<- participant_level %>% 
+ANOVA_data<- participant_level %>%
     select(ID, N2c_latency_LeftTarget, N2c_latency_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -902,11 +704,27 @@ ANOVA_data<- participant_level %>%
 print("Repeated Measures ANOVA  for the effect of Hemifield on N2c_latency:")
 print(Hemifield_ANOVA);
 
+#Permutation test:
+Perm_data<- participant_level %>%
+    select(ID, N2c_latency_LeftTarget, N2c_latency_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on N2c_latency:")
+print(Hemifield_Perm);
+
 ###################################################################
-ANOVA_data<- participant_level %>% 
+ANOVA_data<- participant_level %>%
     select(ID, N2c_LeftTarget, N2c_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -923,10 +741,12 @@ print(Hemifield_ANOVA);
 
 
 ###################################################################
-ANOVA_data<- participant_level %>% 
-    select(ID, AlphaDesync_i_LeftTarget, AlphaDesync_i_RightTarget) %>%
+
+
+ANOVA_data<- participant_level %>%
+    select(ID, Beta_LeftTarget, Beta_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -938,15 +758,34 @@ ANOVA_data<- participant_level %>%
                         , between_covariates = NULL
                         , observed = NULL
                         , type = 3);
-print("Repeated Measures ANOVA  for the effect of Hemifield on AlphaDesync_i:")
+print("Repeated Measures ANOVA  for the effect of Hemifield on Stim Locked Beta Amplitude:")
 print(Hemifield_ANOVA);
+
+
+
+Perm_data<- participant_level %>%
+    select(ID, Beta_LeftTarget, Beta_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Stim Locked Beta Amplitude:")
+print(Hemifield_Perm);
 
 
 ###################################################################
-ANOVA_data<- participant_level %>% 
-    select(ID, AlphaDesync_c_LeftTarget, AlphaDesync_c_RightTarget) %>%
+
+
+ANOVA_data<- participant_level %>%
+    select(ID, Beta_slope_LeftTarget, Beta_slope_RightTarget) %>%
     na.omit() %>%
-    gather(Hemifield, dv, -ID) 
+    gather(Hemifield, dv, -ID)
 
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
@@ -958,15 +797,32 @@ ANOVA_data<- participant_level %>%
                         , between_covariates = NULL
                         , observed = NULL
                         , type = 3);
-print("Repeated Measures ANOVA  for the effect of Hemifield on AlphaDesync_c:")
+print("Repeated Measures ANOVA  for the effect of Hemifield on Resp Locked Beta Slope:")
 print(Hemifield_ANOVA);
+
+
+
+Perm_data<- participant_level %>%
+    select(ID, Beta_slope_LeftTarget, Beta_slope_RightTarget) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on SResp Locked Beta Slope:")
+print(Hemifield_Perm);
 
 ```
 
 
 
 #test correlation between all of the Asymmetry measures (i.e. RT, N2, CPP, alpha, asymmetry) 
-```{r, echo=FALSE, warning=FALSE}
+```{r, correlation between Asymmetry measures, echo=FALSE, warning=FALSE}
 Normality_tests <-participant_level %>% 
                     select(contains("Asym"))  %>% 
                     gather() %>% 
@@ -1000,7 +856,7 @@ data_for_cor <- data_for_cor[, c(refcols, setdiff(names(data_for_cor), refcols))
 
 ##look at r-values, p-palues, and CIs. can use pearson for parametric or spearman for nonparmetric
 cor_pram_list<-corr.test(data_for_cor, use = "pairwise", method="pearson", adjust="none")
-print(cor_pram_list, short=F)
+# print(cor_pram_list, short=F)
 
 #######################################
 ##Plot p-value matrix using ggplot:
@@ -1029,10 +885,10 @@ qplot(x=Var1, y=Var2, data=p_data, fill=p_value, geom="tile")+
 cor_matrix<-cor(as.matrix(data_for_cor), use="na.or.complete", method="pearson")
 
 #Save the corPlot() as a .png image
-png("Correlation betweem RT_Asymmetry & SLF_Asymmetry.png",  width = 10*600, height = 10*600, units = "px", res = 600)
+png("Correlation betweem RT_Asymmetry.png",  width = 10*600, height = 10*600, units = "px", res = 600)
 corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry & SLF_Asymmetry",  show.legend=F, upper=T,  cex = 1)
 dev.off()
-corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry & SLF_Asymmetry",  show.legend=F, upper=T,  cex = 1)
+corPlot(cor_matrix, numbers=T, main="Correlation betweem RT_Asymmetry",  show.legend=F, upper=T,  cex = 1)
 
 
 
@@ -1065,27 +921,6 @@ ggplot(data_for_cor, aes(x=RT_Asym, y=CPPslope_Asym)) +
                 se=FALSE)    # Don't add shaded confidence region
 
 ggplot(data_for_cor, aes(x=RT_Asym, y=Beta_Asym)) +
-    geom_point(size=3) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-
-ggplot(data_for_cor, aes(x=Beta_Asym, y=Beta_slope_Asym)) +
-    geom_point(size=3) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-
-ggplot(data_for_cor, aes(x=Beta_slope_Asym, y=N2c_Asym)) +
-    geom_point(size=3) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-
-ggplot(data_for_cor, aes(x=Beta_slope_Asym, y=N2c_latency_Asym)) +
-    geom_point(size=3) +    # Use hollow circles
-    geom_smooth(method=lm,   # Add linear regression line
-                se=FALSE)    # Don't add shaded confidence region
-
-
-ggplot(data_for_cor, aes(x=CPPonset_Asym, y=CPPslope_Asym)) +
     geom_point(size=3) +    # Use hollow circles
     geom_smooth(method=lm,   # Add linear regression line
                 se=FALSE)    # Don't add shaded confidence region
