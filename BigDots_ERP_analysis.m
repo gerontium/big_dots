@@ -116,7 +116,7 @@ for s2 = 1:length(subject_folder)
     end
 end
 %%
-duds = [1]; %4 and 74 could also be kicked out as they are RT outliers
+duds = [1]; %%1 completed the wrong paradigm  %4 and 74 could also be kicked out as they are RT outliers
 single_participants = [];
 %%
 if ~isempty(duds) && isempty(single_participants)
@@ -459,21 +459,27 @@ for side = 1:2
     end
 end
 
-% t1 = 500; t2 = 600;
-% plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>=t1 & t<t2),:),2),3));
-% figure
-% topoplot(plot_mean,chanlocs,'maplimits', ...
-%     [min(plot_mean) max(plot_mean)], ...
-%     'electrodes','numbers','plotchans',plot_chans);
 
-t1 = 260; t2 = 280;
+%% Make some scalp plots for R:
+%CPP scalp topo
+t1 = 450; t2 = 600;
+plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>=t1 & t<t2),:),2),3));
+figure
+topoplot(plot_mean,chanlocs,'maplimits', ...
+    [min(plot_mean) max(plot_mean)], ...
+    'electrodes','off','plotchans',plot_chans);
+
+%N2 scalp topo
+t1 = 200; t2 = 300;
 for side = 1:2
     plot_mean = squeeze(mean(mean(ERP_group_side(:,find(t>=t1 & t<t2),side),2),3));
     figure
     topoplot(plot_mean,chanlocs,'maplimits', ...
         [min(plot_mean) max(plot_mean)], ...
-        'electrodes','numbers','plotchans',plot_chans);
+        'electrodes','off','plotchans',plot_chans);
 end
+
+
 %% Grand average ERPr
 % chan x time x side
 ERPr_group_side = squeeze(mean(ERPr_side(:,:,:,:),1));
@@ -513,7 +519,6 @@ figure
 for side = 1:2
     h(side) = plot(t,squeeze(CPP(:,side)),'LineWidth',3,'LineStyle','-');hold on
 end
-
 set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
 ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
 xlabel('Time (ms)','FontName','Arial','FontSize',16)
@@ -562,7 +567,6 @@ figure
 for side = 1:2
     h(side) = plot(t,squeeze(N2c(:,side)),'LineWidth',3,'LineStyle','-');hold on
 end
-
 set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
 ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
 xlabel('Time (ms)','FontName','Arial','FontSize',16)
@@ -596,7 +600,6 @@ figure
 for side = 1:2
     h(side) = plot(t,squeeze(N2i(:,side)),'LineWidth',3,'LineStyle','-');hold on
 end
-
 set(gca,'FontSize',16,'xlim',[-100,1200],'xtick',[-100,0:200:1200]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
 ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
 xlabel('Time (ms)','FontName','Arial','FontSize',16)
@@ -722,26 +725,26 @@ for s=1:length(allsubj)
 end
 
 %%%%Plot each individual participant's CPPr_slope 
-for s=1:length(allsubj)
-    clear h
-    figure
-    for side = 1:2
-        h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
-        coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
-        CPP_slope(s,side)=coef(1);
-        r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
-        plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
-    end
-    
-    set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-    ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-    xlabel('Time (ms)','FontName','Arial','FontSize',16)
-    title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
-    line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-    line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-    legend(h,side_tags,'FontSize',16,'Location','NorthWest');
-   pause(1) 
-end
+% for s=1:length(allsubj)
+%     clear h
+%     figure
+%     for side = 1:2
+%         h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
+%         coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
+%         CPP_slope(s,side)=coef(1);
+%         r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
+%         plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
+%     end
+%     
+%     set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
+%     ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+%     xlabel('Time (ms)','FontName','Arial','FontSize',16)
+%     title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
+%     line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+%     line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+%     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
+%    pause(1) 
+% end
 
 
 

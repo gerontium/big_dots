@@ -52,6 +52,20 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
     '484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'};
 %%
 
+ %%
+duds = [1]; %4 and 74 could also be kicked out as they are RT outliers
+single_participants = [];
+%%
+if ~isempty(duds) && isempty(single_participants)
+    subject_folder([duds]) = [];
+    allsubj([duds]) = [];  
+end
+
+if ~isempty(single_participants)
+    subject_folder = subject_folder(single_participants);
+    allsubj = allsubj(single_participants);
+end
+ 
  
 CSD=0; %Use Current Source Density transformed erp? 1=yes, 0=no
 
