@@ -397,6 +397,11 @@ library(grid)
 CPP_scalp <- rasterGrob(readPNG("CPP_scalp.png",native = T, info = T), interpolate=TRUE)
 N2c_LeftTarget_scalp <- rasterGrob(readPNG("N2c_LeftTarget_scalp.png"), interpolate=TRUE)
 N2c_RightTarget_scalp <- rasterGrob(readPNG("N2c_RightTarget_scalp.png"), interpolate=TRUE)
+Alpha_scalp<- rasterGrob(readPNG("Alpha_scalp.png",native = T, info = T), interpolate=TRUE)
+Beta_scalp<- rasterGrob(readPNG("Beta_scalp.png",native = T, info = T), interpolate=TRUE)
+N2_scalp<- rasterGrob(readPNG("N2_scalp.png",native = T, info = T), interpolate=TRUE)
+N2_scalp2<- rasterGrob(readPNG("N2_scalp2.png",native = T, info = T), interpolate=TRUE)
+Paradigm<- rasterGrob(readPNG("Paradigm_v2.png",native = T, info = T), interpolate=TRUE)
 
 participant_level_long<-participant_level %>% 
                     select(ID, RT_Left, RT_Right, CPPonset_LeftTarget, CPPonset_RightTarget) %>%
@@ -411,12 +416,11 @@ participant_level_long$Measure[participant_level_long$measure_type=="RT_Right"|
                                      participant_level_long$measure_type=="RT_Left"] <- "RT"
 
 
-p1<-ggplot(participant_level_long, aes(measure_type, data, colour = Hemifield))  +
+p_violin<-ggplot(participant_level_long, aes(measure_type, data, colour = Hemifield))  +
     scale_y_continuous(limits = c(-100, 900)) +
     geom_violin(aes(linetype = Measure), size=1) + 
     # geom_boxplot(aes(linetype = Measure), alpha=0.1, notch=T, notchwidth=0.75, width = 0.3) + 
     xlab("Target Hemifield") + ylab("Time (ms)") +
-    theme_bw() +
     theme(  axis.title.x = element_blank(), #element_text(face="bold", size=12),
             axis.text.x  =  element_blank(), #element_text(face="bold", angle=0,  size=12),
             axis.ticks.x=element_blank(),
@@ -425,6 +429,7 @@ p1<-ggplot(participant_level_long, aes(measure_type, data, colour = Hemifield)) 
             axis.ticks.y=element_blank(),
             legend.title = element_text(size=12, face="bold"),
             legend.text = element_text(size = 12, face = "bold"),
+            panel.background = element_blank(), #remove grey background 
             legend.position=c(0.9,0.22),  #Move ledgend position
             axis.line = element_line(colour = "black")) +
         guides(colour=FALSE) +
@@ -444,21 +449,21 @@ p1<-ggplot(participant_level_long, aes(measure_type, data, colour = Hemifield)) 
 
 
 
-p2<-ggplot(plotdata_Stim_locked_CPP, aes(x=Time, y=CPP, color=Hemifield,fill=Hemifield)) + 
+p_CPP<-ggplot(plotdata_Stim_locked_CPP, aes(x=Time, y=CPP, color=Hemifield,fill=Hemifield)) + 
     geom_line(size=1) + 
     geom_ribbon(aes(ymin=CPP-ci, ymax=CPP+ci), alpha = 0.5, colour=NA) + 
     coord_cartesian(ylim = c(-0.1, 6),  xlim = c(-100, 900)) +
     xlab("Time (ms)") + ylab("CPP Amplitude (uV)") +
-    theme_bw() +
     theme(axis.title.x = element_text(face="bold", size=12),
           axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
           axis.title.y = element_text(face="bold", size=12),
           axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
           legend.title = element_text(size=12, face="bold"),
           legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
           legend.position= c(0.88,0.88)) + #Move ledgend position
     guides(color=FALSE) +
-    annotation_custom(CPP_scalp,xmin = 80, xmax = 220, ymin = 4.5, ymax = 6.25) + #add the CPP scapl plot 
+    annotation_custom(CPP_scalp,xmin = 30, xmax = 270, ymin = 4, ymax = 6.25) + #add the CPP scapl plot 
     geom_vline(xintercept=as.numeric(participant_level %>% select(RT_Left) %>% summarise(mean(RT_Left))), #add dashed verticle for RT
                colour  = scales::hue_pal()(1), size=0.75,  linetype="dashed", alpha=0.75) +
     geom_vline(xintercept=as.numeric(participant_level %>% select(RT_Right) %>% summarise(mean(RT_Right))), 
@@ -469,17 +474,10 @@ p2<-ggplot(plotdata_Stim_locked_CPP, aes(x=Time, y=CPP, color=Hemifield,fill=Hem
                 colour  = scales::hue_pal()(2)[2], size=0.75, alpha=0.75) +
     geom_hline(yintercept=0, alpha = 0.5) + 
     geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
+    scale_x_continuous(breaks = seq(-100, 900, 50)) + #increase the resolution of the axis ticks
+    scale_y_continuous(breaks = seq(0,6,1)) +
     annotate("text", x = -75, y = 6, label = "[B]", size=6)
-
-
-
-
-png("CPP_and_RT.png", width = 10*600, height = 6*600,  units = "px", res = 600)
-source("multiplot.R")
-multiplot(p1,p2,layout= matrix(c(1,2,2)))    
-dev.off()
-multiplot(p1,p2,layout= matrix(c(1,2,2)))    
-
+p_CPP
 
 
 #N2c plot
@@ -523,22 +521,28 @@ names(plotdata_Stim_locked_N2c)[names(plotdata_Stim_locked_N2c)=="N2c"] <- "N2"
 names(plotdata_Stim_locked_N2c)[names(plotdata_Stim_locked_N2c)=="N2c_norm"] <- "N2_norm"
 plotdata_N2<-rbind(plotdata_Stim_locked_N2i,plotdata_Stim_locked_N2c)
 
-p3<-ggplot(plotdata_N2, aes(x=Time, y=N2, color=Hemifield,fill=Hemifield, linetype=Hemisphere)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=N2-ci, ymax=N2+ci), alpha = 0.3, colour=NA) + 
+p_N2<-ggplot(plotdata_N2, aes(x=Time, y=N2, color=Hemifield,fill=Hemifield, linetype=Hemisphere)) + 
+    annotation_custom(N2_scalp2,xmin = 0, xmax = 230, ymin = -1.2, ymax = -2.72) + #add the scapl plot 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=N2-ci, ymax=N2+ci), alpha = 0.3, colour=NA) + 
         geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-2.7, 1), xlim = c(-100, 500)) +
+    coord_cartesian(ylim = c(-2.7, 0.45), xlim = c(-100, 500)) +
     xlab("Time (ms)") + ylab("N2 Amplitude (uV)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-    theme(panel.margin = unit(1.5, "lines"))
+       theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.85,0.19)) + #Move ledgend position
+    guides(color=FALSE, fill=FALSE) +
+    theme(panel.margin = unit(1.5, "lines")) +
+    scale_x_continuous(breaks = seq(-100, 500, 100)) + #increase the resolution of the axis ticks
+    scale_y_continuous(breaks = seq(-2.7,1, 0.5)) +
+    annotate("text", x = -75, y = 0.45, label = "[E]", size=6)
     
-p3
+p_N2
 
 ```
 
@@ -587,20 +591,23 @@ summary(plotdata_Stim_locked_Beta$Time)
 lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
 
 #Stim_locked_Beta Group on same plot
-p4<-ggplot(plotdata_Stim_locked_Beta, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
+p_Beta<-ggplot(plotdata_Stim_locked_Beta, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
+    annotation_custom(Beta_scalp,xmin = 200, xmax = 800, ymin = -0.04, ymax = -0.001) + #add the scapl plot 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
         geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
     coord_cartesian(ylim = c(-0.1, 0.01),  xlim = c(-100, 800)) +
     xlab("Time") + ylab("Beta Power (uV)") +
     theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black"))
-p4
+              axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+              axis.title.y = element_text(face="bold", size=12),
+              axis.text.y  = element_text(face="bold", angle=0, size=12),
+              panel.background = element_blank(),
+              legend.position= c(0.35,0.19),
+              legend.title = element_text(size=12, face="bold"),
+              legend.text = element_text(size = 12, face = "bold")) +
+    annotate("text", x = -75, y = 0.01, label = "[D]", size=6)
+p_Beta
 
 ##Calculate t_values for each of the rolling variables ability to predict log(RT) at each time point
 plot_data<-data_Stim_locked_Beta %>% 
@@ -644,9 +651,6 @@ rm(data_Stim_locked_Beta)
 
 
 
-multiplot(p1,p2,p3,p4,layout= matrix(c(1,2,3,1,2,4), nrow = 3, ncol = 2))  
-
-multiplot(p3,p4,layout= matrix(c(1,2)))
 
 ```
 
@@ -1116,34 +1120,110 @@ log <- capture.output({
 print("Factorial Permutation test for the effect of Hemisphere on Pre-target Alpha Power:")
 print(Hemisphere_Perm);
 
-##Try reading in a .png and plotting it on a ggplot
-library(png)
-library(grid)
-#Read in pmg
-img<-readPNG("ROIs.png")
-#transform it to a raster grob
-g <- rasterGrob(img, interpolate=TRUE)
 
-ggplot(ANOVA_data, aes(Hemisphere, dv, colour = Hemisphere))  +
+p_Alpha<-ggplot(ANOVA_data, aes(Hemisphere, dv, colour = Hemisphere))  +
+    annotation_custom(Alpha_scalp,xmin = 1, xmax = 2, ymin = 3.5, ymax = 5) + #add the scapl plot 
     geom_violin() + 
     geom_boxplot(alpha=0.1) +  
-    theme_bw () + 
     geom_point() +
     xlab("Hemisphere") + ylab("Alpha Power (uV)") +
     theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black"))+
-    annotation_custom(g, xmin=1, xmax=2, ymin=1, ymax=2)
-
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), 
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(face="bold", angle=0, size=12),
+          panel.background = element_blank()) +
+    guides(colour=FALSE) +
+    scale_x_discrete(labels=c("Left", "Right")) +
+    annotate("text", x = 0.6, y = 5, label = "[F]", size=6)
+p_Alpha
 
 ```
 
+```{r, Make the multi panel figure }
 
+Paradigm2<-ggplot(data_frame(y=c(1,460,920), x=c(1,490,985)), aes(x, y))  +
+            annotation_custom(Paradigm, xmin = 0, xmax = 980, ymin = -19, ymax = 890) +
+             theme(axis.title.x = element_blank(),
+                  axis.text.x  = element_blank(), 
+                  axis.title.y = element_blank(),
+                  axis.text.y  = element_blank(),
+                  axis.ticks.x = element_blank(),
+                  axis.ticks.y = element_blank(),
+                  panel.background = element_blank()) +
+            annotate("text", x = 155, y = 930, label = "[C]", size=6)
+Paradigm2
+
+# png("Figure 2.png", width = 10*600, height = 15*600,  units = "px", res = 600)
+# source("multiplot.R")
+# multiplot(p_violin,p_CPP,p_scatter_CPP,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))        
+# dev.off()
+# multiplot(p_violin,p_CPP,p_scatter_CPP,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))  
+
+
+png("Figure 1.png", width = 10*600, height = 15*600,  units = "px", res = 600)
+source("multiplot.R")
+multiplot(p_violin,p_CPP,Paradigm2,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))        
+dev.off()
+multiplot(p_violin,p_CPP,Paradigm2,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2)) 
+
+
+
+p_scatter_CPP<-ggplot(participant_level, aes(x=RT_Asym, y=CPPonset_Asym)) +
+        geom_point(shape=1, size=2) +    
+        geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
+        xlab("RT Asymmetry") + ylab("CPP-onset Asymmetry") +
+        theme(axis.title.x = element_text(face="bold", size=14),
+              axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
+              axis.title.y = element_text(face="bold", size=14),
+              axis.text.y  = element_text(face="bold", angle=0, size=14),
+              panel.background = element_blank()) +
+        geom_hline(yintercept=0, alpha = 0.4) + 
+        geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
+        annotate("text", x = -0.1, y = 0.40, label = "[A]", size=6)
+p_scatter_CPP                   
+
+
+
+p_scatter_Alpha<-ggplot(participant_level, aes(x=RT_Asym, y=PreAlphaAsym)) +
+        geom_point(shape=1, size=2) +    
+        geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
+        xlab("RT Asymmetry") + ylab("Pre-target Alpha Asymmetry") +
+        theme(axis.title.x = element_text(face="bold", size=14),
+              axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
+              axis.title.y = element_text(face="bold", size=14),
+              axis.text.y  = element_text(face="bold", angle=0, size=14),
+              panel.background = element_blank()) +
+        geom_hline(yintercept=0, alpha = 0.4) + 
+        geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
+        annotate("text", x = -0.1, y = 0.35, label = "[C]", size=6)
+p_scatter_Alpha  
+
+
+p_scatter_N2<-ggplot(participant_level, aes(x=RT_Asym, y=N2c_latency_Asym)) +
+        geom_point(shape=1, size=2) +    
+        geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
+        xlab("RT Asymmetry") + ylab("N2c-latency Asymmetry") +
+        theme(axis.title.x = element_text(face="bold", size=14),
+              axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
+              axis.title.y = element_text(face="bold", size=14),
+              axis.text.y  = element_text(face="bold", angle=0, size=14),
+              panel.background = element_blank()) +
+        geom_hline(yintercept=0, alpha = 0.4) + 
+        geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
+        annotate("text", x = -0.1, y = 0.3, label = "[B]", size=6)
+p_scatter_N2    
+
+
+png("Figure 2.png", width = 12*600, height = 4.3*600,  units = "px", res = 600)
+source("multiplot.R")
+multiplot(p_scatter_CPP, p_scatter_N2, p_scatter_Alpha,layout= matrix(c(1,2,3),nrow = 1, ncol = 3))        
+dev.off()
+multiplot(p_scatter_CPP, p_scatter_N2, p_scatter_Alpha,layout= matrix(c(1,2,3),nrow = 1, ncol = 3))   
+
+
+
+
+```
 
 #test correlation between all of the Asymmetry measures (i.e. RT, N2, CPP, alpha, asymmetry) 
 ```{r, correlation between Asymmetry measures, echo=FALSE, warning=FALSE}
@@ -1288,24 +1368,32 @@ N2c_latency_Asym<-update(N2c_Asym, .~. + N2c_latency_Asym)
 CPPonset_Asym<-update(N2c_latency_Asym, .~. + CPPonset_Asym)
 CPPslope_Asym<-update(CPPonset_Asym, .~. + CPPslope_Asym)
 Beta_Asym<-update(CPPslope_Asym, .~. + Beta_Asym)
+Beta_slope_Asym<-update(Beta_Asym, .~. + Beta_slope_Asym)
 
-anova(intercept_only, Controls, PreAlphaAsym, N2c_Asym, N2c_latency_Asym, CPPonset_Asym, CPPslope_Asym, Beta_Asym)
+anova(intercept_only, Controls, PreAlphaAsym, N2c_Asym, N2c_latency_Asym, CPPonset_Asym, CPPslope_Asym, Beta_Asym, Beta_slope_Asym)
 
+
+summary(Controls)
+summary(PreAlphaAsym)
+summary(N2c_Asym)
+summary(N2c_latency_Asym)
+summary(CPPonset_Asym)
+summary(CPPslope_Asym)
+summary(Beta_Asym)
+summary(Beta_slope_Asym)
 
 
 #For the final model, only keep predictors that significantly improve model fit
 final_model<-lm(RT_Asym ~  PreAlphaAsym + N2c_latency_Asym + CPPonset_Asym, data=participant_level)
 
-kable(tidy(final_model))
-tidy(anova(final_model)) # anova table 
+kable(tidy(final_model),digits=3)
+
 
 #---We can obtain standardized parameter estimates with the lm.beta() "QuantPsyc" pachage function---
 #Standardized Beta values can be compared to each other and therefore allow us to gague the relative 
 #importance of each predictor.  
-
-# install.packages(c("QuantPsyc","car","leaps"))
-library(QuantPsyc)
 library(car)
+library(QuantPsyc)
 lm.beta(final_model)
 
 
@@ -1372,30 +1460,28 @@ hist(residuals_final_model)
 
 # Stepwise Regression
 library(MASS)
-fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data=participant_level)
+fit <- lm(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym + Beta_slope_Asym, data=participant_level)
 step <- stepAIC(fit, direction="both")
 step$anova # display results
 tidy(step)
 
 
 
-# All Subsets Regression
-library(leaps)
-leaps<-regsubsets(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data=participant_level,nbest=9)
-# plot a table of models showing variables in each model.
-# models are ordered by the selection statistic.
-layout(1)
-plot(leaps,scale="r2")
-plot(leaps, scale="adjr2")
-plot(leaps, scale="bic")
+# # All Subsets Regression
+# library(leaps)
+# leaps<-regsubsets(RT_Asym~ Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym + Beta_slope_Asym, data=participant_level,nbest=9)
+# # plot a table of models showing variables in each model.
+# # models are ordered by the selection statistic.
+# layout(1)
+# plot(leaps,scale="r2")
+# plot(leaps, scale="adjr2")
+# plot(leaps, scale="bic")
 
 
 ############################################################################################
 ##------Bootstrapping------
-#---Write a bootstrap function.
 library(boot)
-
-
+#---Write a bootstrap function.
 bootReg<-function(formula, data, i)
 {
 	d <- data[i,]
@@ -1403,21 +1489,24 @@ bootReg<-function(formula, data, i)
 	return(coef(fit))
 	}
 
-#----bootstrapping our regression model, with 2000 replications---
-bootResults<-boot(statistic = bootReg, formula = RT_Asym ~  Location + Sex + Age + PreAlphaAsym + N2c_Asym + N2c_latency_Asym + CPPonset_Asym + CPPslope_Asym + Beta_Asym, data = participant_level, R = 2000)
+#----bootstrapping our regression model, with 5000 replications---
+bootResults<-boot(statistic = bootReg, formula = RT_Asym ~  PreAlphaAsym + N2c_latency_Asym + CPPonset_Asym, data = participant_level, R = 5000)
 
 #---We can then obtaine the bootstrap confidence intervals for the intercept:---
 boot.ci(bootResults, type = "bca", index = 1)
 
 #---And the slope estimates---
-boot.ci(bootResults, type = "bca", index = 2)
-boot.ci(bootResults, type = "bca", index = 3)
-boot.ci(bootResults, type = "bca", index = 4)
-boot.ci(bootResults, type = "bca", index = 5)
-boot.ci(bootResults, type = "bca", index = 6)
-boot.ci(bootResults, type = "bca", index = 7)
-boot.ci(bootResults, type = "bca", index = 8)
-boot.ci(bootResults, type = "bca", index = 9)
+boot.ci(bootResults, type = "bca", index = 2) #PreAlphaAsym 
+boot.ci(bootResults, type = "bca", index = 3) #N2c_latency_Asym
+boot.ci(bootResults, type = "bca", index = 4) #CPPonset_Asym
+
+
+lm.boot(final_model, 3000, rows = TRUE, new.xpts = NULL, ngrid = 100,
+weights = NULL)
+
+
+
+
 
 ```
 

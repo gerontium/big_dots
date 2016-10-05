@@ -659,8 +659,8 @@ topoplot(plot_mean,chanlocs,'maplimits', ...
 %     'electrodes','off','plotchans',plot_chans);
 % topoplot(plot_mean,chanlocs,'maplimits',[-4 4], ...
 %     'electrodes','off','plotchans',plot_chans);
-colorbar('FontSize',12)
-title(['Pretarget Alpha -500ms to 0ms'],'FontSize',12);
+% colorbar('FontSize',12)
+% title(['Pretarget Alpha -500ms to 0ms'],'FontSize',12);
 
 alpha_base_group_side = squeeze(mean(alpha_base_side(:,:,:,:),1)); % chan x time x side
 figure

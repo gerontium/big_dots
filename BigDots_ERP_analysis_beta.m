@@ -564,9 +564,14 @@ plottopo(beta_group_side(:,:,:),'chanlocs',chanlocs,'limits',[STFT_time(1) STFT_
     min(min(min(beta_group_side(plot_chans,:,:))))  max(max(max(beta_group_side(plot_chans,:,:))))], ...
     'title',['beta left vs right targets'],'legend',side_tags,'showleg','on','ydir',1)
 
-t1 = -500; t2 = -50;
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+beta_base_group_side = squeeze(mean(beta_base_side(:,:,:,:),1)); % chan x time x side
+
+t1 = 300; t2 = 500;
 figure
-plot_mean = squeeze(mean(mean(beta_group_side(:,find(STFT_time>=t1 & STFT_time<=t2),:),2),3));
+plot_mean = squeeze(mean(mean(beta_base_group_side(:,find(STFT_time>=t1 & STFT_time<=t2),:),2),3));
 topoplot(plot_mean,chanlocs,'maplimits', ...
     [min(plot_mean) max(plot_mean)], ...
     'electrodes','off','plotchans',plot_chans);
@@ -575,8 +580,10 @@ topoplot(plot_mean,chanlocs,'maplimits', ...
 %     'electrodes','off','plotchans',plot_chans);
 % topoplot(plot_mean,chanlocs,'maplimits',[-4 4], ...
 %     'electrodes','off','plotchans',plot_chans);
-colorbar('FontSize',12)
-title(['Pretarget beta -500ms to 0ms'],'FontSize',12);
+% colorbar('FontSize',12)
+% title(['Post-target beta 300ms to 500ms'],'FontSize',12);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 beta_base_group_side = squeeze(mean(beta_base_side(:,:,:,:),1)); % chan x time x side
 figure
