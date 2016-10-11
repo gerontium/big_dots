@@ -33,6 +33,8 @@ if(length(new.packages)) install.packages(new.packages)
 lapply(required_packages, require, character.only = TRUE)
 
 
+#Set decimal points and disable scientific notation
+options(digits=3, scipen=999) 
 
 
 ###### Import single trial data:
@@ -144,7 +146,7 @@ data <- merge(data, Accuracy_checker, by.x = "ID", by.y = "ID")
 #RT longer than 1000ms (i.e. after target finished)
 #RT faster than 100ms (i.e. too fast must be false alarm) or RT=0 (i.e. they did not respond)
 #Kick out trials with fixation breaks:
-data<-filter(data, RT<1500 & RT>150 & !FixBreak_neg100_100PR)
+data<-filter(data, RT<1500, RT>150, !-FixBreak_neg100_100PR)
 
 
 ############################################ Log transform:
@@ -169,25 +171,6 @@ ggplot(data, aes(log_RT))  + geom_histogram(aes(y=..count..), colour="black", fi
 #Calculate the number of trials each participant has left after fixation break trials are kicked out:
 num_trials2 <- data %>% group_by(ID) %>% summarise( Trials = length(RT))
 summary(num_trials2$Trials)
-
-# #Calculate alpha desynchronisation by subtracting Pre-target Alpha from post target alpha
-# data$AlphaDesyncRH<-(data$PreAlphaPowerRH)-(data$PostAlphaPowerRH)
-# data$AlphaDesyncLH<-data$PreAlphaPowerLH-data$PostAlphaPowerLH
-# # Make PostAlpha contralateral (PostAlpha_c) and -Ipsilateral (PostAlpha_i) variables:
-# A<-data$Hemifield=="Left"
-# #Absolute post target alpha
-# data$PostAlpha_c[A]<-data$PostAlphaPowerRH[A]
-# data$PostAlpha_c[!A]<-data$PostAlphaPowerLH[!A]
-# data$PostAlpha_i[!A]<-data$PostAlphaPowerRH[!A]
-# data$PostAlpha_i[A]<-data$PostAlphaPowerLH[A]
-# #Post target Alpha desynchronisation 
-# data$AlphaDesync_c[A]<-data$AlphaDesyncRH[A]
-# data$AlphaDesync_c[!A]<-data$AlphaDesyncLH[!A]
-# data$AlphaDesync_i[!A]<-data$AlphaDesyncRH[!A]
-# data$AlphaDesync_i[A]<-data$AlphaDesyncLH[A]
-# rm(A)
-
-
 
 ####Import participant_level_matrix with ERP measures
 if (location=="Monash") {
@@ -240,36 +223,6 @@ PreAlpha_collapsed<- data %>%
                       PreAlpha_RightHemi=mean(PreAlphaPowerRH))
 #Merge it in with the ERP measures
 participant_level<-merge(participant_level, PreAlpha_collapsed, by.x = "ID", by.y = "ID") 
-
-# #Collapse each participant's PostAlpha trials to participant level
-# PostAlphaAsym_collapsed<- data %>% 
-#             filter(!Art_neg500_0, !FixBreak_neg500_0, PostAlpha_c!=0, PostAlpha_i!=0) %>%
-#             mutate(PostAlphaAsym=(PostAlpha_c-PostAlpha_i)/(PostAlpha_c+PostAlpha_i)) %>% #contra - ipsi asym
-#             group_by(ID) %>%
-#             summarise(PostAlphaAsym=mean(PostAlphaAsym))
-# #Merge it in with the ERP measures
-# participant_level<-merge(participant_level, PostAlphaAsym_collapsed, by.x = "ID", by.y = "ID") 
-
-#Collapse each participant's Post-target AlphaDesync single trials to participant level
-# AlphaDesync_c_collapsed<- data %>% 
-#             filter(!Art_neg500_100PR, !FixBreak_neg500_100PR, AlphaDesync_c!=0) %>%
-#             group_by(ID, Hemifield) %>%
-#             summarise(AlphaDesync_c=mean(AlphaDesync_c)) %>% #next bring Target-Hemifield up into wide format:
-#             spread(Hemifield, AlphaDesync_c) %>% #next rename
-#             rename(AlphaDesync_c_LeftTarget=Left, AlphaDesync_c_RightTarget=Right) %>% # next Calculate RT asymmetry:
-#             mutate(AlphaDesync_c_Asym=(AlphaDesync_c_LeftTarget-AlphaDesync_c_RightTarget)/(AlphaDesync_c_LeftTarget+AlphaDesync_c_RightTarget)) 
-# #Merge it in with the ERP measures
-# participant_level<-merge(participant_level, AlphaDesync_c_collapsed, by.x = "ID", by.y = "ID") 
-# 
-# AlphaDesync_i_collapsed<- data %>% 
-#             filter(!Art_neg500_100PR, !FixBreak_neg500_100PR, AlphaDesync_i!=0) %>%
-#             group_by(ID, Hemifield) %>%
-#             summarise(AlphaDesync_i=mean(AlphaDesync_i)) %>% #next bring Target-Hemifield up into wide format:
-#             spread(Hemifield, AlphaDesync_i) %>% #next rename
-#             rename(AlphaDesync_i_LeftTarget=Left, AlphaDesync_i_RightTarget=Right) %>% # next Calculate RT asymmetry:
-#             mutate(AlphaDesync_i_Asym=(AlphaDesync_i_LeftTarget-AlphaDesync_i_RightTarget)/(AlphaDesync_i_LeftTarget+AlphaDesync_i_RightTarget)) 
-# # Merge it in with the ERP measures
-# participant_level<-merge(participant_level, AlphaDesync_i_collapsed, by.x = "ID", by.y = "ID") 
 
 
 #Collapse each participant's RT single trials to participant level
@@ -898,7 +851,7 @@ log <- capture.output({
                           , within = .(Hemifield)
                           , perms = 1000);
  })
-print("Factorial Permutation test for the effect of Hemifield on SResp Locked Beta Slope:")
+print("Factorial Permutation test for the effect of Hemifield on Resp Locked Beta Slope:")
 print(Hemifield_Perm);
 
 
@@ -1080,6 +1033,32 @@ print(Hemifield_ANOVA);
 
 kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
 
+###################################################################
+#combine N2c and N2i into the one analysis and test for the TargetHemifield*Hemisphere interaction:
+ANOVA_data<- participant_level %>%
+    select(ID, N2c_LeftTarget, N2c_RightTarget, N2i_LeftTarget, N2i_RightTarget) %>%
+    na.omit() %>%
+    gather(condition, dv, -ID) %>%
+    mutate(Hemifield = replace(condition, condition=="N2c_LeftTarget" | condition=="N2i_LeftTarget", "Left")) %>%
+    mutate(Hemifield = replace(Hemifield, condition=="N2c_RightTarget" | condition=="N2i_RightTarget", "Right")) %>%
+    mutate(Hemisphere = replace(condition, condition=="N2i_LeftTarget" | condition=="N2i_RightTarget", "Ipsilateral")) %>%
+    mutate(Hemisphere = replace(Hemisphere, condition=="N2c_LeftTarget" | condition=="N2c_RightTarget", "Contralateral")) %>%
+    as.data.frame()
+
+
+Hemifield_Hemisphere_ANOVA <- ezANOVA(data = ANOVA_data
+                              , dv = .(dv)
+                              , wid = .(ID)
+                              , within = .(Hemifield, Hemisphere)
+                                , within_covariates = NULL
+                                , between = NULL
+                                , between_covariates = NULL
+                                , observed = NULL
+                                , type = 3);
+print("Repeated Measures ANOVA for the effects of Hemifield*Hemisphere on N2 Amplitude:")
+print(Hemifield_Hemisphere_ANOVA);
+
+
 
 ###################################################################
 
@@ -1136,6 +1115,10 @@ p_Alpha<-ggplot(ANOVA_data, aes(Hemisphere, dv, colour = Hemisphere))  +
     scale_x_discrete(labels=c("Left", "Right")) +
     annotate("text", x = 0.6, y = 5, label = "[F]", size=6)
 p_Alpha
+
+######################################################################
+
+
 
 ```
 
