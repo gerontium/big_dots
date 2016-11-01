@@ -87,10 +87,11 @@ DARIS_ID<-read_excel("DARIS_ID.xlsx")
 SLF<-merge(SLF, DARIS_ID, by.x = "DARIS", by.y = "DARIS")
 ID_Order <- read_excel("ID_Order_for_Matlab.xlsx")
 
+
+
 SLF<-merge(SLF, ID_Order, by.x = "ID", by.y = "ID", all=T) 
 
-SLF<-dplyr::arrange(SLF, Order)
-# xlsx::write.xlsx(SLF, "SLF.xlsx", row.names=F)
+
 
 ###Read in Participant Demographics (note for Sex 1=male)
 Demographics<-read_excel("Participant_Demographics.xlsx") %>% #then calculate Age at testing date:
@@ -136,6 +137,7 @@ data<- data %>% #Rename data columns:
 #(there are a few extra participants who we got SLF from who were not tested on big dots)
 SLF <-SLF[SLF$ID %in% data$ID, ]
 Demographics <-Demographics[Demographics$ID %in% data$ID, ] 
+
 
 #Calculate alpha desynchronisation by subtracting Pre-target Alpha from post target alpha
 data$AlphaDesyncRH<-(data$PreAlphaPowerRH)-(data$PostAlphaPowerRH)
@@ -201,6 +203,20 @@ data<-merge(data, DAT1, by.x = "ID", by.y = "ID")
 ### Merge in the SLF data
 SLF <-SLF[SLF$ID %in% data$ID, ] 
 data<-merge(data, SLF, by.x = "ID", by.y = "ID") 
+
+SLF<-merge(SLF, Demographics , by.x = "ID", by.y = "ID") 
+
+
+TVA_ID <- read_excel("TVA ID.xlsx") 
+TVA_ID<-TVA_ID[,1:2]
+
+
+SLF<-merge(SLF, TVA_ID , by = "ID") 
+
+SLF<-dplyr::arrange(SLF, Order)
+SLF<-na.omit(SLF)
+xlsx::write.xlsx(SLF, "SLF.xlsx", row.names=F)
+
 
 ################################################################################################
 #########Creat ordered DAT1 genotype .xlsx file for matlab:

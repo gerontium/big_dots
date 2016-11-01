@@ -184,9 +184,9 @@ end
      
 %% Response locked STFT
 %Response locked STFT time (ms)
-STFT_timer= -400:40:80;
+STFT_timer= -600:40:80;
 %Response locked STFT time in samples
-STFT_timers = [-.400*25:25*.100];
+STFT_timers = [-.600*25:25*.100];
 
 STFTr = zeros(size(STFT,1),length(STFT_timer),size(STFT,3));    
     
@@ -217,6 +217,8 @@ STFTr = zeros(size(STFT,1),length(STFT_timer),size(STFT,3));
          master_matrix_R(current:current+(length(STFT_timer)-1),4)=STFT_timer; 
         %% 5. Response Locked Beta (Baselined)
         master_matrix_R(current:current+(length(STFT_timer)-1),5)=STFTr_base(ch_beta,:, trial);
+        %% 6.  Response Locked Beta (NOT Baselined)
+        master_matrix_R(current:current+(length(STFT_timer)-1),6)=STFTr(ch_beta,:, trial);
         
         current=current+length(STFT_timer);
     end
