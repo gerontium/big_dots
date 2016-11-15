@@ -1517,7 +1517,7 @@ p_scatter_N2<-ggplot(participant_level, aes(x=RT_Asym, y=N2c_latency_Asym)) +
 p_scatter_N2    
 
 
-png("Figure 2.png", width = 12*600, height = 4.3*600,  units = "px", res = 600)
+png("Figure 3.png", width = 12*600, height = 4.3*600,  units = "px", res = 600)
 source("multiplot.R")
 multiplot(p_scatter_Alpha, p_scatter_N2, p_scatter_CPP, layout= matrix(c(1,2,3),nrow = 1, ncol = 3))     
 dev.off()
