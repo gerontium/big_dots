@@ -116,7 +116,7 @@ for s2 = 1:length(subject_folder)
     end
 end
 %%
-duds = [1]; %%1 completed the wrong paradigm  %4 and 74 could also be kicked out as they are RT outliers
+duds = [1]; %% 1(LK_07_04_14) completed the wrong paradigm  
 single_participants = [];
 %%
 if ~isempty(duds) && isempty(single_participants)
@@ -133,7 +133,10 @@ if ~isempty(single_participants)
     DAT1_split = DAT1_split(single_participants);
     DAT1_nosplit = DAT1_nosplit(single_participants);
     subject_location = subject_location(single_participants);
- end
+end
+ 
+%% Use Current Source Density transformed erp? 1=yes, 0=no
+CSD=0;
 
 %% Define channels, having combined Brain Products and Biosemi data
 
@@ -215,15 +218,18 @@ z_thresh = 3;
 %% Start loop
 for s=1:length(allsubj)
     pause(1)
-    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','allRT','allrespLR','allTrig','allblock_count',...
+    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_8Hz','erp_LPF_35Hz','erp_LPF_35Hz_CSD','allRT','allrespLR','allTrig','allblock_count',...
         'BL_resp_artrej','ET_BL_resp_artrej');
     
     if strcmp(subject_folder{s},'331M_CL') % really odd tiny artifact meant this trial was messing with CSD!
         allRT(53) = 0; allrespLR(53) = 0; allTrig(53) = 0;
     end
-    
-%     erp = erp_LPF_8Hz;
-    erp = erp_LPF_35Hz;
+
+     if CSD
+         erp=double(erp_LPF_35Hz_CSD);
+     else
+         erp=double(erp_LPF_35Hz);
+     end
                 
     % Baseline erp
     baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);
@@ -724,27 +730,28 @@ for s=1:length(allsubj)
     end
 end
 
-%%%%Plot each individual participant's CPPr_slope 
-% for s=1:length(allsubj)
-%     clear h
-%     figure
-%     for side = 1:2
-%         h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
-%         coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
-%         CPP_slope(s,side)=coef(1);
-%         r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
-%         plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
-%     end
-%     
-%     set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
-%     ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
-%     xlabel('Time (ms)','FontName','Arial','FontSize',16)
-%     title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
-%     line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
-%     line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
-%     legend(h,side_tags,'FontSize',16,'Location','NorthWest');
-%    pause(1) 
-% end
+%%%Plot each individual participant's CPPr_slope with time-window varying
+%%%per participant
+for s=1:length(allsubj)
+    clear h
+    figure
+    for side = 1:2
+        h(side) = plot(tr,CPPr_side(s,:,side),'LineWidth',3,'LineStyle','-');hold on       
+        coef = polyfit(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)),(CPPr_side(s,slope_timeframe_index(s,1):slope_timeframe_index(s,2),side)),1);% coef gives 2 coefficients fitting r = slope * x + intercept
+        CPP_slope(s,side)=coef(1);
+        r = coef(1) .* tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
+        plot(tr(slope_timeframe_index(s,1):slope_timeframe_index(s,2)), r,'Linewidth',2, 'LineStyle', ':');   
+    end
+    
+    set(gca,'FontSize',16,'xlim',[-500,100]);%,'ylim',[-4,8],'ytick',[-4:2:8]);%,'ylim',[-1.5,0.5]);
+    ylabel('Amplitude (\muVolts)','FontName','Arial','FontSize',16)
+    xlabel('Time (ms)','FontName','Arial','FontSize',16)
+    title([subject_folder{s}, ' CPP (resp-locked) by Hemifield'])
+    line([0,0],ylim,'Color','k','LineWidth',1.5,'LineStyle','--');
+    line(xlim,[0,0],'Color','k','LineWidth',1.5,'LineStyle','-');
+    legend(h,side_tags,'FontSize',16,'Location','NorthWest');
+   pause(1) 
+end
 
 
 

@@ -138,7 +138,11 @@ if ~isempty(single_participants)
     DAT1_split = DAT1_split(single_participants);
     DAT1_nosplit = DAT1_nosplit(single_participants);
     subject_location = subject_location(single_participants);
- end
+end
+
+%% Use Current Source Density transformed erp? 1=yes, 0=no 
+CSD=1; %Use Current Source Density transformed erp? 1=yes, 0=no
+
 
 %% Define channels, having combined Brain Products and Biosemi data
 
@@ -252,12 +256,17 @@ end
 %% Start loop
 for s=1:length(allsubj)
     pause(1)
-    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_35Hz','allRT','allrespLR','allTrig','allblock_count',...
+    load([path_temp subject_folder{s} '\' allsubj{s} 'big_dots_erp'],'erp_LPF_35Hz','erp_LPF_35Hz_CSD','allRT','allrespLR','allTrig','allblock_count',...
         'BL_resp_artrej','ET_BL_resp_artrej');
     if strcmp(subject_folder{s},'331M_CL') % really odd tiny artifact meant this trial was messing with CSD!
         allRT(53) = 0; allrespLR(53) = 0; allTrig(53) = 0;
     end
-    erp = double(erp_LPF_35Hz);
+    
+     if CSD
+         erp=double(erp_LPF_35Hz_CSD);
+     else
+         erp=double(erp_LPF_35Hz);
+     end
                 
     % Baseline erp
     baseline_erp = mean(erp(:,find(t>=BL_erp(1) & t<=BL_erp(2)),:),2);

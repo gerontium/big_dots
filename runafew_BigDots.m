@@ -52,7 +52,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
     '484M_AI','453M_LB','422M_MK','323M_CZ','240M_FM'};
 %%
 
-duds = []; % LK_07_04_14
+duds = []; % LK_07_04_14 completed the wrong paradigm so will delete this participant later
 single_participants = [81];
 
 %%
