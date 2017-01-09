@@ -24,8 +24,8 @@ if (location=="Monash") {
 
 ### Install/load required packages
 #List of R packages required for this analysis:
-required_packages <- c("psych", "ggplot2", "dplyr", "tidyr", "stringr", "lubridate", "readxl","knitr",
-                       "readr", "rmarkdown", "png", "lme4", "ez", "multcomp","zoo")
+required_packages <- c("psych", "ggplot2", "tidyr", "stringr", "lubridate", "readxl","knitr",
+                       "readr", "rmarkdown", "png", "lme4", "ez", "multcomp","zoo", "dplyr")
 #Install required_packages:
 new.packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -283,6 +283,12 @@ participant_level<-merge(participant_level, Demographics, by.x = "ID", by.y = "I
 participant_level$Location<-as.factor(participant_level$Location)
 participant_level$Sex<-as.factor(participant_level$Sex)
 
+
+#load some functions I will use below
+source("summarySE.R") 
+source("summarySEwithin.R") #function to calculate Std.Er of mean
+source("normDataWithin.R")
+
 ```
 
 
@@ -329,10 +335,6 @@ data_Stim_locked_ERP<- data_Stim_locked_ERP %>%
 ###########################################################################################################
 
 #Plot Stimonse locked 
-detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
-source("summarySE.R") 
-source("summarySEwithin.R") #function to calculate Std.Er of mean
-source("normDataWithin.R")
 plotdata_Stim_locked_CPP <- summarySEwithin(data_Stim_locked_ERP, measurevar="CPP", withinvars=c("Time", "Hemifield"), idvar="ID")
 plotdata_Stim_locked_CPP$Time<-as.numeric(as.character(plotdata_Stim_locked_CPP$Time))
 plotdata_Stim_locked_N2c <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2c", withinvars=c("Time", "Hemifield"), idvar="ID")
@@ -340,7 +342,7 @@ plotdata_Stim_locked_N2c$Time<-as.numeric(as.character(plotdata_Stim_locked_N2c$
 plotdata_Stim_locked_N2i <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2i", withinvars=c("Time", "Hemifield"), idvar="ID")
 plotdata_Stim_locked_N2i$Time<-as.numeric(as.character(plotdata_Stim_locked_N2i$Time))
 summary(plotdata_Stim_locked_CPP$Time)
-lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+
 
 
 ##First import the scalp plots from matlab to inclued on a ggplot
@@ -534,14 +536,10 @@ data_Stim_locked_Beta<- data_Stim_locked_Beta %>% filter(!Art_neg100_100PR, !Fix
 ###########################################################################################################
 
 #Plot Stimonse locked 
-detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
-source("summarySE.R") 
-source("summarySEwithin.R") #function to calculate Std.Er of mean
-source("normDataWithin.R")
 plotdata_Stim_locked_Beta <- summarySEwithin(data_Stim_locked_Beta, measurevar="Stim_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
 plotdata_Stim_locked_Beta$Time<-as.numeric(as.character(plotdata_Stim_locked_Beta$Time))
 summary(plotdata_Stim_locked_Beta$Time)
-lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+
 
 #Stim_locked_Beta Group on same plot
 p_Beta<-ggplot(plotdata_Stim_locked_Beta, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
@@ -643,16 +641,12 @@ data_Resp_locked_Beta<- data_Resp_locked_Beta %>% filter(!Art_neg100_100PR)
 ###########################################################################################################
 
 #Plot response locked 
-detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
-source("summarySE.R") 
-source("summarySEwithin.R") #function to calculate Std.Er of mean
-source("normDataWithin.R")
 plotdata_Resp_locked_Beta <- summarySEwithin(data_Resp_locked_Beta, measurevar="Resp_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
 plotdata_Resp_locked_Beta_NOTbaselined <- summarySEwithin(data_Resp_locked_Beta, measurevar="Resp_locked_Beta_NOTbaselined", withinvars=c("Time", "Hemifield"), idvar="ID")
 plotdata_Resp_locked_Beta$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta$Time))
 plotdata_Resp_locked_Beta_NOTbaselined$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta_NOTbaselined$Time))
 summary(plotdata_Resp_locked_Beta$Time)
-lapply(required_packages, require, character.only = TRUE) # re-load all librarys now that I'm finished with plyr
+
 
 #Resp_locked_Beta Group on same plot
 ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
@@ -1178,10 +1172,7 @@ participant_level %>%
     full_join(data_Stim_locked_ERP, by="ID") -> data_Stim_locked_ERP
 
 
-detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
-source("summarySE.R") 
-source("summarySEwithin.R") #function to calculate Std.Er of mean
-source("normDataWithin.R")
+
 plotdata_Stim_locked_CPP <- summarySEwithin(data_Stim_locked_ERP, measurevar="CPP", withinvars=c("Time", "Hemifield"), betweenvars = c("Bias_Group"), idvar="ID")
 plotdata_Stim_locked_CPP$Time<-as.numeric(as.character(plotdata_Stim_locked_CPP$Time))
 plotdata_Stim_locked_N2c <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2c", withinvars=c("Time", "Hemifield"), betweenvars = c("Bias_Group"), idvar="ID")
@@ -1189,7 +1180,7 @@ plotdata_Stim_locked_N2c$Time<-as.numeric(as.character(plotdata_Stim_locked_N2c$
 plotdata_Stim_locked_N2i <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2i", withinvars=c("Time", "Hemifield"), betweenvars = c("Bias_Group"), idvar="ID")
 plotdata_Stim_locked_N2i$Time<-as.numeric(as.character(plotdata_Stim_locked_N2i$Time))
 summary(plotdata_Stim_locked_CPP$Time)
-lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+
 
 
 #N2c plot
@@ -1255,10 +1246,6 @@ multiplot(p1,p2,p3)
 
 ##Split Participants into RT_Asym Quartiles and plot their N2 and CPP for the 2 most extream groups
 ```{r, Quartiles Split Based on RT_Asym }
-detach("package:dplyr", unload=TRUE) #Detach dplyr as functions below use plyr
-source("summarySE.R") 
-source("summarySEwithin.R") #function to calculate Std.Er of mean
-source("normDataWithin.R")
 plotdata_Stim_locked_CPP <- summarySEwithin(data_Stim_locked_ERP, measurevar="CPP", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
 plotdata_Stim_locked_CPP$Time<-as.numeric(as.character(plotdata_Stim_locked_CPP$Time))
 plotdata_Stim_locked_N2c <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2c", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
@@ -1266,7 +1253,7 @@ plotdata_Stim_locked_N2c$Time<-as.numeric(as.character(plotdata_Stim_locked_N2c$
 plotdata_Stim_locked_N2i <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2i", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
 plotdata_Stim_locked_N2i$Time<-as.numeric(as.character(plotdata_Stim_locked_N2i$Time))
 summary(plotdata_Stim_locked_CPP$Time)
-lapply(required_packages, require, character.only = TRUE) # re-load all librarys no that I'm finished with dlyr
+
 
 
 #N2c plot

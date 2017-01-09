@@ -8,10 +8,16 @@
 ##   na.rm: a boolean that indicates whether to ignore NA's
 normDataWithin <- function(data=NULL, idvar, measurevar, betweenvars=NULL,
                            na.rm=FALSE, .drop=TRUE) {
-  require(plyr)
-  
+  # require(plyr)
+    required_packages <- c("plyr")
+    #Install required_packages:
+    new.packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+    if(length(new.packages)) install.packages(new.packages)
+
+#######################################################################################      
+      
   # Measure var on left, idvar + between vars on right of formula.
-  data.subjMean <- ddply(data, c(idvar, betweenvars), .drop=.drop,
+  data.subjMean <- plyr::ddply(data, c(idvar, betweenvars), .drop=.drop,
                          .fun = function(xx, col, na.rm) {
                            c(subjMean = mean(xx[,col], na.rm=na.rm))
                          },
