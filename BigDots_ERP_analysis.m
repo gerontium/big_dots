@@ -335,12 +335,6 @@ for s=1:length(allsubj)
         
         % do t-test to zero across the smoothed trials.
         for tt = 1:size(win_mean,1)
-            
-            if strcmp( subject_folder(s),'AD48C') %This participant has strainge CPP baseline, so do CPP onset t-test against -1.5 instead of against 0
-                [~,P,~,STATS] = ttest(win_mean(tt,:),-1.5);
-            else
-                [~,P,~,STATS] = ttest(win_mean(tt,:));
-            end
             tstats(tt) = STATS.tstat;
             ps(tt) = P;
         end
@@ -354,7 +348,7 @@ for s=1:length(allsubj)
         onsetp05=[];
         for i = 1:length(allp05)
             if  (i+consecutive_windows-1)<=length(allp05)
-                if allp05(i+consecutive_windows-1)-allp05(i)==consecutive_windows-1 %if there is at least 10 consecutive windows where p<.05
+                if allp05(i+consecutive_windows-1)-allp05(i)==consecutive_windows-1 %if there is at least 15 consecutive windows where p<.05
                     onsetp05=allp05(i);
                     break
                 end

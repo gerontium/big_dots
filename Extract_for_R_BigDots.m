@@ -70,15 +70,7 @@ end
 CSD=0; %Use Current Source Density transformed erp? 1=yes, 0=no
 
 
-% ch_N2i = [23;27];
-% ch_LR=ch_N2i;
-% ch_N2c = [27;23]; % right hemi channels for left target, vice versa.
-% ch_for_ipsicon(1,:) = [27;23];
-% ch_for_ipsicon(2,:) = [23;27];
-% ch_l = [23];
-% ch_r = [27];
-% ch_front = 5; %5=Fz
-% ch_CPP = [53];%25=Pz; 53=CPz
+ch_CPP = [31];
 ch_beta=[13];
 
 fs=500;
@@ -336,6 +328,23 @@ end
         elseif ismember(subject_folder{s},Monash_bigdots)
             master_matrix_R(total_numtr,22) = 2; %Monash
         end 
+        
+       %% 23. Respose locked CPP slope: (just fitting a straight line, like in Kelly and O'Connel J.Neuro, but on trial-by-trial basis)
+        slope_timeframe = [-150,-10];
+        if validrlock(trial)
+            coef = polyfit(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)),(erpr(ch_CPP,tr>slope_timeframe(1) & tr<slope_timeframe(2),trial)),1); % coef returns 2 coefficients fitting r = slope * x + intercept
+            master_matrix_R(total_numtr,23) = coef(1); %slope
+%                             r = coef(1) .* tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
+%                             figure
+%                             plot(tr,erpr(ch_CPP,:,trial),'color','k');
+%                             hold on;
+%                             plot(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)), r, ':');
+%                             line(xlim,[0,0],'Color','k');
+%                             line([0,0],ylim,'Color','k');
+%                             line([slope_timeframe(1),slope_timeframe(1)],ylim,'linestyle',':');
+%                             line([slope_timeframe(2),slope_timeframe(2)],ylim,'linestyle',':');
+%                             hold off;
+        end   
 %% HAVE NOT YET UPDATED BELOW FOR BIG DOTS
 %         %% 20. Pre-target Pupil Diameter:
 %         master_matrix_R(total_numtr,20)=mean(Pupil(find(t==-500):find(t==0),trial));
@@ -396,22 +405,7 @@ end
 %             % it's good! add it in.
 %             master_matrix_R(total_numtr,27)=t(N2pc_min_ind);  %N2c_peak_latencies(trial)= t(N2pc_min_ind);
 %         end
-%        %% 28. Respose locked CPP slope: (just fitting a straight line, like in Kelly and O'Connel J.Neuro, but on trial-by-trial basis)
-%         slope_timeframe = [-150,-10];
-%         if validrlock(trial)
-%             coef = polyfit(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)),(erpr(ch_CPP,tr>slope_timeframe(1) & tr<slope_timeframe(2),trial)),1); % coef returns 2 coefficients fitting r = slope * x + intercept
-%             master_matrix_R(total_numtr,28) = coef(1); %slope
-%             %                 r = coef(1) .* tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)) + coef(2); %r=slope(x)+intercept, r is a vectore representing the linear curve fitted to the erpr during slope_timeframe
-%             %                 figure
-%             %                 plot(tr,erpr(ch_CPP,:,trial),'color','k');
-%             %                 hold on;
-%             %                 plot(tr(tr>slope_timeframe(1) & tr<slope_timeframe(2)), r, ':');
-%             %                 line(xlim,[0,0],'Color','k');
-%             %                 line([0,0],ylim,'Color','k');
-%             %                 line([slope_timeframe(1),slope_timeframe(1)],ylim,'linestyle',':');
-%             %                 line([slope_timeframe(2),slope_timeframe(2)],ylim,'linestyle',':');
-%             %                 hold off;
-%         end     
+  
     end
 end
   
@@ -421,5 +415,5 @@ emptyCells = cellfun(@isempty,ID_vector);
 ID_vector(emptyCells) = [];
 
 %Save the data in .csv format to be read into R for inferential stats analysis
-csvwrite ('master_matrix_R_BigDots.csv',master_matrix_R)
-cell2csv ('ID_vector_BigDots.csv',ID_vector)
+ csvwrite ('master_matrix_R_BigDots.csv',master_matrix_R)
+ cell2csv ('ID_vector_BigDots.csv',ID_vector)

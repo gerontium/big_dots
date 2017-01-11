@@ -93,7 +93,8 @@ data<- data %>% #Rename data columns:
            PreAlphaAsym=V19,
            PostAlphaPowerLH=V20,
            PostAlphaPowerRH=V21,
-           Location=V22) %>% #next make the required columns into factors:
+           Location=V22,
+           RespLockedCPPslope = V23) %>% #next make the required columns into factors:
     mutate_each_(funs(factor), c("ITI", "Hemifield", "Accuracy")) %>% #next re-class required vectors into Logicals:
     mutate_at(vars(starts_with("Art_")), funs(as.logical)) %>% 
     mutate_at(vars(starts_with("FixBreak_")), funs(as.logical)) %>% #next use the ! negation operator to reverse of a TRUE/FALSE vectors: 
@@ -162,6 +163,10 @@ data$log_RT.Z <- (data$log_RT-m[data$IDbyITIbyHemifield])/s[data$IDbyITIbyHemifi
 #Remove trials where absolute log_RT.Z>3 (i.e. remove outlier RTs)
 data<-data[!abs(data$log_RT.Z)>3,]
 
+#Make an RT bin variable from the z-scored RTs
+data %>% 
+    mutate(RT_bin = ntile(.$log_RT.Z, 2)) %>%
+    mutate(RT_bin = if_else(RT_bin==1, "Fast", "Slow")) -> data
 
 #plot again after outlier removal:
 ggplot(data, aes(RT))  + geom_histogram(aes(y=..count..), colour="black", fill="white") 
@@ -291,11 +296,64 @@ source("normDataWithin.R")
 
 ```
 
+#Does single trial CPP-slope predict RT
+```{r}
+m <- tapply(data$RespLockedCPPslope,data$IDbyITIbyHemifield,mean, na.rm = T)
+s <- tapply(data$RespLockedCPPslope,data$IDbyITIbyHemifield,sd, na.rm = T)
+#calculate RespLockedCPPslope.Z and save it inside data.frame
+data$RespLockedCPPslope.Z <- (data$RespLockedCPPslope-m[data$IDbyITIbyHemifield])/s[data$IDbyITIbyHemifield]
+#Remove trials where absolute RespLockedCPPslope.Z>3 (i.e. remove outlier RTs)
+data2<-data[!abs(data$RespLockedCPPslope.Z)>2.5,]
+
+
+RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (RespLockedCPPslope|ID) + (1|Hemifield) + (1|ITI), data = data2, REML=FALSE, na.action = na.omit)
+RespLockedCPPslope <- update(RT_random_intercepts_only, .~. + RespLockedCPPslope)
+
+anova(RT_random_intercepts_only, RespLockedCPPslope)
+
+
+require(effects)
+plot(allEffects(RespLockedCPPslope))
+
+summary(RespLockedCPPslope)
+
+plot(residuals(RespLockedCPPslope))
+hist(residuals(RespLockedCPPslope))
+qqnorm(residuals(RespLockedCPPslope))
+qqline(residuals(RespLockedCPPslope))
+
+
+plot(RespLockedCPPslope, resid(., scaled=TRUE) ~ fitted(.) | Hemifield, abline = 0)
+
+plot(RespLockedCPPslope, ID ~ resid(., scaled=TRUE))
+
+plot(RespLockedCPPslope, log(RT) ~ fitted(.) | ID, abline = c(0,1))
+
+plot(RespLockedCPPslope, resid(., scaled=TRUE) ~ Location | Sex, abline = 0)
+
+
+
+    ggplot(fortify(RespLockedCPPslope), aes(.fitted,.resid)) + 
+        geom_point(colour="blue") +
+        facet_grid(.~Hemifield) + 
+        geom_hline(yintercept=0)
+    ## note: Subjects are ordered by mean distance
+    ggplot(fortify(RespLockedCPPslope), aes(ID,.resid)) + 
+        geom_boxplot() + 
+        coord_flip()
+    
+    ggplot(fortify(RespLockedCPPslope), aes(.fitted,log(RT), colour= ITI)) + 
+        geom_point() +
+        facet_wrap(~ID) + 
+        geom_abline(intercept=0,slope=1)
+
+```
+
 
 # Stim Locked ERP trace plots
 ```{r, Stim Locked ERP trace plots, echo=FALSE, warning=FALSE}
 
-###### Import trial sample level data Resp locked Beta
+###### Import trial sample level data 
 if (location=="Monash") {
 data_Stim_locked_ERP <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Stim_locked_ERP.csv", header=FALSE)
 ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Stim_locked_ERP.csv", quote="\"")
@@ -325,7 +383,7 @@ data_Stim_locked_ERP<- data_Stim_locked_ERP %>% #Rename data columns:
            N2i=V7)
 
 #Grab the columns from data that I need to merge in
-toMerge<-data %>% select(ID, Trial, Art_neg100_100PR, FixBreak_neg100_100PR, Hemifield, RT) 
+toMerge<-data %>% select(ID, Trial, Art_neg100_100PR, FixBreak_neg100_100PR, Hemifield, RT, RT_bin) 
 #Now merge them 
 data_Stim_locked_ERP<-data_Stim_locked_ERP %>%   merge(., toMerge, by = c("ID", "Trial")) 
 #Filter out artifacts
@@ -422,6 +480,7 @@ p_CPP<-ggplot(plotdata_Stim_locked_CPP, aes(x=Time, y=CPP, color=Hemifield,fill=
     geom_vline(xintercept=as.numeric(participant_level %>% select(RT_Left) %>% summarise(mean(RT_Left))), #add dashed verticle for RT
                colour  = scales::hue_pal()(1), size=0.75,  linetype="dashed", alpha=0.75) +
     geom_vline(xintercept=as.numeric(participant_level %>% select(RT_Right) %>% summarise(mean(RT_Right))), 
+               
                 colour  = scales::hue_pal()(2)[2], size=0.75,  linetype="dashed", alpha=0.75) +
     geom_vline(xintercept=as.numeric(participant_level %>% select(CPPonset_LeftTarget) %>% summarise(mean(CPPonset_LeftTarget))), 
                colour  = scales::hue_pal()(1), size=0.75, alpha=0.75) +
@@ -501,6 +560,72 @@ p_N2
 
 ```
 
+
+# Resp Locked ERP trace plots
+```{r, Resp Locked ERP trace plots, echo=FALSE, warning=FALSE}
+
+###### Import trial sample level data 
+if (location=="Monash") {
+data_Resp_locked_ERP <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Resp_locked_ERP.csv", header=FALSE)
+ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Resp_locked_ERP.csv", quote="\"")
+} else if (location=="DansLaptop") {
+data_Resp_locked_ERP <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Resp_locked_ERP.csv", header=FALSE)
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Resp_locked_ERP.csv", quote="\"")
+} else setwd(("~"))
+
+
+data_Resp_locked_ERP$ID<-data_Resp_locked_ERP[,1]
+#Replace the participant numbers with IDs:
+data_Resp_locked_ERP[,1]<-ID[,1]
+#Remove the seperate ID vector now it has been included into data dataframe
+rm(ID)
+drops <- c("ID")
+data_Resp_locked_ERP<-data_Resp_locked_ERP[,!(names(data_Resp_locked_ERP) %in% drops)]
+
+#Merge with the RT, Accuracy, Hemifield data 
+data_Resp_locked_ERP<- data_Resp_locked_ERP %>% #Rename data columns:
+    rename(., 
+           ID=V1,
+           TotalTrialNumber=V2,
+           Trial=V3,
+           Time=V4,
+           CPPr=V5)
+
+#Grab the columns from data that I need to merge in
+toMerge<-data %>% select(ID, Trial, Art_neg100_100PR, FixBreak_neg100_100PR, Hemifield, RT, RT_bin) 
+#Now merge them 
+data_Resp_locked_ERP<-data_Resp_locked_ERP %>%   merge(., toMerge, by = c("ID", "Trial")) 
+#Filter out artifacts
+data_Resp_locked_ERP<- data_Resp_locked_ERP %>% 
+    filter(!Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
+    select(-Art_neg100_100PR, -FixBreak_neg100_100PR)
+###########################################################################################################
+
+#Plot Response locked 
+plotdata_Resp_locked_CPPr <- summarySEwithin(data_Resp_locked_ERP, measurevar="CPPr", withinvars=c("Time", "Hemifield"), idvar="ID")
+plotdata_Resp_locked_CPPr$Time<-as.numeric(as.character(plotdata_Resp_locked_CPPr$Time))
+
+
+ggplot(plotdata_Resp_locked_CPPr, aes(x=Time, y=CPPr, color=Hemifield,fill=Hemifield)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=CPPr-ci, ymax=CPPr+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(ylim = c(-0.1, 7),  xlim = c(-700, 50)) +
+    xlab("Time (ms)") + ylab("CPP Amplitude (\u00b5V)") + # \u00b5 makes the "u" symbol for 'micro'V
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.44,0.88)) + #Move ledgend position
+    guides(color=FALSE) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
+    scale_x_continuous(breaks = seq(-700, 50, 50)) + #increase the resolution of the axis ticks
+    scale_y_continuous(breaks = seq(0,7,1)) 
+
+```
 
 # Stim Locked Beta
 ```{r, Stim Locked Beta, echo=FALSE, warning=FALSE}
@@ -1693,10 +1818,110 @@ weights = NULL)
 
 
 
+#Look at CPP onset binned by RT
+```{r}
+library(broom)
+library(modelr)
+data_Stim_locked_ERP %>% filter(!ID == "221M_SJ")  %>% # can not detect significant CPPonset for Slow RT in 221M_SJ thus remove from this part of the analysis 
+    select(ID, Trial, RT_bin, Time, CPP) %>%
+    arrange(ID, Trial, Time) %>%
+    group_by(ID, 
+             Trial,
+             CPP_smooth = rollmean(.$CPP, k=50,  fill = NA)) %>%
+    filter(Time>0, Time<1000) %>%
+    group_by(ID, RT_bin, Time) %>%
+    do(t_test = tidy(t.test(.$CPP_smooth, mu=0))) %>%
+    unnest() %>%
+    select(ID, RT_bin, Time, p.value) %>%
+    group_by(ID, 
+             RT_bin, 
+             significant = rollapply(.$p.value, width = 20,
+          FUN = function(x) all(x<0.05),
+          align = "left", fill = NA)) %>%
+    mutate(count = row_number(), 
+           first_CPPonset = significant & count==1) %>%
+    filter(first_CPPonset) %>%
+    rename(CPPonset = Time) -> CPPonset_RTbin
+
+
+
+CPPonset_RTbin %>% group_by(RT_bin) %>% summarise(CPPonset = mean(CPPonset))
+   
+
+ezANOVA(data = as.data.frame(CPPonset_RTbin)
+                        , dv = .(CPPonset)
+                        , wid = .(ID)
+                        , within = .(RT_bin)
+                        , type = 3)
+
+###########################################################################
+
+#plot stim-locked CPP binned by RT
+data_Stim_locked_ERP %>% summarySEwithin(., measurevar="CPP", 
+                                         withinvars=c("Time", "RT_bin"), 
+                                         idvar="ID") %>%
+    mutate(Time = as.numeric(as.character(Time))) %>%
+    ggplot(., aes(x=Time, y=CPP, color=RT_bin,fill=RT_bin)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=CPP-ci, ymax=CPP+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(ylim = c(-0.1, 6.5),  xlim = c(-100, 900)) +
+    xlab("Time (ms)") + ylab("CPP Amplitude (\u00b5V)") + # \u00b5 makes the "u" symbol for 'micro'V
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.88,0.88)) + #Move ledgend position
+    guides(color=FALSE) +
+    annotation_custom(CPP_scalp,xmin = 30, xmax = 270, ymin = 4, ymax = 6.25) + #add the CPP scapl plot 
+    geom_vline(xintercept=as.numeric(data %>% filter(RT_bin == "Fast") %>% summarise(mean(RT))), 
+               colour  = scales::hue_pal()(1), size=0.75, alpha=0.75, linetype="dashed") +
+    geom_vline(xintercept=as.numeric(data %>% filter(RT_bin == "Slow") %>% summarise(mean(RT))), 
+               colour  = scales::hue_pal()(2)[2], size=0.75, alpha=0.75, linetype="dashed") +
+    geom_vline(xintercept=as.numeric(CPPonset_RTbin %>% ungroup() %>% filter(RT_bin == "Fast") %>% summarise(mean(CPPonset))), 
+               colour  = scales::hue_pal()(1), size=0.75, alpha=0.75) +
+    geom_vline(xintercept=as.numeric(CPPonset_RTbin %>% ungroup() %>% filter(RT_bin == "Slow") %>% summarise(mean(CPPonset))), 
+               colour  = scales::hue_pal()(2)[2], size=0.75, alpha=0.75) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
+    scale_x_continuous(breaks = seq(-100, 900, 50)) + #increase the resolution of the axis ticks
+    scale_y_continuous(breaks = seq(0,6,1)) +
+    annotate("text", x = -75, y = 6, label = "[A]", size=6)
+
+
+#plot stim-locked CPP binned by RT
+data_Resp_locked_ERP %>% summarySEwithin(., measurevar="CPPr", 
+                                         withinvars=c("Time", "RT_bin"), 
+                                         idvar="ID") %>%
+    mutate(Time = as.numeric(as.character(Time))) %>%
+ggplot(., aes(x=Time, y=CPPr, color=RT_bin,fill=RT_bin)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=CPPr-ci, ymax=CPPr+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(ylim = c(-0.1, 7),  xlim = c(-700, 50)) +
+    xlab("Time (ms)") + ylab("CPP Amplitude (\u00b5V)") + # \u00b5 makes the "u" symbol for 'micro'V
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.44,0.88)) + #Move ledgend position
+    guides(color=FALSE) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
+    scale_x_continuous(breaks = seq(-700, 50, 50)) + #increase the resolution of the axis ticks
+    scale_y_continuous(breaks = seq(0,7,1)) 
 
 
 
 
+
+
+ 
+```
 
 
 
