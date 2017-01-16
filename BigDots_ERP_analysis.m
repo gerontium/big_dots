@@ -335,6 +335,12 @@ for s=1:length(allsubj)
         
         % do t-test to zero across the smoothed trials.
         for tt = 1:size(win_mean,1)
+            
+            if strcmp( subject_folder(s),'AD48C') %This participant has strainge CPP baseline, so do CPP onset t-test against -1.5 instead of against 0
+                [~,P,~,STATS] = ttest(win_mean(tt,:),-1.5);
+            else
+                [~,P,~,STATS] = ttest(win_mean(tt,:));
+            end
             tstats(tt) = STATS.tstat;
             ps(tt) = P;
         end
@@ -417,11 +423,6 @@ for s=1:length(allsubj)
 %     title(subject_folder{s})
 %     pause(1)
     
-%     erp_mean = (squeeze(mean(mean(mean(ERP_uptarg(s,:,:,:,:,:),4),5),6))+squeeze(mean(mean(mean(ERP_righttarg(s,:,:,:,:,:),4),5),6)))/2;
-%     figure
-%     plottopo(erp_mean(:,:),'chanlocs',chanlocs,'limits',[t(1) t(end) ...
-%         min(min(min(erp_mean(plot_chans,:))))  max(max(max(erp_mean(plot_chans,:))))], ...
-%         'title',[allsubj{s}],'legend',{'90 deg (up)','60 deg','30 deg','0 deg (right)'},'showleg','off','ydir',1)
 %     pause(1)
 end
 

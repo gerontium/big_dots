@@ -329,8 +329,6 @@ plot(RespLockedCPPslope, ID ~ resid(., scaled=TRUE))
 
 plot(RespLockedCPPslope, log(RT) ~ fitted(.) | ID, abline = c(0,1))
 
-plot(RespLockedCPPslope, resid(., scaled=TRUE) ~ Location | Sex, abline = 0)
-
 
 
     ggplot(fortify(RespLockedCPPslope), aes(.fitted,.resid)) + 
@@ -627,10 +625,15 @@ ggplot(plotdata_Resp_locked_CPPr, aes(x=Time, y=CPPr, color=Hemifield,fill=Hemif
 
 ```
 
-# Stim Locked Beta
+# Stim Locked Beta (short time fourier transform - STFT)
 ```{r, Stim Locked Beta, echo=FALSE, warning=FALSE}
 ###########################################################################################################
 ###### Import trial sample level data Stim locked Beta
+
+#Use Short time fourier transform (STFT) or temporal spectral evolution (TSE) ?
+
+
+
 if (location=="Monash") {
 data_Stim_locked_Beta <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Stim_locked_beta.csv", header=FALSE)
 ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Stim_locked_beta.csv", quote="\"")
@@ -655,9 +658,10 @@ data_Stim_locked_Beta<- data_Stim_locked_Beta %>% #Rename data columns:
            Trial=V3,
            Time=V4,
            Stim_locked_Beta=V5) %>%
-    merge(., data, by = c("ID", "Trial", "TotalTrialNumber")) 
+    merge(., data, by = c("ID", "Trial")) 
 #Filter out artifacts
 data_Stim_locked_Beta<- data_Stim_locked_Beta %>% filter(!Art_neg100_100PR, !FixBreak_neg100_100PR)
+
 ###########################################################################################################
 
 #Plot Stimonse locked 
@@ -730,7 +734,7 @@ rm(data_Stim_locked_Beta)
 
 ```
 
-# Resp Locked Beta Slope
+# Resp Locked Beta Slope (short time fourier transform - STFT)
 ```{r, Resp Locked Beta, echo=FALSE, warning=FALSE}
 ###########################################################################################################
 ###### Import trial sample level data Resp locked Beta
@@ -759,7 +763,7 @@ data_Resp_locked_Beta<- data_Resp_locked_Beta %>% #Rename data columns:
            Time=V4,
            Resp_locked_Beta=V5,
            Resp_locked_Beta_NOTbaselined=V6) %>%
-    merge(., data, by = c("ID", "Trial", "TotalTrialNumber")) 
+    merge(., data, by = c("ID", "Trial")) 
 
 #Filter out artifacts
 data_Resp_locked_Beta<- data_Resp_locked_Beta %>% filter(!Art_neg100_100PR)
@@ -777,7 +781,7 @@ summary(plotdata_Resp_locked_Beta$Time)
 ggplot(plotdata_Resp_locked_Beta, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
     geom_line(size=1.4) + geom_ribbon(aes(ymin=Resp_locked_Beta-ci, ymax=Resp_locked_Beta+ci), alpha = 0.3, colour=NA) + 
         geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-0.104, 0.01),  xlim = c(-600, 100)) +
+    coord_cartesian(xlim = c(-600, 100)) +
     xlab("Time") + ylab("Beta Power (\u00b5V)") +
     theme(axis.title.x = element_text(face="bold", size=12),
           axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
@@ -813,6 +817,201 @@ participant_level<-left_join(participant_level, beta_participant_level, by = "ID
 rm(data_Resp_locked_Beta)
 ```
 
+# Stim Locked Beta (temporal spectral evolution - TSE)
+```{r, Stim Locked Beta, echo=FALSE, warning=FALSE}
+###########################################################################################################
+###### Import trial sample level data Stim locked Beta
+
+#temporal spectral evolution (TSE) 
+
+
+
+if (location=="Monash") {
+data_Stim_locked_Beta_TSE <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Stim_locked_beta_TSE.csv", header=FALSE)
+ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Stim_locked_beta_TSE.csv", quote="\"")
+} else if (location=="DansLaptop") {
+data_Stim_locked_Beta_TSE <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Stim_locked_beta_TSE.csv", header=FALSE)
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Stim_locked_beta_TSE.csv", quote="\"")
+} else setwd(("~"))
+
+data_Stim_locked_Beta_TSE$ID<-data_Stim_locked_Beta_TSE[,1]
+#Replace the participant numbers with IDs:
+data_Stim_locked_Beta_TSE[,1]<-ID[,1]
+#Remove the seperate ID vector now it has been included into data dataframe
+rm(ID)
+drops <- c("ID")
+data_Stim_locked_Beta_TSE<-data_Stim_locked_Beta_TSE[,!(names(data_Stim_locked_Beta_TSE) %in% drops)]
+
+#Merge with the RT, Accuracy, Hemifield data 
+data_Stim_locked_Beta_TSE<- data_Stim_locked_Beta_TSE %>% #Rename data columns:
+    rename(., 
+           ID=V1,
+           TotalTrialNumber=V2,
+           Trial=V3,
+           Time=V4,
+           Stim_locked_Beta=V5) %>%
+    merge(., data, by = c("ID", "Trial")) 
+#Filter out artifacts
+data_Stim_locked_Beta_TSE<- data_Stim_locked_Beta_TSE %>% filter(!Art_neg100_100PR, !FixBreak_neg100_100PR)
+
+###########################################################################################################
+
+#Plot Stimonse locked 
+plotdata_Stim_locked_Beta_TSE <- summarySEwithin(data_Stim_locked_Beta_TSE, measurevar="Stim_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
+plotdata_Stim_locked_Beta_TSE$Time<-as.numeric(as.character(plotdata_Stim_locked_Beta_TSE$Time))
+summary(plotdata_Stim_locked_Beta_TSE$Time)
+
+
+#Stim_locked_Beta Group on same plot
+ggplot(plotdata_Stim_locked_Beta_TSE, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
+    annotation_custom(Beta_scalp,xmin = 200, xmax = 800, ymin = -0.04, ymax = -0.001) + #add the scapl plot 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
+        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
+    coord_cartesian(ylim = c(-0.16, 0.01),  xlim = c(-100, 800)) +
+    xlab("Time") + ylab("Beta Power (\u00b5V)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+              axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+              axis.title.y = element_text(face="bold", size=12),
+              axis.text.y  = element_text(face="bold", angle=0, size=12),
+              panel.background = element_blank(),
+              legend.position= c(0.35,0.19),
+              legend.title = element_text(size=12, face="bold"),
+              legend.text = element_text(size = 12, face = "bold")) +
+    annotate("text", x = -90, y = 0.01, label = "[D]", size=6)
+
+
+##Calculate t_values for each of the rolling variables ability to predict log(RT) at each time point
+plot_data<-data_Stim_locked_Beta_TSE %>% 
+            group_by(Hemifield, Time) %>%  
+            do(Beta_Amplitude = summary(lmer(log(RT) ~ Stim_locked_Beta + (1|ID) + (1|ITI), data = ., REML=F))$coefficients[2,3]) %>%
+            gather(., key, t_value, -Hemifield, -Time) %>%
+            mutate(t_value= as.double(t_value)) %>% 
+            arrange(key)
+
+plot_data <- plot_data %>% arrange(key)
+
+
+ggplot(plot_data, aes(Time, t_value, colour=Hemifield)) + geom_line(size=1.4) + 
+    geom_hline(yintercept=2, alpha = 0.5,  size=1.4) + geom_hline(yintercept=-2, alpha = 0.5,  size=1.4) + geom_vline(xintercept=0, alpha = 0.5,  size=1.4) +
+     coord_cartesian(ylim = c(-5, 8), xlim = c(-100, 800)) +
+    theme(axis.title.x = element_text(face="bold", size=14),
+          axis.text.x  = element_text(face="bold", angle=0,  size=14)) +
+    theme(axis.title.y = element_text(face="bold", size=14),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=14)) +
+    theme(plot.title = element_text(face="bold", size=16)) +
+    theme(strip.text.x = element_text(size = 13)) 
+
+
+##Pull out mean beta amplitude measures from 300 - 500ms in stim locked beta
+beta_participant_level<- data_Stim_locked_Beta_TSE %>% 
+                            filter(Time>400, Time<600) %>% 
+                            group_by(ID, Hemifield) %>% 
+                            summarise(Stim_locked_Beta=mean(Stim_locked_Beta)) %>%
+                            spread(Hemifield, Stim_locked_Beta) %>% 
+                            select(Beta_LeftTarget_TSE = Left,
+                                   Beta_RightTarget_TSE = Right) %>%
+                            mutate(Beta_Asym_TSE = (Beta_LeftTarget_TSE-Beta_RightTarget_TSE)/(Beta_LeftTarget_TSE+Beta_RightTarget_TSE)) %>%
+                            ungroup()
+
+#Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
+participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
+
+
+#Remove it to free up some memory
+rm(data_Stim_locked_Beta_TSE)
+
+
+
+
+```
+
+
+
+
+# Resp Locked Beta Slope (temporal spectral evolution - TSE)
+```{r, Resp Locked Beta, echo=FALSE, warning=FALSE}
+###########################################################################################################
+###### Import trial sample level data Resp locked Beta
+if (location=="Monash") {
+data_Resp_locked_Beta_TSE <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Resp_locked_beta_TSE.csv", header=FALSE)
+ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Resp_locked_beta_TSE.csv", quote="\"")
+} else if (location=="DansLaptop") {
+data_Stim_locked_Beta_TSE <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Resp_locked_beta_TSE.csv", header=FALSE)
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Resp_locked_beta_TSE.csv", quote="\"")
+} else setwd(("~"))
+
+data_Resp_locked_Beta_TSE$ID<-data_Resp_locked_Beta_TSE[,1]
+#Replace the participant numbers with IDs:
+data_Resp_locked_Beta_TSE[,1]<-ID[,1]
+#Remove the seperate ID vector now it has been included into data dataframe
+rm(ID)
+drops <- c("ID")
+data_Resp_locked_Beta_TSE<-data_Resp_locked_Beta_TSE[,!(names(data_Resp_locked_Beta_TSE) %in% drops)]
+
+#Merge with the RT, Accuracy, Hemifield data 
+data_Resp_locked_Beta_TSE<- data_Resp_locked_Beta_TSE %>% #Rename data columns:
+    rename(., 
+           ID=V1,
+           TotalTrialNumber=V2,
+           Trial=V3,
+           Time=V4,
+           Resp_locked_Beta=V5,
+           Resp_locked_Beta_NOTbaselined=V6) %>%
+    merge(., data, by = c("ID", "Trial")) 
+
+#Filter out artifacts
+data_Resp_locked_Beta_TSE<- data_Resp_locked_Beta_TSE %>% filter(!Art_neg100_100PR)
+###########################################################################################################
+
+#Plot response locked 
+plotdata_Resp_locked_Beta_TSE <- summarySEwithin(data_Resp_locked_Beta_TSE, measurevar="Resp_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
+plotdata_Resp_locked_Beta_TSE_NOTbaselined <- summarySEwithin(data_Resp_locked_Beta_TSE, measurevar="Resp_locked_Beta_NOTbaselined", withinvars=c("Time", "Hemifield"), idvar="ID")
+plotdata_Resp_locked_Beta_TSE$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta_TSE$Time))
+plotdata_Resp_locked_Beta_TSE_NOTbaselined$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta_TSE_NOTbaselined$Time))
+summary(plotdata_Resp_locked_Beta_TSE$Time)
+
+
+#Resp_locked_Beta Group on same plot
+ggplot(plotdata_Resp_locked_Beta_TSE, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
+    geom_line(size=1.4) + geom_ribbon(aes(ymin=Resp_locked_Beta-ci, ymax=Resp_locked_Beta+ci), alpha = 0.3, colour=NA) + 
+        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
+    coord_cartesian(xlim = c(-600, 100)) +
+    xlab("Time") + ylab("Beta Power (\u00b5V)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
+    theme(axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
+    theme(legend.title = element_text(size=11, face="bold")) +
+    theme(legend.text = element_text(size = 11, face = "bold")) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+
+
+
+##Pull out mean beta amplitude measures from -300 to -50ms in Resp locked beta
+beta_participant_level<- data_Resp_locked_Beta_TSE %>% 
+                            filter(Time>-300, Time<(-50)) %>% 
+                            group_by(ID, Hemifield) %>% 
+                            summarise( xyBar =mean(Time*Resp_locked_Beta),
+                                       xBar = mean(Time),
+                                       yBar = mean(Resp_locked_Beta),
+                                       x2Bar =mean(Time^2),
+                                       Resp_locked_Beta_Slope = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
+                            select(ID, Hemifield, Resp_locked_Beta_Slope) %>%
+                            spread(Hemifield, Resp_locked_Beta_Slope) %>% 
+                            select(Beta_slope_LeftTarget_TSE = Left,
+                                   Beta_slope_RightTarget_TSE = Right) %>%
+                            mutate(Beta_slope_Asym_TSE = (Beta_slope_LeftTarget_TSE-Beta_slope_RightTarget_TSE)/(Beta_slope_LeftTarget_TSE+Beta_slope_RightTarget_TSE)) 
+
+#Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
+participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
+
+#Remove it to free up some memory
+rm(data_Resp_locked_Beta_TSE)
+rm(beta_participant_level)
+```
 
 #Run tests of normality on the RT, CPPonset, N2c, etc. measures 
 ```{r, test of normality, echo=FALSE, warning=FALSE}
@@ -1282,8 +1481,90 @@ p_Alpha
 
 ```
 
+### Try TSE beta (instead of STFT beta) as per reviwer2's request 
+```{r}
+###############################################################################
+############################Try TSE beta (instead of STFT) as per reviwer2's request 
 
-##Split Participants into RT_Asym Groups (Left bias vs Right bias) and plot their N2 and CPP
+ANOVA_data<- participant_level %>%
+    select(ID, Beta_LeftTarget_TSE, Beta_RightTarget_TSE) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+
+   Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                        , within_covariates = NULL
+                        , between = NULL
+                        , between_covariates = NULL
+                        , observed = NULL
+                        , type = 3);
+print("Repeated Measures ANOVA  for the effect of Hemifield on Stim Locked Beta_TSE Amplitude:")
+print(Hemifield_ANOVA);
+
+kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
+
+Perm_data<- participant_level %>%
+    select(ID, Beta_LeftTarget_TSE, Beta_RightTarget_TSE) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Stim Locked Beta_TSE Amplitude:")
+print(Hemifield_Perm);
+
+
+
+
+ANOVA_data<- participant_level %>%
+    select(ID, Beta_slope_LeftTarget_TSE, Beta_slope_RightTarget_TSE) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+
+
+   Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                        , within_covariates = NULL
+                        , between = NULL
+                        , between_covariates = NULL
+                        , observed = NULL
+                        , type = 3);
+print("Repeated Measures ANOVA  for the effect of Hemifield on Resp Locked Beta_TSE Slope:")
+print(Hemifield_ANOVA);
+
+kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
+
+Perm_data<- participant_level %>%
+    select(ID, Beta_slope_LeftTarget_TSE, Beta_slope_RightTarget_TSE) %>%
+    na.omit() %>%
+    gather(Hemifield, dv, -ID)
+
+log <- capture.output({
+   Hemifield_Perm <- ezPerm(data = Perm_data
+                          , dv = .(dv)
+                          , wid = .(ID)
+                          , within = .(Hemifield)
+                          , perms = 1000);
+ })
+print("Factorial Permutation test for the effect of Hemifield on Resp Locked Beta_TSE Slope:")
+print(Hemifield_Perm);
+
+##########################################################################################
+
+```
+
+##Split Participants into RT_Asym Groups (Left bias vs Right bias) and plot their N2 and CPP as per Redmond's request
 ```{r, Median Split Based on RT_Asym }
 participant_level %>% 
     mutate(Bias_Group = ifelse(RT_Asym<0, "Left", "Right"),
@@ -1369,7 +1650,7 @@ multiplot(p1,p2,p3)
 
 ```
 
-##Split Participants into RT_Asym Quartiles and plot their N2 and CPP for the 2 most extream groups
+##Split Participants into RT_Asym Quartiles and plot their N2 and CPP for the 2 most extream groups as per Redmond's request
 ```{r, Quartiles Split Based on RT_Asym }
 plotdata_Stim_locked_CPP <- summarySEwithin(data_Stim_locked_ERP, measurevar="CPP", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
 plotdata_Stim_locked_CPP$Time<-as.numeric(as.character(plotdata_Stim_locked_CPP$Time))

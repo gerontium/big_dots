@@ -50,7 +50,7 @@ Monash_bigdots = {'059M_HP','093M_BR','036M_JK','221M_SJ','068M_CB', ...
 
 
 duds = [];
-single_participants = [81];
+single_participants = [24];
 
 file_start = 1;
 
@@ -99,8 +99,8 @@ for s=file_start:length(subject_folder)
 %     chanVar = chanVar(:,[1:3,6:14]);
     chanVar = double(chanVar);
     
-%     badchans = [16,25,33];
-%     changechans = [17,27,34]; % must be in same order as badchans.
+%     badchans = [22];
+%     changechans = [17]; % must be in same order as badchans.
 %     chanVar(badchans(1:end),:) = chanVar(changechans(1:end),:);
     
     avVar = mean(chanVar,2); 
