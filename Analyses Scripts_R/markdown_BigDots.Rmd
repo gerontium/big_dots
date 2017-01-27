@@ -323,18 +323,8 @@ qqnorm(residuals(RespLockedCPPslope))
 qqline(residuals(RespLockedCPPslope))
 
 
-plot(RespLockedCPPslope, resid(., scaled=TRUE) ~ fitted(.) | Hemifield, abline = 0)
-
 plot(RespLockedCPPslope, ID ~ resid(., scaled=TRUE))
 
-plot(RespLockedCPPslope, log(RT) ~ fitted(.) | ID, abline = c(0,1))
-
-
-
-    ggplot(fortify(RespLockedCPPslope), aes(.fitted,.resid)) + 
-        geom_point(colour="blue") +
-        facet_grid(.~Hemifield) + 
-        geom_hline(yintercept=0)
     ## note: Subjects are ordered by mean distance
     ggplot(fortify(RespLockedCPPslope), aes(ID,.resid)) + 
         geom_boxplot() + 
@@ -726,8 +716,6 @@ beta_participant_level<- data_Stim_locked_Beta %>%
 participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
 
 
-#Remove it to free up some memory
-rm(data_Stim_locked_Beta)
 
 
 
@@ -813,8 +801,7 @@ beta_participant_level<- data_Resp_locked_Beta %>%
 #Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
 participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
 
-#Remove it to free up some memory
-rm(data_Resp_locked_Beta)
+
 ```
 
 # Stim Locked Beta (temporal spectral evolution - TSE)
@@ -864,7 +851,6 @@ summary(plotdata_Stim_locked_Beta_TSE$Time)
 
 #Stim_locked_Beta Group on same plot
 ggplot(plotdata_Stim_locked_Beta_TSE, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
-    annotation_custom(Beta_scalp,xmin = 200, xmax = 800, ymin = -0.04, ymax = -0.001) + #add the scapl plot 
     geom_line(size=1) + 
     geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
         geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
@@ -877,8 +863,7 @@ ggplot(plotdata_Stim_locked_Beta_TSE, aes(x=Time, y=Stim_locked_Beta, color=Hemi
               panel.background = element_blank(),
               legend.position= c(0.35,0.19),
               legend.title = element_text(size=12, face="bold"),
-              legend.text = element_text(size = 12, face = "bold")) +
-    annotate("text", x = -90, y = 0.01, label = "[D]", size=6)
+              legend.text = element_text(size = 12, face = "bold")) 
 
 
 ##Calculate t_values for each of the rolling variables ability to predict log(RT) at each time point
@@ -916,11 +901,6 @@ beta_participant_level<- data_Stim_locked_Beta_TSE %>%
 
 #Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
 participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
-
-
-#Remove it to free up some memory
-rm(data_Stim_locked_Beta_TSE)
-
 
 
 
@@ -1008,10 +988,78 @@ beta_participant_level<- data_Resp_locked_Beta_TSE %>%
 #Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
 participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
 
-#Remove it to free up some memory
-rm(data_Resp_locked_Beta_TSE)
-rm(beta_participant_level)
 ```
+
+
+```{r}
+
+#make a function to create correlation coef text for the scatter plot
+corr_eqn <- function(x,y, method = "pearson", round_digits = 3) {
+  corr_coef <- round(cor(x, y), digits = round_digits)
+  paste("Pearson's r = ", corr_coef)
+}
+
+
+#Stim-locked
+data_Stim_locked_Beta %>%
+    filter(Time>300, Time<500, !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
+    group_by(ID) %>%
+    summarise(mean_Beta_STFT = mean(Stim_locked_Beta)) -> temp1
+data_Stim_locked_Beta_TSE %>%
+  filter(Time>300, Time<500, !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
+  group_by(ID) %>%
+  summarise(mean_Beta_TSE = mean(Stim_locked_Beta)) %>%
+    full_join(temp1, by=c("ID")) -> to_plot
+    ggplot(to_plot, aes(mean_Beta_STFT, mean_Beta_TSE)) +
+    geom_point(shape = 1, size = 2) +
+    geom_smooth(method= "lm", se = FALSE, colour = "black") +
+    labs(title = "[A] Stimulus-locked Beta amplitude\n   (STFT vs TSE)",
+         x = "STFT Beta Power",
+         y = "TSE Beta Power") +
+    annotate("text", x = -0.2, y = -0.05, 
+             label = corr_eqn(to_plot$mean_Beta_STFT, to_plot$mean_Beta_TSE)) -> p1
+
+
+    
+###Resp-locked
+data_Resp_locked_Beta %>%
+    filter(Time>-300, Time<(-50), !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
+    group_by(ID) %>%
+    summarise( xyBar =mean(Time*Resp_locked_Beta),
+           xBar = mean(Time),
+           yBar = mean(Resp_locked_Beta),
+           x2Bar =mean(Time^2),
+           Beta_Slope_STFT = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) -> temp1
+data_Resp_locked_Beta_TSE %>%
+  filter(Time>-300, Time<(-50), !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
+  group_by(ID) %>%
+    summarise( xyBar =mean(Time*Resp_locked_Beta),
+           xBar = mean(Time),
+           yBar = mean(Resp_locked_Beta),
+           x2Bar =mean(Time^2),
+           Beta_Slope_TSE = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
+    full_join(temp1, by=c("ID")) -> to_plot
+    ggplot(to_plot, aes(Beta_Slope_STFT, Beta_Slope_TSE)) +
+    geom_point(shape = 1, size = 2) +
+    geom_smooth(method= "lm", se = FALSE, colour = "black") +
+    labs(title = "[B] Response-locked beta slope\n   (STFT vs TSE)",
+         x = "STFT Beta Slope",
+         y = "TSE Beta Slope") +
+    annotate("text", x = -0.001, y = 0.0001, 
+             label = corr_eqn(to_plot$Beta_Slope_STFT, to_plot$Beta_Slope_TSE)) -> p2
+        
+
+    
+png("Review_Figure 2.png", width = 10*600, height = 5*600,  units = "px", res = 600)    
+source("multiplot.R")
+multiplot(p1, p2, cols = 2)    
+dev.off()
+
+
+rm(temp1)
+
+```
+
 
 #Run tests of normality on the RT, CPPonset, N2c, etc. measures 
 ```{r, test of normality, echo=FALSE, warning=FALSE}
@@ -1510,7 +1558,6 @@ Perm_data<- participant_level %>%
     select(ID, Beta_LeftTarget_TSE, Beta_RightTarget_TSE) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
-
 log <- capture.output({
    Hemifield_Perm <- ezPerm(data = Perm_data
                           , dv = .(dv)
@@ -1528,8 +1575,6 @@ ANOVA_data<- participant_level %>%
     select(ID, Beta_slope_LeftTarget_TSE, Beta_slope_RightTarget_TSE) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
-
-
 
    Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
                           , dv = .(dv)
@@ -1944,10 +1989,11 @@ Normality_tests <-participant_level %>%
 ```
 
 #Look at multiple regression to predice RT_Asym 
+Fit the regression modles in a hierarchical fashion with their entry order determined by their temporal order in the perceptual decision making process. This allowed us to model individual differences in RT-asymmetry as a function of asymmetries in neural signals representing each temporal stage of perceptual decision making, from a pre-target preparatory signal (alpha power), to target selection (N2c), to evidence accumulation (CPP) to motor preparation (LHB). The hierarchical entry method allowed us to assess whether each of the different signals improved the model fit for RT-asymmetry over-and-above the signals which temporally proceed it. Only those signals that explained unique variation in RT-asymmetry were then selected for forced input into a final simplified RT-asymmetry model, to obtain accurate parameter estimates not influenced by other signals shown not improve model fit.
 ```{r, echo=FALSE, warning=FALSE}
 library(broom)
 
-### Fitting the Model
+### Fitting the Model in a hierarchical fashion
 intercept_only<-lm(RT_Asym~ 1, data=participant_level)
 Controls <- update(intercept_only, .~. + Location + Sex + Age)
 PreAlphaAsym<-update(Controls, .~. + PreAlphaAsym)
@@ -2025,14 +2071,14 @@ participant_level[participant_level$large.residual , c("ID", "standardized.resid
 #This is a test for independence 
 durbinWatsonTest(final_model) # D-W Statistic is close to 2 and nowhere near significant so we are all good
 
-#----Obtaining the VIF to assess collinearity/multicillinearity---
+#----Obtaining the VIF to assess collinearity/multicollinearity---
 vif(final_model)
 #tolerance:
 1/vif(final_model)
-# If the largest VIF is greater than 10 then there is a multicillinearity problem
-# If the average VIF is substantially greater than 1 there could be a multicillinearity problem
-# Tolerances below 0.1 indicate a serious multicillinearity problem
-# Tolerances below 0.2 indicate a potential multicillinearity problem
+# If the largest VIF is greater than 10 then there is a multicollinearity problem
+# If the average VIF is substantially greater than 1 there could be a multicollinearity problem
+# Tolerances below 0.1 indicate a serious multicollinearity problem
+# Tolerances below 0.2 indicate a potential multicollinearity problem
 
 #Plot standardized residual histogram
 residuals_final_model=residuals(final_model)
@@ -2093,16 +2139,374 @@ boot.ci(bootResults, type = "bca", index = 4) #CPPonset_Asym
 lm.boot(final_model, 3000, rows = TRUE, new.xpts = NULL, ngrid = 100,
 weights = NULL)
 
+##### 
+```
+
+##Address Review 1's question "Is there scope of looking at the correlation between the different EEG measures to assess to what extent they independently (or not) contribute to the RT bias?"
+```{r}
+##grab the Asym EEG measures of interest for 
+data_for_cor<-select(participant_level, ends_with("Asym"), -N2i_Asym, -N2i_latency_Asym, -RT_Asym) %>%
+    rename(`CPP onset Asym` = CPPonset_Asym,
+           `CPP slope Asym` = CPPslope_Asym,
+           `N2c Amplitude Asym` = N2c_Asym,
+           `N2c latency Asym` = N2c_latency_Asym,
+           `Pretarget Alpha Asym` = PreAlphaAsym, 
+           `LHB Amplitude Asym` = Beta_Asym,
+           `LHB slope Asym` = Beta_slope_Asym)
+
+###################################################################
+#Make a function to compute the matrix of p-value from the correlation matrix:
+cor.mtest <- function(mat, ...) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p_mat<- matrix(NA, n, n)
+    diag(p_mat) <- 0
+    for (i in 1:(n - 1)) {
+        for (j in (i + 1):n) {
+            tmp <- cor.test(mat[, i], mat[, j], ...)
+            p_mat[i, j] <- p_mat[j, i] <- tmp$p.value
+        }
+    }
+  colnames(p_mat) <- rownames(p_mat) <- colnames(mat)
+  p_mat
+}
+###################################################################
+
+# matrix of the p-value of the correlation - "p_mat"
+p_mat <- cor.mtest(data_for_cor)
+head(p_mat[, 1:5])
+
+
+corrplot::corrplot(corr = cor(data_for_cor), 
+             method="color", 
+             type="upper", 
+             order="hclust", 
+             addCoef.col = "black", # Add coefficient of correlation
+             tl.col="black", tl.srt=45, #Text label color and rotation
+             # Combine with significance
+             p.mat = p_mat, sig.level = 0.05, insig = "blank", 
+             # hide correlation coefficient on the principal diagonal
+             diag=FALSE)
+
+
+source("multiplot.R")
+
+png("Review_Figure_corrplot.png", width = 10*600, height = 10*600,  units = "px", res = 600) 
+corrplot::corrplot(corr = cor(data_for_cor), 
+             method="color", 
+             type="upper", 
+             order="hclust", 
+             addCoef.col = "black", # Add coefficient of correlation
+             tl.col="black", tl.srt=45, #Text label color and rotation
+             # Combine with significance
+             p.mat = p_mat, sig.level = 0.05, insig = "blank", 
+             # hide correlation coefficient on the principal diagonal
+             diag=FALSE)
+dev.off()
 
 
 ```
 
 
+#Test the effect of RT_bin on pre-target alpha power
 
-#Look at CPP onset binned by RT
 ```{r}
 library(broom)
 library(modelr)
+
+data %>% 
+    filter(!Art_neg500_0) %>%
+    group_by(ID, RT_bin) %>%
+    summarise(PreAlphaPower = mean(PreAlphaPower)) %>%
+    ezANOVA(.
+            , dv = .(PreAlphaPower)
+            , wid = .(ID)
+            , within = .(RT_bin)
+            , type = 3)
+
+
+log <- capture.output({
+alpha_perm <- data %>% 
+                filter(!Art_neg500_0) %>%
+                group_by(ID, RT_bin) %>%
+                summarise(PreAlphaPower = mean(PreAlphaPower)) %>%
+                    ezPerm(.
+                        , dv = .(PreAlphaPower)
+                        , wid = .(ID)
+                        , within = .(RT_bin)
+                        , perms = 1000);
+})
+print("Factorial Permutation test for the effect of RT_bin on Pre-target Alpha Power:")
+print(alpha_perm)
+
+
+
+data %>% 
+    filter(!Art_neg500_0) %>%
+    group_by(ID, RT_bin) %>%
+    summarise(PreAlphaPower = mean(PreAlphaPower)) %>% 
+    group_by(RT_bin) %>% 
+    summarise(mean=mean(PreAlphaPower),
+              sd=sd(PreAlphaPower))
+
+
+alpha_sup <- data %>%
+            filter(!Art_neg500_0) %>%
+            ggplot(., aes(x = PreAlphaPower, y = RT, colour = RT_bin)) +
+            geom_smooth() +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank()) + #remove grey background 
+    ylab("Reaction-time (RT), ms") +
+    xlab("Pre-target Alpha Power (\u00b5V)") +
+    ggtitle("[A]")
+
+data %>%
+    filter(!Art_neg500_0) %>%
+    ggplot(., aes(x = log(PreAlphaPower), y = log(RT), colour = RT_bin)) +
+    geom_smooth() + 
+    xlim(0, 2.5)
+
+
+
+RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (log(PreAlphaPower)|ID) + (1|Hemifield) + (1|ITI), data = filter(data, !Art_neg500_0), REML=FALSE, na.action = na.omit)
+PreAlphaPower <- update(RT_random_intercepts_only, .~. + log(PreAlphaPower))
+
+anova(RT_random_intercepts_only, PreAlphaPower)
+
+summary(PreAlphaPower)
+
+plot(residuals(PreAlphaPower))
+hist(residuals(PreAlphaPower))
+qqnorm(residuals(PreAlphaPower))
+qqline(residuals(PreAlphaPower))
+
+
+    ## note: Subjects are ordered by mean distance
+    ggplot(fortify(PreAlphaPower), aes(ID,.resid)) + 
+        geom_boxplot() + 
+        coord_flip()
+
+```
+
+
+#Test the effect of RT_bin on N2c
+```{r}
+#plot stim-locked N2c binned by RT
+data_Stim_locked_ERP %>% summarySEwithin(., measurevar="N2c", 
+                                         withinvars=c("Time", "RT_bin"), 
+                                         idvar="ID") %>%
+    mutate(Time = as.numeric(as.character(Time))) %>%
+    ggplot(., aes(x=Time, y=N2c, color=RT_bin,fill=RT_bin)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=N2c-ci, ymax=N2c+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(ylim = c(-3, 0.5),  xlim = c(-100, 450)) +
+    xlab("Time (ms)") + ylab("N2c Amplitude (\u00b5V)") + # \u00b5 makes the "u" symbol for 'micro'V
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.1,0.5)) + #Move ledgend position
+    guides(color=FALSE) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
+    scale_x_continuous(breaks = seq(-100, 500, 50)) +
+    ggtitle("[B]") -> N2c_sup
+    ggsave("N2c_RTbin.png")
+
+
+###Find participant level N2c peak latency for each RT_bin and run ANOVA to test effect of RT_bin###
+data_Stim_locked_ERP %>% 
+            filter(Time>100, Time<(450)) %>% 
+            group_by(ID, RT_bin, Time) %>% 
+            summarise(N2c = mean(N2c)) %>%
+            group_by(ID, RT_bin) %>%
+            mutate(peak_latency = ifelse(N2c==min(N2c), TRUE, FALSE)) %>%
+     filter(peak_latency) %>%
+    rename(N2c_latency = Time) -> N2c_latency_RTbin 
+
+ezANOVA(data = as.data.frame(N2c_latency_RTbin)
+                        , dv = .(N2c_latency)
+                        , wid = .(ID)
+                        , within = .(RT_bin)
+                        , type = 3)
+
+
+ggplot(N2c_latency_RTbin) +
+    geom_density(aes(x=N2c_latency, colour=RT_bin))
+
+
+
+###Find participant level N2c amplitude for each RT_bin and run ANOVA to test effect of RT_bin###
+
+#First find grand average N2c peak latency for each RT_bin
+data_Stim_locked_ERP %>% 
+            filter(Time>100, Time<(450)) %>% 
+            group_by(RT_bin, Time) %>% 
+            summarise(N2c = mean(N2c)) %>%
+            group_by(RT_bin) %>%
+            mutate(peak_latency = ifelse(N2c==min(N2c), TRUE, FALSE)) %>%
+     filter(peak_latency) %>%
+    rename(N2c_latency = Time) -> N2c_latency
+
+#Now find mean amplitude around those 2 peak latencies for each participant 
+data_Stim_locked_ERP %>% 
+    filter(RT_bin =="Fast") %>%
+    group_by(ID) %>%
+    summarise(Fast = mean(N2c[Time>=(N2c_latency$N2c_latency[N2c_latency$RT_bin=="Fast"]-50) & 
+                                    Time<=(N2c_latency$N2c_latency[N2c_latency$RT_bin=="Fast"]+50)])) %>%
+    full_join(., data_Stim_locked_ERP %>% 
+                  filter(RT_bin =="Slow") %>%
+                  group_by(ID) %>%
+                  summarise(Slow = mean(N2c[Time>=(N2c_latency$N2c_latency[N2c_latency$RT_bin=="Slow"]-50) & 
+                                    Time<=(N2c_latency$N2c_latency[N2c_latency$RT_bin=="Slow"]+50)])), by = "ID") %>% 
+    gather(RT_bin, N2c, -ID) -> N2c_Amp
+    
+
+ezANOVA(data = N2c_Amp
+                    , dv = .(N2c)
+                    , wid = .(ID)
+                    , within = .(RT_bin)
+                    , type = 3)
+
+
+ggplot(N2c_Amp) +
+    geom_density(aes(x=N2c, colour=RT_bin))
+
+
+
+```
+
+
+#plot stim-locked N2i binned by RT
+```{r}
+data_Stim_locked_ERP %>% summarySEwithin(., measurevar="N2i", 
+                                         withinvars=c("Time", "RT_bin"), 
+                                         idvar="ID") %>%
+    mutate(Time = as.numeric(as.character(Time))) %>%
+    ggplot(., aes(x=Time, y=N2i, color=RT_bin,fill=RT_bin)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=N2i-ci, ymax=N2i+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(ylim = c(-1.5, 0.5),  xlim = c(-100, 450)) +
+    xlab("Time (ms)") + ylab("N2i Amplitude (\u00b5V)") + # \u00b5 makes the "u" symbol for 'micro'V
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.1,0.5)) + #Move ledgend position
+    guides(color=FALSE) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
+    scale_x_continuous(breaks = seq(-100, 500, 50)) +
+    ggtitle("[C]") -> N2i_sup
+    ggsave("N2i_RTbin.png")
+
+
+###Find participant level N2i peak latency for each RT_bin and run ANOVA to test effect of RT_bin###
+data_Stim_locked_ERP %>% 
+            filter(Time>100, Time<(450)) %>% 
+            group_by(ID, RT_bin, Time) %>% 
+            summarise(N2i = mean(N2i)) %>%
+            group_by(ID, RT_bin) %>%
+            mutate(peak_latency = ifelse(N2i==min(N2i), TRUE, FALSE)) %>%
+     filter(peak_latency) %>%
+    rename(N2i_latency = Time) -> N2i_latency_RTbin 
+
+ezANOVA(data = as.data.frame(N2i_latency_RTbin)
+                        , dv = .(N2i_latency)
+                        , wid = .(ID)
+                        , within = .(RT_bin)
+                        , type = 3)
+
+
+ggplot(N2i_latency_RTbin) +
+    geom_density(aes(x=N2i_latency, colour=RT_bin))
+
+log <- capture.output({
+N2i_latency_RTbin_Perm<-ezPerm(as.data.frame(N2i_latency_RTbin)
+        , dv = .(N2i_latency)
+        , wid = .(ID)
+        , within = .(RT_bin)
+        , perms = 1000
+)
+ })
+print("Factorial Permutation test for the relationship between N2i_latency and RT_bin:")
+kable(N2i_latency_RTbin_Perm)
+
+
+
+###Find participant level N2i amplitude for each RT_bin and run ANOVA to test effect of RT_bin###
+
+#First find grand average N2i peak latency for each RT_bin
+data_Stim_locked_ERP %>% 
+            filter(Time>100, Time<(450)) %>% 
+            group_by(RT_bin, Time) %>% 
+            summarise(N2i = mean(N2i)) %>%
+            group_by(RT_bin) %>%
+            mutate(peak_latency = ifelse(N2i==min(N2i), TRUE, FALSE)) %>%
+     filter(peak_latency) %>%
+    rename(N2i_latency = Time) -> N2i_latency
+
+#Now find mean amplitude around those 2 peak latencies for each participant 
+data_Stim_locked_ERP %>% 
+    filter(RT_bin =="Fast") %>%
+    group_by(ID) %>%
+    summarise(Fast = mean(N2i[Time>=(N2i_latency$N2i_latency[N2i_latency$RT_bin=="Fast"]-50) & 
+                                    Time<=(N2i_latency$N2i_latency[N2i_latency$RT_bin=="Fast"]+50)])) %>%
+    full_join(., data_Stim_locked_ERP %>% 
+                  filter(RT_bin =="Slow") %>%
+                  group_by(ID) %>%
+                  summarise(Slow = mean(N2i[Time>=(N2i_latency$N2i_latency[N2i_latency$RT_bin=="Slow"]-50) & 
+                                    Time<=(N2i_latency$N2i_latency[N2i_latency$RT_bin=="Slow"]+50)])), by = "ID") %>% 
+    gather(RT_bin, N2i, -ID) -> N2i_Amp
+    
+
+ezANOVA(data = N2i_Amp
+        , dv = .(N2i)
+        , wid = .(ID)
+        , within = .(RT_bin)
+        , type = 3)
+
+ezPerm(data = N2i_Amp
+    , dv = .(N2i)
+    , wid = .(ID)
+    , within = .(RT_bin)
+    , perms = 1000
+)
+
+
+#Permutation test:
+log <- capture.output({
+   N2i_Amp_Perm <- ezPerm(data = N2i_Amp
+                            , dv = .(N2i)
+                            , wid = .(ID)
+                            , within = .(RT_bin)
+                            , perms = 1000
+)
+ })
+print("Factorial Permutation test for the relationship between N2c and RT_bin:")
+kable(N2i_Amp_Perm)
+
+
+```
+
+#Test the effect of RT_bin on CPP
+```{r}
+library(broom)
+library(modelr)
+
+###########CPP onset
+
 data_Stim_locked_ERP %>% filter(!ID == "221M_SJ")  %>% # can not detect significant CPPonset for Slow RT in 221M_SJ thus remove from this part of the analysis 
     select(ID, Trial, RT_bin, Time, CPP) %>%
     arrange(ID, Trial, Time) %>%
@@ -2126,7 +2530,10 @@ data_Stim_locked_ERP %>% filter(!ID == "221M_SJ")  %>% # can not detect signific
 
 
 
-CPPonset_RTbin %>% group_by(RT_bin) %>% summarise(CPPonset = mean(CPPonset))
+CPPonset_RTbin %>% 
+    group_by(RT_bin) %>% 
+    summarise(SD = sd(CPPonset),
+        CPPonset = mean(CPPonset))
    
 
 ezANOVA(data = as.data.frame(CPPonset_RTbin)
@@ -2135,7 +2542,10 @@ ezANOVA(data = as.data.frame(CPPonset_RTbin)
                         , within = .(RT_bin)
                         , type = 3)
 
-###########################################################################
+
+ggplot(CPPonset_RTbin) +
+    geom_density(aes(x=CPPonset, colour=RT_bin))
+
 
 #plot stim-locked CPP binned by RT
 data_Stim_locked_ERP %>% summarySEwithin(., measurevar="CPP", 
@@ -2156,7 +2566,7 @@ data_Stim_locked_ERP %>% summarySEwithin(., measurevar="CPP",
           panel.background = element_blank(), #remove grey background 
           legend.position= c(0.88,0.88)) + #Move ledgend position
     guides(color=FALSE) +
-    annotation_custom(CPP_scalp,xmin = 30, xmax = 270, ymin = 4, ymax = 6.25) + #add the CPP scapl plot 
+    # annotation_custom(CPP_scalp,xmin = 30, xmax = 270, ymin = 4, ymax = 6.25) + #add the CPP scapl plot 
     geom_vline(xintercept=as.numeric(data %>% filter(RT_bin == "Fast") %>% summarise(mean(RT))), 
                colour  = scales::hue_pal()(1), size=0.75, alpha=0.75, linetype="dashed") +
     geom_vline(xintercept=as.numeric(data %>% filter(RT_bin == "Slow") %>% summarise(mean(RT))), 
@@ -2167,12 +2577,16 @@ data_Stim_locked_ERP %>% summarySEwithin(., measurevar="CPP",
                colour  = scales::hue_pal()(2)[2], size=0.75, alpha=0.75) +
     geom_hline(yintercept=0, alpha = 0.5) + 
     geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
-    scale_x_continuous(breaks = seq(-100, 900, 50)) + #increase the resolution of the axis ticks
+    scale_x_continuous(breaks = seq(-100, 900, 100)) + #increase the resolution of the axis ticks
     scale_y_continuous(breaks = seq(0,6,1)) +
-    annotate("text", x = -75, y = 6, label = "[A]", size=6)
+    ggtitle("[D]") -> StimLockedCPP_sup
+    ggsave("StimLockedCPP_RTbin.png")
 
 
-#plot stim-locked CPP binned by RT
+
+###########CPP slope
+    
+#plot resp-locked CPP binned by RT
 data_Resp_locked_ERP %>% summarySEwithin(., measurevar="CPPr", 
                                          withinvars=c("Time", "RT_bin"), 
                                          idvar="ID") %>%
@@ -2193,19 +2607,146 @@ ggplot(., aes(x=Time, y=CPPr, color=RT_bin,fill=RT_bin)) +
     guides(color=FALSE) +
     geom_hline(yintercept=0, alpha = 0.5) + 
     geom_vline(xintercept=0, alpha = 0.5) + #add black likes at 0 on x and y axis 
-    scale_x_continuous(breaks = seq(-700, 50, 50)) + #increase the resolution of the axis ticks
-    scale_y_continuous(breaks = seq(0,7,1)) 
+    scale_x_continuous(breaks = seq(-700, 50, 100)) + #increase the resolution of the axis ticks
+    scale_y_continuous(breaks = seq(0,7,1)) +
+    ggtitle("[E]") -> RespLockedCPP_sup #increase the resolution of the axis ticks
+ggsave("RespLockedCPP_RTbin.png")
+
+
+
+##Pull out mean beta slope measures from -300 to -50ms in Resp locked beta
+data_Resp_locked_ERP %>% 
+            filter(Time>-150, Time<(-10)) %>% 
+            group_by(ID, RT_bin) %>% 
+            summarise( xyBar =mean(Time*CPPr),
+                       xBar = mean(Time),
+                       yBar = mean(CPPr),
+                       x2Bar =mean(Time^2),
+                       CPPr_Slope = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
+            select(ID, RT_bin, CPPr_Slope) -> CPPslope_RTbin
+
+#check group means:
+CPPslope_RTbin %>% 
+    group_by(RT_bin) %>% 
+    summarise(SD = sd(CPPr_Slope),
+        CPPslope = mean(CPPr_Slope))
+   
+
+ezANOVA(data = as.data.frame(CPPslope_RTbin)
+                        , dv = .(CPPr_Slope)
+                        , wid = .(ID)
+                        , within = .(RT_bin)
+                        , type = 3)
+
+
+ggplot(CPPslope_RTbin) +
+    geom_density(aes(x=CPPr_Slope, colour=RT_bin))
+
+
+
+data %>%
+    ggplot(., aes(x = RespLockedCPPslope, 
+                  y = RT)) +
+    # geom_point(alpha = 0.5, shape = 1) +
+        geom_smooth() +
+        xlim(-0.2, 0.4)
+ 
+
+colnames(data_Stim_locked_ERP)
+colnames(data_Resp_locked_ERP)
+```
+
+#Test the effect of RT_bin on left hemisphere beta power
+```{r}
+#plot stim-locked Stim_locked_Beta binned by RT
+data_Stim_locked_Beta %>% summarySEwithin(., measurevar="Stim_locked_Beta", 
+                                         withinvars=c("Time", "RT_bin"), 
+                                         idvar="ID") %>%
+    mutate(Time = as.numeric(as.character(Time))) %>%
+    ggplot(., aes(x=Time, y=Stim_locked_Beta, color=RT_bin,fill=RT_bin)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(ylim = c(-0.1, 0.01),  xlim = c(-100, 800)) +
+    xlab("Time") + ylab("Beta Power (\u00b5V)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.3,0.2)) + #Move ledgend position
+    guides(color=FALSE) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) +
+    ggtitle("[F]") -> StimLockedBeta_sup
+    ggsave("Stim_locked_Beta_RTbin.png")
 
 
 
 
+data_Resp_locked_Beta %>% summarySEwithin(., measurevar="Resp_locked_Beta", 
+                                         withinvars=c("Time", "RT_bin"), 
+                                         idvar="ID") %>%
+    mutate(Time = as.numeric(as.character(Time))) %>%
+    ggplot(., aes(x=Time, y=Resp_locked_Beta, color=RT_bin,fill=RT_bin)) + 
+    geom_line(size=1) + 
+    geom_ribbon(aes(ymin=Resp_locked_Beta-ci, ymax=Resp_locked_Beta+ci), alpha = 0.5, colour=NA) + 
+    coord_cartesian(xlim = c(-600, 100)) +
+    xlab("Time") + ylab("Beta Power (\u00b5V)") +
+    theme(axis.title.x = element_text(face="bold", size=12),
+          axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
+          axis.title.y = element_text(face="bold", size=12),
+          axis.text.y  = element_text(angle=0, vjust=0.5, size=12),
+          legend.title = element_text(size=12, face="bold"),
+          legend.text = element_text(size = 12, face = "bold"),
+          panel.background = element_blank(), #remove grey background 
+          legend.position= c(0.2,0.2)) + #Move ledgend position
+    guides(color=FALSE) +
+    geom_hline(yintercept=0, alpha = 0.5) + 
+    geom_vline(xintercept=0, alpha = 0.5) -> RespLockedBeta_sup 
+    ggsave("Resp_locked_Beta_RTbin.png")
+
+
+
+##Pull out mean beta slope measures from -300 to -50ms in Resp locked beta
+data_Resp_locked_Beta %>% 
+            filter(Time>-300, Time<(-50)) %>% 
+            group_by(ID, RT_bin) %>% 
+            summarise( xyBar =mean(Time*Resp_locked_Beta),
+                       xBar = mean(Time),
+                       yBar = mean(Resp_locked_Beta),
+                       x2Bar =mean(Time^2),
+                       Resp_locked_Beta_Slope = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
+            select(ID, RT_bin, Resp_locked_Beta_Slope) -> Resp_locked_Beta_slope_RTbin
+
+
+#check group means:
+Resp_locked_Beta_slope_RTbin %>% 
+    group_by(RT_bin) %>% 
+    summarise(SD = sd(Resp_locked_Beta_Slope),
+        Beta_slope = mean(Resp_locked_Beta_Slope))
+   
+
+ezANOVA(data = as.data.frame(Resp_locked_Beta_slope_RTbin)
+                        , dv = .(Resp_locked_Beta_Slope)
+                        , wid = .(ID)
+                        , within = .(RT_bin)
+                        , type = 3)
 
 
  
 ```
 
 
+##Make plots for Response to Rviewers (and to maybe include in supplementry info)
+```{r}
 
+source("multiplot.R")
 
+png("Review_Figure_multiplot.png", width = 10*600, height = 10*600,  units = "px", res = 600) 
+multiplot(alpha_sup, N2c_sup, N2i_sup, StimLockedCPP_sup, RespLockedCPP_sup, StimLockedBeta_sup, cols=2)
+dev.off()
 
+```
 
