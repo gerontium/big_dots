@@ -75,7 +75,7 @@ chanlocs = chanlocs(1:nchan)';
 %% Initialise
 % # % Make sure all initialised
 numtr=0;
-allRT=[]; allrespLR=[]; allTrig=[]; allblock_count = [];
+allRT=[]; allrespLR=[]; allTrig=[]; allblock_count = []; ET_trials = [];
 erp_LPF_8Hz = []; erp_LPF_35Hz = []; erp_LPF_8Hz_CSD = []; erp_LPF_35Hz_CSD = [];
 artifchans_pretarg = []; artifchans_BL_resp = []; artifchans_resp = []; artifchans_1000ms = [];
 pretarg_artrej = []; BL_resp_artrej = []; resp_artrej = []; t1000ms_artrej = [];
@@ -122,6 +122,7 @@ for f=1:length(files)
     EEG.pnts = EEG2.pnts;
     EEG.times = EEG2.times;
     EEG.srate = EEG2.srate;
+    EEG.event = EEG2.event;
     if size(resamp_data,2)~=EEG.pnts
         disp('Resample size mismatch')
         keyboard
@@ -134,6 +135,7 @@ for f=1:length(files)
         trigs(i)=EEG2.event(i).type;
         stimes(i)=round(EEG2.event(i).latency);
     end
+    
     clear EEG2 % unnecessary now
         
     % interpolate bad channels
@@ -274,10 +276,10 @@ for f=1:length(files)
             keyboard
         end
         
-        artifchans_thistrial_pretarg = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts<=0))),[],2)>artifth));
-        artifchans_thistrial_BL_resp = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts>=-0.1 & ts<=(response_time+0.1*fs)))),[],2)>artifth));
+        artifchans_thistrial_pretarg = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts<=0*fs))),[],2)>artifth));
+        artifchans_thistrial_BL_resp = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts>=-0.1*fs & ts<=(response_time+0.1*fs)))),[],2)>artifth));
         artifchans_thistrial_resp = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts<=(response_time+0.1*fs)))),[],2)>artifth));
-        artifchans_thistrial_1000ms = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts>=-0.1 & ts<=1))),[],2)>artifth));
+        artifchans_thistrial_1000ms = ARchans(find(max(abs(ep_LPF_35Hz_BL(ARchans,find(ts>=-0.1*fs & ts<=1*fs))),[],2)>artifth));
         
         artifchans_pretarg = [artifchans_pretarg artifchans_thistrial_pretarg];
         artifchans_BL_resp = [artifchans_BL_resp artifchans_thistrial_BL_resp];
@@ -291,10 +293,10 @@ for f=1:length(files)
         if length(artifchans_thistrial_1000ms) > 0, t1000ms_artrej(numtr) = 0; else t1000ms_artrej(numtr) = 1; end
         
         % scres = 1024 x 768: 512, 384 is middle. 3 deg is 76 pixels. Nope!
-        artif_ET_pretarg = find(ep_ET(2,find(ts<=0))<middle-ranger | ep_ET(2,find(ts<=0))>middle+ranger);
-        artif_ET_BL_resp = find(ep_ET(2,find(ts>=-0.1 & ts<=response_time+0.1*fs))<middle-ranger | ep_ET(2,find(ts>=-0.1 & ts<=response_time+0.1*fs))>middle+ranger);
+        artif_ET_pretarg = find(ep_ET(2,find(ts<=0*fs))<middle-ranger | ep_ET(2,find(ts<=0*fs))>middle+ranger);
+        artif_ET_BL_resp = find(ep_ET(2,find(ts>=-0.1*fs & ts<=response_time+0.1*fs))<middle-ranger | ep_ET(2,find(ts>=-0.1*fs & ts<=response_time+0.1*fs))>middle+ranger);
         artif_ET_resp = find(ep_ET(2,find(ts<=(response_time+0.1*fs)))<middle-ranger | ep_ET(2,find(ts<=(response_time+0.1*fs)))>middle+ranger);
-        artif_ET_1000ms = find(ep_ET(2,find(ts>=-0.1 & ts<=1))<middle-ranger | ep_ET(2,find(ts>=-0.1 & ts<=1))>middle+ranger);
+        artif_ET_1000ms = find(ep_ET(2,find(ts>=-0.1*fs & ts<=1*fs))<middle-ranger | ep_ET(2,find(ts>=-0.1*fs & ts<=1*fs))>middle+ranger);
         
         % 0 = reject, 1 = keep
         if length(artif_ET_pretarg) > 0, ET_pretarg_artrej(numtr) = 0; else ET_pretarg_artrej(numtr) = 1; end

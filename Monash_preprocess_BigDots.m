@@ -75,7 +75,7 @@ chanlocs = chanlocs(1:nchan)';
 %% Initialise
 % # % Make sure all initialised
 numtr=0;
-allRT=[]; allrespLR=[]; allTrig=[]; allblock_count = [];
+allRT=[]; allrespLR=[]; allTrig=[]; allblock_count = []; ET_trials = [];
 erp_LPF_8Hz = []; erp_LPF_35Hz = []; erp_LPF_8Hz_CSD = []; erp_LPF_35Hz_CSD = [];
 artifchans_pretarg = []; artifchans_BL_resp = []; artifchans_resp = []; artifchans_1000ms = [];
 pretarg_artrej = []; BL_resp_artrej = []; resp_artrej = []; t1000ms_artrej = [];
