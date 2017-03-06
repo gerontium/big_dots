@@ -4,7 +4,7 @@ close all
 clc
 
 %%
-path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+path_temp = 'C:\Users\Dan\Desktop\Big_Dots_Data\';
 % path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
 %%
 subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16_04_14', ...
@@ -104,7 +104,7 @@ ID_vector=cell(32000,1); %this will save the subjects ID for each single trial c
 beta_bandlimits = [20,35]; % defining the filter for beta bandpass.
 [H,G]=butter(4,[2*(beta_bandlimits(1)/fs) 2*(beta_bandlimits(2)/fs)]); % beta bandpass for 500Hz
 
-window = 25; % in samples. Time is double this.
+window = 26; % in samples. Time is double this.
 skip_step = window/2;
 
 % beta time

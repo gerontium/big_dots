@@ -4,7 +4,7 @@ close all
 clc
 
 %%
-path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+path_temp = 'C:\Users\Dan\Desktop\Big_Dots_Data\';
 % path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
 %%
 subject_folder = {'LK_07_04_14','AR_08_04_14','MH_14_04_14','AA_15_04_14','NT_16_04_14', ...

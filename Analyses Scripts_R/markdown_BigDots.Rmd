@@ -5,19 +5,18 @@ output:
   html_document:
     fig_width: 8
     keep_md: yes
-  word_document: default
 ---
 
 ```{r Load and Pre-Process the single trial Data, echo=FALSE, include=FALSE, warning=FALSE}
 
 ####Which computer/directory is this being run on?
-location<-"Monash"
-# location<-"GersLaptop"
+# location<-"Monash"
+location<-"DansLaptop"
 
 if (location=="Monash") {
     setwd(("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/Analyses Scripts_R"))
-} else if (location=="GersLaptop") {
-    setwd(("C:/Users/loughnge/Documents/GitHub/big_dots/Analyses Scripts_R"))
+} else if (location=="DansLaptop") {
+    setwd(("C:/Users/Dan/Documents/GitHub/big_dots/Analyses Scripts_R"))
 } else setwd(("~"))
 
 
@@ -25,7 +24,7 @@ if (location=="Monash") {
 ### Install/load required packages
 #List of R packages required for this analysis:
 required_packages <- c("psych", "ggplot2", "tidyr", "stringr", "lubridate", "readxl","knitr",
-                       "readr", "rmarkdown", "png", "lme4", "ez", "multcomp","zoo", "dplyr")
+                       "readr", "rmarkdown", "png", "lme4", "ez", "dplyr")
 #Install required_packages:
 new.packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -40,13 +39,13 @@ options(digits=3, scipen=999)
 ###### Import single trial data:
 if (location=="Monash") {
 data <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_BigDots.csv", header=FALSE)
-} else if (location=="GersLaptop") {
+} else if (location=="DansLaptop") {
 data <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_BigDots.csv", header=FALSE)
 } else setwd(("~"))
 #Import IDs:
 if (location=="Monash") {
 ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_BigDots.csv", quote="\"")
-} else if (location=="GersLaptop") {
+} else if (location=="DansLaptop") {
 ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_BigDots.csv", quote="\"")
 } else setwd(("~"))
 
@@ -296,47 +295,6 @@ source("normDataWithin.R")
 
 ```
 
-#Does single trial CPP-slope predict RT
-```{r}
-m <- tapply(data$RespLockedCPPslope,data$IDbyITIbyHemifield,mean, na.rm = T)
-s <- tapply(data$RespLockedCPPslope,data$IDbyITIbyHemifield,sd, na.rm = T)
-#calculate RespLockedCPPslope.Z and save it inside data.frame
-data$RespLockedCPPslope.Z <- (data$RespLockedCPPslope-m[data$IDbyITIbyHemifield])/s[data$IDbyITIbyHemifield]
-#Remove trials where absolute RespLockedCPPslope.Z>3 (i.e. remove outlier RTs)
-data2<-data[!abs(data$RespLockedCPPslope.Z)>2.5,]
-
-
-RT_random_intercepts_only<-lmer(log(RT) ~ 1 + (RespLockedCPPslope|ID) + (1|Hemifield) + (1|ITI), data = data2, REML=FALSE, na.action = na.omit)
-RespLockedCPPslope <- update(RT_random_intercepts_only, .~. + RespLockedCPPslope)
-
-anova(RT_random_intercepts_only, RespLockedCPPslope)
-
-
-require(effects)
-plot(allEffects(RespLockedCPPslope))
-
-summary(RespLockedCPPslope)
-
-plot(residuals(RespLockedCPPslope))
-hist(residuals(RespLockedCPPslope))
-qqnorm(residuals(RespLockedCPPslope))
-qqline(residuals(RespLockedCPPslope))
-
-
-plot(RespLockedCPPslope, ID ~ resid(., scaled=TRUE))
-
-    ## note: Subjects are ordered by mean distance
-    ggplot(fortify(RespLockedCPPslope), aes(ID,.resid)) + 
-        geom_boxplot() + 
-        coord_flip()
-    
-    ggplot(fortify(RespLockedCPPslope), aes(.fitted,log(RT), colour= ITI)) + 
-        geom_point() +
-        facet_wrap(~ID) + 
-        geom_abline(intercept=0,slope=1)
-
-```
-
 
 # Stim Locked ERP trace plots
 ```{r, Stim Locked ERP trace plots, echo=FALSE, warning=FALSE}
@@ -371,7 +329,14 @@ data_Stim_locked_ERP<- data_Stim_locked_ERP %>% #Rename data columns:
            N2i=V7)
 
 #Grab the columns from data that I need to merge in
-toMerge<-data %>% select(ID, Trial, Art_neg100_100PR, FixBreak_neg100_100PR, Hemifield, RT, RT_bin) 
+toMerge<-data %>% 
+    select(ID, 
+           Trial, 
+           Art_neg100_100PR, 
+           FixBreak_neg100_100PR, 
+           Hemifield, 
+           RT, 
+           RT_bin) 
 #Now merge them 
 data_Stim_locked_ERP<-data_Stim_locked_ERP %>%   merge(., toMerge, by = c("ID", "Trial")) 
 #Filter out artifacts
@@ -620,31 +585,27 @@ ggplot(plotdata_Resp_locked_CPPr, aes(x=Time, y=CPPr, color=Hemifield,fill=Hemif
 ###########################################################################################################
 ###### Import trial sample level data Stim locked Beta
 
-#Use Short time fourier transform (STFT) or temporal spectral evolution (TSE) ?
-
-
-
-if (location=="Monash") {
-data_Stim_locked_Beta <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Stim_locked_beta.csv", header=FALSE)
-ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Stim_locked_beta.csv", quote="\"")
-} else if (location=="DansLaptop") {
-data_Stim_locked_Beta <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Stim_locked_beta.csv", header=FALSE)
-ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Stim_locked_beta.csv", quote="\"")
+if (location == "Monash") {
+data_Stim_locked_Beta <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Stim_locked_beta.csv", header = FALSE)
+ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Stim_locked_beta.csv", quote = "\"")
+} else if (location == "DansLaptop") {
+data_Stim_locked_Beta <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Stim_locked_beta.csv", header = FALSE)
+ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Stim_locked_beta.csv", quote = "\"")
 } else setwd(("~"))
 
-data_Stim_locked_Beta$ID<-data_Stim_locked_Beta[,1]
+data_Stim_locked_Beta$ID <- data_Stim_locked_Beta[,1]
 #Replace the participant numbers with IDs:
-data_Stim_locked_Beta[,1]<-ID[,1]
+data_Stim_locked_Beta[,1] <- ID[,1]
 #Remove the seperate ID vector now it has been included into data dataframe
 rm(ID)
 drops <- c("ID")
-data_Stim_locked_Beta<-data_Stim_locked_Beta[,!(names(data_Stim_locked_Beta) %in% drops)]
+data_Stim_locked_Beta <- data_Stim_locked_Beta[,!(names(data_Stim_locked_Beta) %in% drops)]
 
 #Merge with the RT, Accuracy, Hemifield data 
-data_Stim_locked_Beta<- data_Stim_locked_Beta %>% #Rename data columns:
+data_Stim_locked_Beta <- data_Stim_locked_Beta %>% #Rename data columns:
     rename(., 
            ID=V1,
-           TotalTrialNumber=V2,
+           TotalTrialNumber = V2,
            Trial=V3,
            Time=V4,
            Stim_locked_Beta=V5) %>%
@@ -707,7 +668,7 @@ beta_participant_level<- data_Stim_locked_Beta %>%
                             group_by(ID, Hemifield) %>% 
                             summarise(Stim_locked_Beta=mean(Stim_locked_Beta)) %>%
                             spread(Hemifield, Stim_locked_Beta) %>% 
-                            select(Beta_LeftTarget = Left,
+                            rename(Beta_LeftTarget = Left,
                                    Beta_RightTarget = Right) %>%
                             mutate(Beta_Asym = (Beta_LeftTarget-Beta_RightTarget)/(Beta_LeftTarget+Beta_RightTarget)) %>%
                             ungroup()
@@ -722,15 +683,16 @@ participant_level<-left_join(participant_level, beta_participant_level, by = "ID
 
 ```
 
-# Resp Locked Beta Slope (short time fourier transform - STFT)
-```{r, Resp Locked Beta, echo=FALSE, warning=FALSE}
+#Resp Locked Beta Slope (short time fourier transform - STFT)
+
+```{r}
 ###########################################################################################################
 ###### Import trial sample level data Resp locked Beta
 if (location=="Monash") {
 data_Resp_locked_Beta <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Resp_locked_beta.csv", header=FALSE)
 ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Resp_locked_beta.csv", quote="\"")
 } else if (location=="DansLaptop") {
-data_Stim_locked_Beta <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Resp_locked_beta.csv", header=FALSE)
+data_Resp_locked_Beta <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Resp_locked_beta.csv", header=FALSE)
 ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Resp_locked_beta.csv", quote="\"")
 } else setwd(("~"))
 
@@ -800,264 +762,6 @@ beta_participant_level<- data_Resp_locked_Beta %>%
 
 #Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
 participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
-
-
-```
-
-# Stim Locked Beta (temporal spectral evolution - TSE)
-```{r, Stim Locked Beta, echo=FALSE, warning=FALSE}
-###########################################################################################################
-###### Import trial sample level data Stim locked Beta
-
-#temporal spectral evolution (TSE) 
-
-
-
-if (location=="Monash") {
-data_Stim_locked_Beta_TSE <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Stim_locked_beta_TSE.csv", header=FALSE)
-ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Stim_locked_beta_TSE.csv", quote="\"")
-} else if (location=="DansLaptop") {
-data_Stim_locked_Beta_TSE <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Stim_locked_beta_TSE.csv", header=FALSE)
-ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Stim_locked_beta_TSE.csv", quote="\"")
-} else setwd(("~"))
-
-data_Stim_locked_Beta_TSE$ID<-data_Stim_locked_Beta_TSE[,1]
-#Replace the participant numbers with IDs:
-data_Stim_locked_Beta_TSE[,1]<-ID[,1]
-#Remove the seperate ID vector now it has been included into data dataframe
-rm(ID)
-drops <- c("ID")
-data_Stim_locked_Beta_TSE<-data_Stim_locked_Beta_TSE[,!(names(data_Stim_locked_Beta_TSE) %in% drops)]
-
-#Merge with the RT, Accuracy, Hemifield data 
-data_Stim_locked_Beta_TSE<- data_Stim_locked_Beta_TSE %>% #Rename data columns:
-    rename(., 
-           ID=V1,
-           TotalTrialNumber=V2,
-           Trial=V3,
-           Time=V4,
-           Stim_locked_Beta=V5) %>%
-    merge(., data, by = c("ID", "Trial")) 
-#Filter out artifacts
-data_Stim_locked_Beta_TSE<- data_Stim_locked_Beta_TSE %>% filter(!Art_neg100_100PR, !FixBreak_neg100_100PR)
-
-###########################################################################################################
-
-#Plot Stimonse locked 
-plotdata_Stim_locked_Beta_TSE <- summarySEwithin(data_Stim_locked_Beta_TSE, measurevar="Stim_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
-plotdata_Stim_locked_Beta_TSE$Time<-as.numeric(as.character(plotdata_Stim_locked_Beta_TSE$Time))
-summary(plotdata_Stim_locked_Beta_TSE$Time)
-
-
-#Stim_locked_Beta Group on same plot
-ggplot(plotdata_Stim_locked_Beta_TSE, aes(x=Time, y=Stim_locked_Beta, color=Hemifield,fill=Hemifield)) + 
-    geom_line(size=1) + 
-    geom_ribbon(aes(ymin=Stim_locked_Beta-ci, ymax=Stim_locked_Beta+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-0.16, 0.01),  xlim = c(-100, 800)) +
-    xlab("Time") + ylab("Beta Power (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-              axis.text.x  = element_text(face="bold", angle=0,  size=12), #element_text(face="bold", angle=0,  size=12),
-              axis.title.y = element_text(face="bold", size=12),
-              axis.text.y  = element_text(face="bold", angle=0, size=12),
-              panel.background = element_blank(),
-              legend.position= c(0.35,0.19),
-              legend.title = element_text(size=12, face="bold"),
-              legend.text = element_text(size = 12, face = "bold")) 
-
-
-##Calculate t_values for each of the rolling variables ability to predict log(RT) at each time point
-plot_data<-data_Stim_locked_Beta_TSE %>% 
-            group_by(Hemifield, Time) %>%  
-            do(Beta_Amplitude = summary(lmer(log(RT) ~ Stim_locked_Beta + (1|ID) + (1|ITI), data = ., REML=F))$coefficients[2,3]) %>%
-            gather(., key, t_value, -Hemifield, -Time) %>%
-            mutate(t_value= as.double(t_value)) %>% 
-            arrange(key)
-
-plot_data <- plot_data %>% arrange(key)
-
-
-ggplot(plot_data, aes(Time, t_value, colour=Hemifield)) + geom_line(size=1.4) + 
-    geom_hline(yintercept=2, alpha = 0.5,  size=1.4) + geom_hline(yintercept=-2, alpha = 0.5,  size=1.4) + geom_vline(xintercept=0, alpha = 0.5,  size=1.4) +
-     coord_cartesian(ylim = c(-5, 8), xlim = c(-100, 800)) +
-    theme(axis.title.x = element_text(face="bold", size=14),
-          axis.text.x  = element_text(face="bold", angle=0,  size=14)) +
-    theme(axis.title.y = element_text(face="bold", size=14),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=14)) +
-    theme(plot.title = element_text(face="bold", size=16)) +
-    theme(strip.text.x = element_text(size = 13)) 
-
-
-##Pull out mean beta amplitude measures from 300 - 500ms in stim locked beta
-beta_participant_level<- data_Stim_locked_Beta_TSE %>% 
-                            filter(Time>400, Time<600) %>% 
-                            group_by(ID, Hemifield) %>% 
-                            summarise(Stim_locked_Beta=mean(Stim_locked_Beta)) %>%
-                            spread(Hemifield, Stim_locked_Beta) %>% 
-                            select(Beta_LeftTarget_TSE = Left,
-                                   Beta_RightTarget_TSE = Right) %>%
-                            mutate(Beta_Asym_TSE = (Beta_LeftTarget_TSE-Beta_RightTarget_TSE)/(Beta_LeftTarget_TSE+Beta_RightTarget_TSE)) %>%
-                            ungroup()
-
-#Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
-participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
-
-
-
-```
-
-
-
-
-# Resp Locked Beta Slope (temporal spectral evolution - TSE)
-```{r, Resp Locked Beta, echo=FALSE, warning=FALSE}
-###########################################################################################################
-###### Import trial sample level data Resp locked Beta
-if (location=="Monash") {
-data_Resp_locked_Beta_TSE <- read.csv("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/master_matrix_R_Resp_locked_beta_TSE.csv", header=FALSE)
-ID <- read.table("S:/R-MNHS-SPP/Bellgrove-data/4. Dan Newman/big_dots/ID_vector_Resp_locked_beta_TSE.csv", quote="\"")
-} else if (location=="DansLaptop") {
-data_Stim_locked_Beta_TSE <- read.csv("C:/Users/Dan/Documents/GitHub/big_dots/master_matrix_R_Resp_locked_beta_TSE.csv", header=FALSE)
-ID <- read.table("C:/Users/Dan/Documents/GitHub/big_dots/ID_vector_Resp_locked_beta_TSE.csv", quote="\"")
-} else setwd(("~"))
-
-data_Resp_locked_Beta_TSE$ID<-data_Resp_locked_Beta_TSE[,1]
-#Replace the participant numbers with IDs:
-data_Resp_locked_Beta_TSE[,1]<-ID[,1]
-#Remove the seperate ID vector now it has been included into data dataframe
-rm(ID)
-drops <- c("ID")
-data_Resp_locked_Beta_TSE<-data_Resp_locked_Beta_TSE[,!(names(data_Resp_locked_Beta_TSE) %in% drops)]
-
-#Merge with the RT, Accuracy, Hemifield data 
-data_Resp_locked_Beta_TSE<- data_Resp_locked_Beta_TSE %>% #Rename data columns:
-    rename(., 
-           ID=V1,
-           TotalTrialNumber=V2,
-           Trial=V3,
-           Time=V4,
-           Resp_locked_Beta=V5,
-           Resp_locked_Beta_NOTbaselined=V6) %>%
-    merge(., data, by = c("ID", "Trial")) 
-
-#Filter out artifacts
-data_Resp_locked_Beta_TSE<- data_Resp_locked_Beta_TSE %>% filter(!Art_neg100_100PR)
-###########################################################################################################
-
-#Plot response locked 
-plotdata_Resp_locked_Beta_TSE <- summarySEwithin(data_Resp_locked_Beta_TSE, measurevar="Resp_locked_Beta", withinvars=c("Time", "Hemifield"), idvar="ID")
-plotdata_Resp_locked_Beta_TSE_NOTbaselined <- summarySEwithin(data_Resp_locked_Beta_TSE, measurevar="Resp_locked_Beta_NOTbaselined", withinvars=c("Time", "Hemifield"), idvar="ID")
-plotdata_Resp_locked_Beta_TSE$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta_TSE$Time))
-plotdata_Resp_locked_Beta_TSE_NOTbaselined$Time<-as.numeric(as.character(plotdata_Resp_locked_Beta_TSE_NOTbaselined$Time))
-summary(plotdata_Resp_locked_Beta_TSE$Time)
-
-
-#Resp_locked_Beta Group on same plot
-ggplot(plotdata_Resp_locked_Beta_TSE, aes(x=Time, y=Resp_locked_Beta, color=Hemifield,fill=Hemifield)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=Resp_locked_Beta-ci, ymax=Resp_locked_Beta+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(xlim = c(-600, 100)) +
-    xlab("Time") + ylab("Beta Power (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black"))
-
-
-
-
-##Pull out mean beta amplitude measures from -300 to -50ms in Resp locked beta
-beta_participant_level<- data_Resp_locked_Beta_TSE %>% 
-                            filter(Time>-300, Time<(-50)) %>% 
-                            group_by(ID, Hemifield) %>% 
-                            summarise( xyBar =mean(Time*Resp_locked_Beta),
-                                       xBar = mean(Time),
-                                       yBar = mean(Resp_locked_Beta),
-                                       x2Bar =mean(Time^2),
-                                       Resp_locked_Beta_Slope = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
-                            select(ID, Hemifield, Resp_locked_Beta_Slope) %>%
-                            spread(Hemifield, Resp_locked_Beta_Slope) %>% 
-                            select(Beta_slope_LeftTarget_TSE = Left,
-                                   Beta_slope_RightTarget_TSE = Right) %>%
-                            mutate(Beta_slope_Asym_TSE = (Beta_slope_LeftTarget_TSE-Beta_slope_RightTarget_TSE)/(Beta_slope_LeftTarget_TSE+Beta_slope_RightTarget_TSE)) 
-
-#Merge with participant_level data.frame (note don't worry that it coerces ID from factor to character vector)
-participant_level<-left_join(participant_level, beta_participant_level, by = "ID")
-
-```
-
-
-```{r}
-
-#make a function to create correlation coef text for the scatter plot
-corr_eqn <- function(x,y, method = "pearson", round_digits = 3) {
-  corr_coef <- round(cor(x, y), digits = round_digits)
-  paste("Pearson's r = ", corr_coef)
-}
-
-
-#Stim-locked
-data_Stim_locked_Beta %>%
-    filter(Time>300, Time<500, !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
-    group_by(ID) %>%
-    summarise(mean_Beta_STFT = mean(Stim_locked_Beta)) -> temp1
-data_Stim_locked_Beta_TSE %>%
-  filter(Time>300, Time<500, !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
-  group_by(ID) %>%
-  summarise(mean_Beta_TSE = mean(Stim_locked_Beta)) %>%
-    full_join(temp1, by=c("ID")) -> to_plot
-    ggplot(to_plot, aes(mean_Beta_STFT, mean_Beta_TSE)) +
-    geom_point(shape = 1, size = 2) +
-    geom_smooth(method= "lm", se = FALSE, colour = "black") +
-    labs(title = "[A] Stimulus-locked Beta amplitude\n   (STFT vs TSE)",
-         x = "STFT Beta Power",
-         y = "TSE Beta Power") +
-    annotate("text", x = -0.2, y = -0.05, 
-             label = corr_eqn(to_plot$mean_Beta_STFT, to_plot$mean_Beta_TSE)) -> p1
-
-
-    
-###Resp-locked
-data_Resp_locked_Beta %>%
-    filter(Time>-300, Time<(-50), !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
-    group_by(ID) %>%
-    summarise( xyBar =mean(Time*Resp_locked_Beta),
-           xBar = mean(Time),
-           yBar = mean(Resp_locked_Beta),
-           x2Bar =mean(Time^2),
-           Beta_Slope_STFT = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) -> temp1
-data_Resp_locked_Beta_TSE %>%
-  filter(Time>-300, Time<(-50), !Art_neg100_100PR, !FixBreak_neg100_100PR) %>%
-  group_by(ID) %>%
-    summarise( xyBar =mean(Time*Resp_locked_Beta),
-           xBar = mean(Time),
-           yBar = mean(Resp_locked_Beta),
-           x2Bar =mean(Time^2),
-           Beta_Slope_TSE = (xyBar - xBar*yBar) / (x2Bar - xBar^2)) %>%
-    full_join(temp1, by=c("ID")) -> to_plot
-    ggplot(to_plot, aes(Beta_Slope_STFT, Beta_Slope_TSE)) +
-    geom_point(shape = 1, size = 2) +
-    geom_smooth(method= "lm", se = FALSE, colour = "black") +
-    labs(title = "[B] Response-locked beta slope\n   (STFT vs TSE)",
-         x = "STFT Beta Slope",
-         y = "TSE Beta Slope") +
-    annotate("text", x = -0.001, y = 0.0001, 
-             label = corr_eqn(to_plot$Beta_Slope_STFT, to_plot$Beta_Slope_TSE)) -> p2
-        
-
-    
-png("Review_Figure 2.png", width = 10*600, height = 5*600,  units = "px", res = 600)    
-source("multiplot.R")
-multiplot(p1, p2, cols = 2)    
-dev.off()
-
-
-rm(temp1)
-
 ```
 
 
@@ -1094,7 +798,7 @@ kable(Normality_tests,
 ##In cases where the assumption of normality was violated, a factorial permutation test for the effect of Target Hemifield was performed with 1000 permutations and the permuted p-value also reported
 ```{r, effect of Target Hemifield, echo=FALSE, warning=FALSE}
 ###################################################################
-ANOVA_data<- participant_level %>%
+ANOVA_data <- participant_level %>%
     select(ID, RT_Left, RT_Right) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
@@ -1211,7 +915,7 @@ print(Hemifield_ANOVA);
 
 kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
 
-Perm_data<- participant_level %>%
+Perm_data <- participant_level %>%
     select(ID, Beta_slope_LeftTarget, Beta_slope_RightTarget) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
@@ -1268,7 +972,7 @@ ggplot(ANOVA_data, aes(Hemifield, dv, colour = Hemifield))  +
 
 
 ###################################################################
-ANOVA_data<- participant_level %>%
+ANOVA_data <- participant_level %>%
     select(ID, CPPslope_LeftTarget, CPPslope_RightTarget) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
@@ -1290,7 +994,7 @@ print(Hemifield_ANOVA);
 kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
 
 ###################################################################
-ANOVA_data<- participant_level %>%
+ANOVA_data <- participant_level %>%
     select(ID, N2i_latency_LeftTarget, N2i_latency_RightTarget) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
@@ -1385,7 +1089,7 @@ print("Factorial Permutation test for the effect of Hemifield on N2c_latency:")
 print(Hemifield_Perm);
 
 ###################################################################
-ANOVA_data<- participant_level %>%
+ANOVA_data <- participant_level %>%
     select(ID, N2c_LeftTarget, N2c_RightTarget) %>%
     na.omit() %>%
     gather(Hemifield, dv, -ID)
@@ -1411,8 +1115,8 @@ ANOVA_data<- participant_level %>%
     select(ID, N2c_LeftTarget, N2c_RightTarget, N2i_LeftTarget, N2i_RightTarget) %>%
     na.omit() %>%
     gather(condition, dv, -ID) %>%
-    mutate(Hemifield = replace(condition, condition=="N2c_LeftTarget" | condition=="N2i_LeftTarget", "Left")) %>%
-    mutate(Hemifield = replace(Hemifield, condition=="N2c_RightTarget" | condition=="N2i_RightTarget", "Right")) %>%
+    mutate(Hemifield = replace(condition, condition == "N2c_LeftTarget" | condition == "N2i_LeftTarget", "Left")) %>%
+    mutate(Hemifield = replace(Hemifield, condition=="N2c_RightTarget" | condition == "N2i_RightTarget", "Right")) %>%
     mutate(Hemisphere = replace(condition, condition=="N2i_LeftTarget" | condition=="N2i_RightTarget", "Ipsilateral")) %>%
     mutate(Hemisphere = replace(Hemisphere, condition=="N2c_LeftTarget" | condition=="N2c_RightTarget", "Contralateral")) %>%
     as.data.frame()
@@ -1432,7 +1136,7 @@ print(Hemifield_Hemisphere_ANOVA);
 
 ######################################################################
 
-ANOVA_data<- participant_level %>%
+ANOVA_data <- participant_level %>%
     select(ID, N2c_latency_LeftTarget, N2c_latency_RightTarget, N2i_latency_LeftTarget, N2i_latency_RightTarget) %>%
     na.omit() %>%
     gather(condition, dv, -ID) %>%
@@ -1529,437 +1233,104 @@ p_Alpha
 
 ```
 
-### Try TSE beta (instead of STFT beta) as per reviwer2's request 
-```{r}
-###############################################################################
-############################Try TSE beta (instead of STFT) as per reviwer2's request 
-
-ANOVA_data<- participant_level %>%
-    select(ID, Beta_LeftTarget_TSE, Beta_RightTarget_TSE) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID)
-
-
-   Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                        , within_covariates = NULL
-                        , between = NULL
-                        , between_covariates = NULL
-                        , observed = NULL
-                        , type = 3);
-print("Repeated Measures ANOVA  for the effect of Hemifield on Stim Locked Beta_TSE Amplitude:")
-print(Hemifield_ANOVA);
-
-kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
-
-Perm_data<- participant_level %>%
-    select(ID, Beta_LeftTarget_TSE, Beta_RightTarget_TSE) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID)
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on Stim Locked Beta_TSE Amplitude:")
-print(Hemifield_Perm);
-
-
-
-
-ANOVA_data<- participant_level %>%
-    select(ID, Beta_slope_LeftTarget_TSE, Beta_slope_RightTarget_TSE) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID)
-
-   Hemifield_ANOVA <- ezANOVA(data = ANOVA_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                        , within_covariates = NULL
-                        , between = NULL
-                        , between_covariates = NULL
-                        , observed = NULL
-                        , type = 3);
-print("Repeated Measures ANOVA  for the effect of Hemifield on Resp Locked Beta_TSE Slope:")
-print(Hemifield_ANOVA);
-
-kable(ANOVA_data %>% group_by(Hemifield) %>% summarise(mean=mean(dv),sd=sd(dv)))
-
-Perm_data<- participant_level %>%
-    select(ID, Beta_slope_LeftTarget_TSE, Beta_slope_RightTarget_TSE) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID)
-
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = Perm_data
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , perms = 1000);
- })
-print("Factorial Permutation test for the effect of Hemifield on Resp Locked Beta_TSE Slope:")
-print(Hemifield_Perm);
-
-##########################################################################################
-
-```
-
-##Split Participants into RT_Asym Groups (Left bias vs Right bias) and plot their N2 and CPP as per Redmond's request
-```{r, Median Split Based on RT_Asym }
-participant_level %>% 
-    mutate(Bias_Group = ifelse(RT_Asym<0, "Left", "Right"),
-           RT_Asym_Quartile = ntile(RT_Asym, 4)) -> participant_level
-
-summary(as.factor(participant_level$Bias_Group))
-
-
-participant_level %>% 
-    select(ID, Bias_Group, RT_Asym_Quartile) %>%
-    full_join(data_Stim_locked_ERP, by="ID") -> data_Stim_locked_ERP
-
-
-
-plotdata_Stim_locked_CPP <- summarySEwithin(data_Stim_locked_ERP, measurevar="CPP", withinvars=c("Time", "Hemifield"), betweenvars = c("Bias_Group"), idvar="ID")
-plotdata_Stim_locked_CPP$Time<-as.numeric(as.character(plotdata_Stim_locked_CPP$Time))
-plotdata_Stim_locked_N2c <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2c", withinvars=c("Time", "Hemifield"), betweenvars = c("Bias_Group"), idvar="ID")
-plotdata_Stim_locked_N2c$Time<-as.numeric(as.character(plotdata_Stim_locked_N2c$Time))
-plotdata_Stim_locked_N2i <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2i", withinvars=c("Time", "Hemifield"), betweenvars = c("Bias_Group"), idvar="ID")
-plotdata_Stim_locked_N2i$Time<-as.numeric(as.character(plotdata_Stim_locked_N2i$Time))
-summary(plotdata_Stim_locked_CPP$Time)
-
-
-
-#N2c plot
-p1<-ggplot(plotdata_Stim_locked_N2c, aes(x=Time, y=N2c, color=Hemifield,fill=Hemifield, linetype =Bias_Group)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=N2c-ci, ymax=N2c+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-3, 0.5),  xlim = c(-100, 500)) +
-    xlab("Time") + ylab("N2c Amplitude (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-
-
-#N2i plot
-p2<-ggplot(plotdata_Stim_locked_N2i, aes(x=Time, y=N2i, color=Hemifield,fill=Hemifield, linetype =Bias_Group)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=N2i-ci, ymax=N2i+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-2, 0.6),  xlim = c(-100, 500)) +
-    xlab("Time") + ylab("N2i Amplitude (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black"))
-
-
-
-#CPP plot
-p3<-ggplot(plotdata_Stim_locked_CPP, aes(x=Time, y=CPP, color=Hemifield,fill=Hemifield, linetype =Bias_Group)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=CPP-ci, ymax=CPP+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-0.5, 6),  xlim = c(-100, 500)) +
-    xlab("Time") + ylab("CPP Amplitude (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-
-
-
-png("RT_Asym_Bias_Group.png")
-source("multiplot.R")
-multiplot(p1,p2,p3)        
-dev.off()
-
-multiplot(p1,p2,p3)
-
-
-
-```
-
-##Split Participants into RT_Asym Quartiles and plot their N2 and CPP for the 2 most extream groups as per Redmond's request
-```{r, Quartiles Split Based on RT_Asym }
-plotdata_Stim_locked_CPP <- summarySEwithin(data_Stim_locked_ERP, measurevar="CPP", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
-plotdata_Stim_locked_CPP$Time<-as.numeric(as.character(plotdata_Stim_locked_CPP$Time))
-plotdata_Stim_locked_N2c <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2c", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
-plotdata_Stim_locked_N2c$Time<-as.numeric(as.character(plotdata_Stim_locked_N2c$Time))
-plotdata_Stim_locked_N2i <- summarySEwithin(data_Stim_locked_ERP, measurevar="N2i", withinvars=c("Time", "Hemifield"), betweenvars = c("RT_Asym_Quartile"), idvar="ID")
-plotdata_Stim_locked_N2i$Time<-as.numeric(as.character(plotdata_Stim_locked_N2i$Time))
-summary(plotdata_Stim_locked_CPP$Time)
-
-
-
-#N2c plot
-p1<-ggplot(filter(plotdata_Stim_locked_N2c, RT_Asym_Quartile==1 | RT_Asym_Quartile==4), 
-       aes(x=Time, y=N2c, color=Hemifield,fill=Hemifield, linetype =RT_Asym_Quartile)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=N2c-ci, ymax=N2c+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-3, 0.5),  xlim = c(-100, 500)) +
-    xlab("Time") + ylab("N2c Amplitude (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-
-
-#N2i plot
-p2<-ggplot(filter(plotdata_Stim_locked_N2i, RT_Asym_Quartile==1 | RT_Asym_Quartile==4), 
-       aes(x=Time, y=N2i, color=Hemifield,fill=Hemifield, linetype =RT_Asym_Quartile)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=N2i-ci, ymax=N2i+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-2, 0.6),  xlim = c(-100, 500)) +
-    xlab("Time") + ylab("N2i Amplitude (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black"))
-
-
-
-#CPP plot
-p3<-ggplot(filter(plotdata_Stim_locked_CPP, RT_Asym_Quartile==1 | RT_Asym_Quartile==4), 
-       aes(x=Time, y=CPP, color=Hemifield,fill=Hemifield, linetype =RT_Asym_Quartile)) + 
-    geom_line(size=1.4) + geom_ribbon(aes(ymin=CPP-ci, ymax=CPP+ci), alpha = 0.3, colour=NA) + 
-        geom_hline(yintercept=0, alpha = 0.5) + geom_vline(xintercept=0, alpha = 0.5) +   
-    coord_cartesian(ylim = c(-0.5, 6),  xlim = c(-100, 500)) +
-    xlab("Time") + ylab("CPP Amplitude (\u00b5V)") +
-    theme(axis.title.x = element_text(face="bold", size=12),
-          axis.text.x  = element_text(face="bold", angle=0,  size=12)) +
-    theme(axis.title.y = element_text(face="bold", size=12),
-          axis.text.y  = element_text(angle=0, vjust=0.5, size=12)) +
-    theme(legend.title = element_text(size=11, face="bold")) +
-    theme(legend.text = element_text(size = 11, face = "bold")) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          panel.background = element_blank(), axis.line = element_line(colour = "black")) 
-
-
-
-png("RT_Asym_Quartile.png")
-source("multiplot.R")
-multiplot(p1,p2,p3)        
-dev.off()
-
-multiplot(p1,p2,p3)
-
-
-data_Stim_locked_ERP %>% 
-    select(ID, Bias_Group, RT_Asym_Quartile, Time, N2c, N2i, Hemifield) %>%
-    filter(Time>=200, Time<=250) %>%
-    group_by(ID, Hemifield, Bias_Group, RT_Asym_Quartile) %>%
-    summarise(N2c=mean(N2c),
-              N2i=mean(N2i)) -> ANOVA_data
-
-
-## Amplitude
-
-# N2c Bias_Group
-Group_by_Hemifield_ANOVA <- ezANOVA(data = as.data.frame(ANOVA_data)
-                          , dv = .(N2c)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                        , between = .(Bias_Group)
-                        , type = 3);
-print("ANOVA  for Bias_Group*Hemifield on N2c Amplitude (200-250ms):")
-kable(Group_by_Hemifield_ANOVA, 
-      caption="ANOVA  for Bias_Group*Hemifield on N2c Amplitude (200-250ms):");
-
-
-
-# N2c RT_Asym_Quartile
-Group_by_Hemifield_ANOVA <- ezANOVA(data = as.data.frame(filter(ANOVA_data, RT_Asym_Quartile==1 | RT_Asym_Quartile==4))
-                          , dv = .(N2c)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                        , between = .(RT_Asym_Quartile)
-                        , type = 3);
-print("ANOVA  for RT_Asym_QuartileGroup(1 vs 4)*Hemifield on N2c Amplitude (200-250ms):")
-kable(Group_by_Hemifield_ANOVA, 
-      caption="ANOVA for RT_Asym_QuartileGroup(1 vs 4)*Hemifield on N2c Amplitude (200-250ms):");
-
-
-########################################################################################
-
-## Latency
-
-ANOVA_data<- participant_level %>%
-    select(ID, N2c_latency_LeftTarget, N2c_latency_RightTarget, Bias_Group, RT_Asym_Quartile) %>%
-    na.omit() %>%
-    gather(Hemifield, dv, -ID, -Bias_Group, -RT_Asym_Quartile)
-
-
-# N2c_latency Bias_Group
-Hemifield_ANOVA <- ezANOVA(data = as.data.frame(ANOVA_data)
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                        , between = .(Bias_Group)
-                        , type = 3);
-print("ANOVA for Bias_Group*Hemifield on N2c_latency:")
-kable(Hemifield_ANOVA);
-
-#Permutation test:
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = as.data.frame(ANOVA_data)
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , between = .(Bias_Group)
-                          , perms = 1000);
- })
-print("Factorial Permutation test Bias_Group*Hemifield on N2c_latency::")
-kable(Hemifield_Perm)
-
-
-# N2c_latency RT_Asym_Quartile
-Hemifield_ANOVA <- ezANOVA(data = filter(ANOVA_data, RT_Asym_Quartile==1 | RT_Asym_Quartile==4)
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                        , between = .(RT_Asym_Quartile)
-                        , type = 3);
-print("ANOVA for RT_Asym_QuartileGroup(1 vs 4)*Hemifield on N2c_latency:")
-kable(Hemifield_ANOVA);
-
-
-
-#Permutation test:
-log <- capture.output({
-   Hemifield_Perm <- ezPerm(data = as.data.frame(filter(ANOVA_data, RT_Asym_Quartile==1 | RT_Asym_Quartile==4))
-                          , dv = .(dv)
-                          , wid = .(ID)
-                          , within = .(Hemifield)
-                          , between = .(RT_Asym_Quartile)
-                          , perms = 1000);
- })
-print("Factorial Permutation test RT_Asym_QuartileGroup(1 vs 4)*Hemifield on N2c_latency::")
-kable(Hemifield_Perm)
-
-
-```
 
 
 #Make multi panel plots for manuscript
 ```{r, Make the multi panel figure }
-
-Paradigm2<-ggplot(data_frame(y=c(1,460,920), x=c(1,490,985)), aes(x, y))  +
-            annotation_custom(Paradigm, xmin = 0, xmax = 980, ymin = -19, ymax = 890) +
-             theme(axis.title.x = element_blank(),
-                  axis.text.x  = element_blank(), 
-                  axis.title.y = element_blank(),
-                  axis.text.y  = element_blank(),
-                  axis.ticks.x = element_blank(),
-                  axis.ticks.y = element_blank(),
-                  panel.background = element_blank()) +
-            annotate("text", x = 140, y = 930, label = "[A]", size=6)
-Paradigm2
-
-# png("Figure 2.png", width = 10*600, height = 15*600,  units = "px", res = 600)
+# 
+# Paradigm2<-ggplot(data_frame(y=c(1,460,920), x=c(1,490,985)), aes(x, y))  +
+#             annotation_custom(Paradigm, xmin = 0, xmax = 980, ymin = -19, ymax = 890) +
+#              theme(axis.title.x = element_blank(),
+#                   axis.text.x  = element_blank(), 
+#                   axis.title.y = element_blank(),
+#                   axis.text.y  = element_blank(),
+#                   axis.ticks.x = element_blank(),
+#                   axis.ticks.y = element_blank(),
+#                   panel.background = element_blank()) +
+#             annotate("text", x = 140, y = 930, label = "[A]", size=6)
+# Paradigm2
+# 
+# # png("Figure 2.png", width = 10*600, height = 15*600,  units = "px", res = 600)
+# # source("multiplot.R")
+# # multiplot(p_violin,p_CPP,p_scatter_CPP,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))        
+# # dev.off()
+# # multiplot(p_violin,p_CPP,p_scatter_CPP,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))  
+# 
+# 
+# 
+# multiplot(p_violin,p_CPP,Paradigm2,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2)) 
+# 
+# 
+# multiplot(Paradigm2,p_Alpha,p_N2,p_Beta,p_violin,p_CPP, layout=  matrix(c(1,1,3,3,5,6,6,2,2,4,4,5,6,6), nrow = 7, ncol = 2))
+# 
+# 
+# png("Figure 1.png", width = 10*600, height = 7*600,  units = "px", res = 600)
 # source("multiplot.R")
-# multiplot(p_violin,p_CPP,p_scatter_CPP,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))        
+# multiplot(Paradigm2,p_Alpha,p_N2,p_Beta, layout=  matrix(c(1,1,3,3,2,2,4,4),  ncol = 2))
 # dev.off()
-# multiplot(p_violin,p_CPP,p_scatter_CPP,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2))  
-
-
-
-multiplot(p_violin,p_CPP,Paradigm2,p_Beta,p_N2,p_Alpha,layout= matrix(c(1,2,2,3,3,5,5,1,2,2,4,4,6,6), nrow = 7, ncol = 2)) 
-
-
-multiplot(Paradigm2,p_Alpha,p_N2,p_Beta,p_violin,p_CPP, layout=  matrix(c(1,1,3,3,5,6,6,2,2,4,4,5,6,6), nrow = 7, ncol = 2))
-
-
-png("Figure 1.png", width = 10*600, height = 7*600,  units = "px", res = 600)
-source("multiplot.R")
-multiplot(Paradigm2,p_Alpha,p_N2,p_Beta, layout=  matrix(c(1,1,3,3,2,2,4,4),  ncol = 2))
-dev.off()
-multiplot(Paradigm2,p_Alpha,p_N2,p_Beta, layout=  matrix(c(1,1,3,3,2,2,4,4),  ncol = 2))
-
-png("Figure 2.png", width = 10*600, height = 6*600,  units = "px", res = 600)
-source("multiplot.R")
-multiplot(p_violin, p_CPP, layout=  matrix(c(1,2,2,1,2,2), ncol = 2))
-dev.off()
-multiplot(p_violin, p_CPP, layout=  matrix(c(1,2,2,1,2,2), ncol = 2))
-
-
-
-
-
-p_scatter_CPP<-ggplot(participant_level, aes(x=RT_Asym, y=CPPonset_Asym)) +
-        geom_point(shape=1, size=2) +    
-        geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
-        xlab("RT Asymmetry") + ylab("CPP-onset Asymmetry") +
-        theme(axis.title.x = element_text(face="bold", size=14),
-              axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
-              axis.title.y = element_text(face="bold", size=14),
-              axis.text.y  = element_text(face="bold", angle=0, size=14),
-              panel.background = element_blank()) +
-        geom_hline(yintercept=0, alpha = 0.4) + 
-        geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
-        annotate("text", x = -0.1, y = 0.40, label = "[C]", size=6)
-p_scatter_CPP                   
-
-
-
-p_scatter_Alpha<-ggplot(participant_level, aes(x=RT_Asym, y=PreAlphaAsym)) +
-        geom_point(shape=1, size=2) +    
-        geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
-        xlab("RT Asymmetry") + ylab("Pre-target Alpha Asymmetry") +
-        theme(axis.title.x = element_text(face="bold", size=14),
-              axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
-              axis.title.y = element_text(face="bold", size=14),
-              axis.text.y  = element_text(face="bold", angle=0, size=14),
-              panel.background = element_blank()) +
-        geom_hline(yintercept=0, alpha = 0.4) + 
-        geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
-        annotate("text", x = -0.1, y = 0.35, label = "[A]", size=6)
-p_scatter_Alpha  
-
-
-p_scatter_N2<-ggplot(participant_level, aes(x=RT_Asym, y=N2c_latency_Asym)) +
-        geom_point(shape=1, size=2) +    
-        geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
-        xlab("RT Asymmetry") + ylab("N2c-latency Asymmetry") +
-        theme(axis.title.x = element_text(face="bold", size=14),
-              axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
-              axis.title.y = element_text(face="bold", size=14),
-              axis.text.y  = element_text(face="bold", angle=0, size=14),
-              panel.background = element_blank()) +
-        geom_hline(yintercept=0, alpha = 0.4) + 
-        geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
-        annotate("text", x = -0.1, y = 0.3, label = "[B]", size=6)
-p_scatter_N2    
-
-
-png("Figure 3.png", width = 12*600, height = 4.3*600,  units = "px", res = 600)
-source("multiplot.R")
-multiplot(p_scatter_Alpha, p_scatter_N2, p_scatter_CPP, layout= matrix(c(1,2,3),nrow = 1, ncol = 3))     
-dev.off()
-multiplot(p_scatter_Alpha, p_scatter_N2, p_scatter_CPP, layout= matrix(c(1,2,3),nrow = 1, ncol = 3))  
+# multiplot(Paradigm2,p_Alpha,p_N2,p_Beta, layout=  matrix(c(1,1,3,3,2,2,4,4),  ncol = 2))
+# 
+# png("Figure 2.png", width = 10*600, height = 6*600,  units = "px", res = 600)
+# source("multiplot.R")
+# multiplot(p_violin, p_CPP, layout=  matrix(c(1,2,2,1,2,2), ncol = 2))
+# dev.off()
+# multiplot(p_violin, p_CPP, layout=  matrix(c(1,2,2,1,2,2), ncol = 2))
+# 
+# 
+# 
+# 
+# 
+# p_scatter_CPP<-ggplot(participant_level, aes(x=RT_Asym, y=CPPonset_Asym)) +
+#         geom_point(shape=1, size=2) +    
+#         geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
+#         xlab("RT Asymmetry") + ylab("CPP-onset Asymmetry") +
+#         theme(axis.title.x = element_text(face="bold", size=14),
+#               axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
+#               axis.title.y = element_text(face="bold", size=14),
+#               axis.text.y  = element_text(face="bold", angle=0, size=14),
+#               panel.background = element_blank()) +
+#         geom_hline(yintercept=0, alpha = 0.4) + 
+#         geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
+#         annotate("text", x = -0.1, y = 0.40, label = "[C]", size=6)
+# p_scatter_CPP                   
+# 
+# 
+# 
+# p_scatter_Alpha<-ggplot(participant_level, aes(x=RT_Asym, y=PreAlphaAsym)) +
+#         geom_point(shape=1, size=2) +    
+#         geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
+#         xlab("RT Asymmetry") + ylab("Pre-target Alpha Asymmetry") +
+#         theme(axis.title.x = element_text(face="bold", size=14),
+#               axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
+#               axis.title.y = element_text(face="bold", size=14),
+#               axis.text.y  = element_text(face="bold", angle=0, size=14),
+#               panel.background = element_blank()) +
+#         geom_hline(yintercept=0, alpha = 0.4) + 
+#         geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
+#         annotate("text", x = -0.1, y = 0.35, label = "[A]", size=6)
+# p_scatter_Alpha  
+# 
+# 
+# p_scatter_N2<-ggplot(participant_level, aes(x=RT_Asym, y=N2c_latency_Asym)) +
+#         geom_point(shape=1, size=2) +    
+#         geom_smooth(method=lm, se=FALSE, colour="black") + # Add linear regression line # Don't add shaded confidence region
+#         xlab("RT Asymmetry") + ylab("N2c-latency Asymmetry") +
+#         theme(axis.title.x = element_text(face="bold", size=14),
+#               axis.text.x  = element_text(face="bold", angle=0,  size=14), #element_text(face="bold", angle=0,  size=14),
+#               axis.title.y = element_text(face="bold", size=14),
+#               axis.text.y  = element_text(face="bold", angle=0, size=14),
+#               panel.background = element_blank()) +
+#         geom_hline(yintercept=0, alpha = 0.4) + 
+#         geom_vline(xintercept=0, alpha = 0.4) + #add black likes at 0 on x and y axis 
+#         annotate("text", x = -0.1, y = 0.3, label = "[B]", size=6)
+# p_scatter_N2    
+# 
+# 
+# png("Figure 3.png", width = 12*600, height = 4.3*600,  units = "px", res = 600)
+# source("multiplot.R")
+# multiplot(p_scatter_Alpha, p_scatter_N2, p_scatter_CPP, layout= matrix(c(1,2,3),nrow = 1, ncol = 3))     
+# dev.off()
+# multiplot(p_scatter_Alpha, p_scatter_N2, p_scatter_CPP, layout= matrix(c(1,2,3),nrow = 1, ncol = 3))  
 
 
 ```
@@ -1994,17 +1365,17 @@ Fit the regression modles in a hierarchical fashion with their entry order deter
 library(broom)
 
 ### Fitting the Model in a hierarchical fashion
-intercept_only<-lm(RT_Asym~ 1, data=participant_level)
+intercept_only <- lm(RT_Asym~ 1, data=participant_level)
 Controls <- update(intercept_only, .~. + Location + Sex + Age)
-PreAlphaAsym<-update(Controls, .~. + PreAlphaAsym)
-N2c_Asym<-update(PreAlphaAsym, .~. + N2c_Asym)
-N2c_latency_Asym<-update(N2c_Asym, .~. + N2c_latency_Asym)
-CPPonset_Asym<-update(N2c_latency_Asym, .~. + CPPonset_Asym)
-CPPslope_Asym<-update(CPPonset_Asym, .~. + CPPslope_Asym)
-Beta_Asym<-update(CPPslope_Asym, .~. + Beta_Asym)
-Beta_slope_Asym<-update(Beta_Asym, .~. + Beta_slope_Asym)
+PreAlphaAsym <- update(Controls, .~. + PreAlphaAsym)
+N2c_Asym <- update(PreAlphaAsym, .~. + N2c_Asym)
+N2c_latency_Asym <- update(N2c_Asym, .~. + N2c_latency_Asym)
+CPPonset_Asym <- update(N2c_latency_Asym, .~. + CPPonset_Asym)
+CPPslope_Asym <- update(CPPonset_Asym, .~. + CPPslope_Asym)
+Beta_Asym <- update(CPPslope_Asym, .~. + Beta_Asym)
+Beta_slope_Asym <- update(Beta_Asym, .~. + Beta_slope_Asym)
 
-anova(intercept_only, Controls, PreAlphaAsym, N2c_Asym, N2c_latency_Asym, CPPonset_Asym, CPPslope_Asym, Beta_Asym, Beta_slope_Asym)
+ anova(intercept_only, Controls, PreAlphaAsym, N2c_Asym, N2c_latency_Asym, CPPonset_Asym, CPPslope_Asym, Beta_Asym, Beta_slope_Asym)
 
 
 summary(Controls)
@@ -2018,9 +1389,9 @@ summary(Beta_slope_Asym)
 
 
 #For the final model, only keep predictors that significantly improve model fit
-final_model<-lm(RT_Asym ~  PreAlphaAsym + N2c_latency_Asym + CPPonset_Asym, data=participant_level)
+final_model <- lm(RT_Asym ~  PreAlphaAsym + N2c_latency_Asym + CPPonset_Asym, data = participant_level)
 
-kable(tidy(final_model),digits=3)
+kable(tidy(final_model),digits = 3)
 
 
 #---We can obtain standardized parameter estimates with the lm.beta() "QuantPsyc" pachage function---
@@ -2140,69 +1511,73 @@ lm.boot(final_model, 3000, rows = TRUE, new.xpts = NULL, ngrid = 100,
 weights = NULL)
 
 ##### 
+
+detach("package:car", unload=TRUE)
+detach("package:QuantPsyc", unload=TRUE)
+detach("package:MASS", unload=TRUE)
 ```
 
 ##Address Review 1's question "Is there scope of looking at the correlation between the different EEG measures to assess to what extent they independently (or not) contribute to the RT bias?"
 ```{r}
 ##grab the Asym EEG measures of interest for 
-data_for_cor<-select(participant_level, ends_with("Asym"), -N2i_Asym, -N2i_latency_Asym, -RT_Asym) %>%
-    rename(`CPP onset Asym` = CPPonset_Asym,
-           `CPP slope Asym` = CPPslope_Asym,
-           `N2c Amplitude Asym` = N2c_Asym,
-           `N2c latency Asym` = N2c_latency_Asym,
-           `Pretarget Alpha Asym` = PreAlphaAsym, 
-           `LHB Amplitude Asym` = Beta_Asym,
-           `LHB slope Asym` = Beta_slope_Asym)
-
-###################################################################
-#Make a function to compute the matrix of p-value from the correlation matrix:
-cor.mtest <- function(mat, ...) {
-    mat <- as.matrix(mat)
-    n <- ncol(mat)
-    p_mat<- matrix(NA, n, n)
-    diag(p_mat) <- 0
-    for (i in 1:(n - 1)) {
-        for (j in (i + 1):n) {
-            tmp <- cor.test(mat[, i], mat[, j], ...)
-            p_mat[i, j] <- p_mat[j, i] <- tmp$p.value
-        }
-    }
-  colnames(p_mat) <- rownames(p_mat) <- colnames(mat)
-  p_mat
-}
-###################################################################
-
-# matrix of the p-value of the correlation - "p_mat"
-p_mat <- cor.mtest(data_for_cor)
-head(p_mat[, 1:5])
-
-
-corrplot::corrplot(corr = cor(data_for_cor), 
-             method="color", 
-             type="upper", 
-             order="hclust", 
-             addCoef.col = "black", # Add coefficient of correlation
-             tl.col="black", tl.srt=45, #Text label color and rotation
-             # Combine with significance
-             p.mat = p_mat, sig.level = 0.05, insig = "blank", 
-             # hide correlation coefficient on the principal diagonal
-             diag=FALSE)
-
-
-source("multiplot.R")
-
-png("Review_Figure_corrplot.png", width = 10*600, height = 10*600,  units = "px", res = 600) 
-corrplot::corrplot(corr = cor(data_for_cor), 
-             method="color", 
-             type="upper", 
-             order="hclust", 
-             addCoef.col = "black", # Add coefficient of correlation
-             tl.col="black", tl.srt=45, #Text label color and rotation
-             # Combine with significance
-             p.mat = p_mat, sig.level = 0.05, insig = "blank", 
-             # hide correlation coefficient on the principal diagonal
-             diag=FALSE)
-dev.off()
+# data_for_cor<-select(participant_level, ends_with("Asym"), -N2i_Asym, -N2i_latency_Asym, -RT_Asym) %>%
+#     rename(`CPP onset Asym` = CPPonset_Asym,
+#            `CPP slope Asym` = CPPslope_Asym,
+#            `N2c Amplitude Asym` = N2c_Asym,
+#            `N2c latency Asym` = N2c_latency_Asym,
+#            `Pretarget Alpha Asym` = PreAlphaAsym, 
+#            `LHB Amplitude Asym` = Beta_Asym,
+#            `LHB slope Asym` = Beta_slope_Asym)
+# 
+# ###################################################################
+# #Make a function to compute the matrix of p-value from the correlation matrix:
+# cor.mtest <- function(mat, ...) {
+#     mat <- as.matrix(mat)
+#     n <- ncol(mat)
+#     p_mat<- matrix(NA, n, n)
+#     diag(p_mat) <- 0
+#     for (i in 1:(n - 1)) {
+#         for (j in (i + 1):n) {
+#             tmp <- cor.test(mat[, i], mat[, j], ...)
+#             p_mat[i, j] <- p_mat[j, i] <- tmp$p.value
+#         }
+#     }
+#   colnames(p_mat) <- rownames(p_mat) <- colnames(mat)
+#   p_mat
+# }
+# ###################################################################
+# 
+# # matrix of the p-value of the correlation - "p_mat"
+# p_mat <- cor.mtest(data_for_cor)
+# head(p_mat[, 1:5])
+# 
+# 
+# corrplot::corrplot(corr = cor(data_for_cor), 
+#              method="color", 
+#              type="upper", 
+#              order="hclust", 
+#              addCoef.col = "black", # Add coefficient of correlation
+#              tl.col="black", tl.srt=45, #Text label color and rotation
+#              # Combine with significance
+#              p.mat = p_mat, sig.level = 0.05, insig = "blank", 
+#              # hide correlation coefficient on the principal diagonal
+#              diag=FALSE)
+# 
+# 
+# source("multiplot.R")
+# 
+# png("Review_Figure_corrplot.png", width = 10*600, height = 10*600,  units = "px", res = 600) 
+# corrplot::corrplot(corr = cor(data_for_cor), 
+#              method="color", 
+#              type="upper", 
+#              order="hclust", 
+#              addCoef.col = "black", # Add coefficient of correlation
+#              tl.col="black", tl.srt=45, #Text label color and rotation
+#              # Combine with significance
+#              p.mat = p_mat, sig.level = 0.05, insig = "blank", 
+#              # hide correlation coefficient on the principal diagonal
+#              diag=FALSE)
+# dev.off()
 
 
 ```
@@ -2512,7 +1887,7 @@ data_Stim_locked_ERP %>% filter(!ID == "221M_SJ")  %>% # can not detect signific
     arrange(ID, Trial, Time) %>%
     group_by(ID, 
              Trial,
-             CPP_smooth = rollmean(.$CPP, k=50,  fill = NA)) %>%
+             CPP_smooth = zoo::rollmean(.$CPP, k=50,  fill = NA)) %>%
     filter(Time>0, Time<1000) %>%
     group_by(ID, RT_bin, Time) %>%
     do(t_test = tidy(t.test(.$CPP_smooth, mu=0))) %>%
@@ -2520,7 +1895,7 @@ data_Stim_locked_ERP %>% filter(!ID == "221M_SJ")  %>% # can not detect signific
     select(ID, RT_bin, Time, p.value) %>%
     group_by(ID, 
              RT_bin, 
-             significant = rollapply(.$p.value, width = 20,
+             significant = zoo::rollapply(.$p.value, width = 20,
           FUN = function(x) all(x<0.05),
           align = "left", fill = NA)) %>%
     mutate(count = row_number(), 

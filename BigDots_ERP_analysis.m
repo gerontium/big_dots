@@ -4,8 +4,8 @@ clc
 chanlocs = readlocs('cap64.loc');
 
 % path_temp = 'D:\Participant Folders_new\'; %TCD Laptop
-path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
-% save_path = 'D:\Participant Folders_new\';
+% path_temp = 'S:\R-MNHS-SPP\Bellgrove-data\4. Dan Newman\Participant Folders_new\'; %Monash PC
+path_temp = 'C:\Users\Dan\Desktop\Big_Dots_Data\';
 
 %% Create paths for subjects
 
